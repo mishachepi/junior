@@ -53,7 +53,7 @@ uv run junior webhook-server --port 8000
 
 ### Option 3: Direct FastAPI
 ```bash
-uv run uvicorn src.junior.api:app --host 0.0.0.0 --port 8000
+uv run uvicorn junior.app:app --host 0.0.0.0 --port 8000
 ```
 
 ## 🔌 **GitHub Webhook Configuration**
@@ -122,7 +122,7 @@ uv run junior --help
 - Collects commit history and file changes
 - Gathers repository context
 
-✅ **3. Repository Analysis** (`MCPRepositoryAnalyzer`)
+✅ **3. Repository Analysis** (`RepositoryAnalyzer`)
 - Clones repository to temporary directory
 - Analyzes project structure (Python, Node.js, etc.)
 - Prioritizes files: changed → config → context → entry points

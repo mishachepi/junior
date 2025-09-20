@@ -7,8 +7,8 @@ This module contains all AI-related functionality including:
 - Review agents and processors
 """
 
-from .tools import RepositoryAnalyzer
 from .review_agent import LogicalReviewAgent, LogicalReviewState, ReviewFinding
+from .tools import RepositoryAnalyzer
 
 __all__ = [
     "LogicalReviewAgent",

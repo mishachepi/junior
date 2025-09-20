@@ -10,7 +10,7 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel
 
 from ..config import settings
-from ..models import ReviewData, ReviewCategory, ReviewComment, Severity
+from ..models import ReviewCategory, ReviewComment, ReviewData, Severity
 from .tools import RepositoryAnalyzer
 
 logger = structlog.get_logger(__name__)
