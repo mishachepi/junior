@@ -13,7 +13,12 @@
       },
       "console": "integratedTerminal",
       "justMyCode": false,
-      "args": []
+      "args": [],
+      "serverReadyAction": {
+        "pattern": "Application startup complete",
+        "uriFormat": "http://localhost:8000/docs",
+        "action": "openExternally"
+      }
     },
     {
       "name": "Junior API - Production Mode",
@@ -64,7 +69,12 @@
         "--reload",
         "--log-level",
         "debug"
-      ]
+      ],
+      "serverReadyAction": {
+        "pattern": "Application startup complete",
+        "uriFormat": "http://localhost:8005/docs",
+        "action": "openExternally"
+      }
     }
   ]
 }
