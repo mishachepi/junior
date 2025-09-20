@@ -129,7 +129,7 @@ class TestWebhookProcessor:
         """Test processing of valid actions."""
         processor = WebhookProcessor()
         
-        valid_actions = ["opened", "synchronize", "reopened", "ready_for_review"]
+        valid_actions = ["opened", "synchronize", "reopened", "ready_for_review", "labeled"]
         
         for action in valid_actions:
             payload = PullRequestWebhookPayload(
@@ -154,7 +154,7 @@ class TestWebhookProcessor:
         """Test skipping of invalid actions."""
         processor = WebhookProcessor()
         
-        invalid_actions = ["closed", "assigned", "labeled", "edited"]
+        invalid_actions = ["closed", "assigned", "edited"]
         
         for action in invalid_actions:
             payload = PullRequestWebhookPayload(
