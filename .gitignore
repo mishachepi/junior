@@ -211,3 +211,4 @@ junior.db
 logs/
 temp/
 .junior/
+tmp/
