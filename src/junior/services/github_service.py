@@ -108,7 +108,7 @@ class GitHubService:
                 "Review posted to GitHub",
                 repo=repository,
                 pr=pr_number,
-                event=event,
+                review_event=event,
                 inline_comments=len(inline_comments),
             )
 

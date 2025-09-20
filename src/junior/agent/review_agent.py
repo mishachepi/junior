@@ -48,6 +48,9 @@ class LogicalReviewState(BaseModel):
     current_step: str = "start"
     error: str | None = None
     mcp_analyzer: RepositoryAnalyzer | None = None
+    review_summary: str = ""
+    review_comments: list = []
+    recommendation: str = "comment"
 
     class Config:
         arbitrary_types_allowed = True
@@ -88,10 +91,10 @@ class ReviewAgent:
         # Add review steps
         workflow.add_node("analyze_logic", self._analyze_project_logic)
         workflow.add_node("check_security", self._check_logical_security)
-        workflow.add_node("find_critical_bugs", self._find_critical_bugs)
-        workflow.add_node("review_naming", self._review_naming_conventions)
-        workflow.add_node("check_optimization", self._check_code_optimization)
-        workflow.add_node("verify_principles", self._verify_design_principles)
+        # workflow.add_node("find_critical_bugs", self._find_critical_bugs)
+        # workflow.add_node("review_naming", self._review_naming_conventions)
+        # workflow.add_node("check_optimization", self._check_code_optimization)
+        # workflow.add_node("verify_principles", self._verify_design_principles)
         workflow.add_node("generate_summary", self._generate_review_summary)
 
         # Set entry point
@@ -99,11 +102,12 @@ class ReviewAgent:
 
         # Define workflow
         workflow.add_edge("analyze_logic", "check_security")
-        workflow.add_edge("check_security", "find_critical_bugs")
-        workflow.add_edge("find_critical_bugs", "review_naming")
-        workflow.add_edge("review_naming", "check_optimization")
-        workflow.add_edge("check_optimization", "verify_principles")
-        workflow.add_edge("verify_principles", "generate_summary")
+        workflow.add_edge("check_security", "generate_summary")
+        # workflow.add_edge("check_security", "find_critical_bugs")
+        # workflow.add_edge("find_critical_bugs", "review_naming")
+        # workflow.add_edge("review_naming", "check_optimization")
+        # workflow.add_edge("check_optimization", "verify_principles")
+        # workflow.add_edge("verify_principles", "generate_summary")
         workflow.add_edge("generate_summary", END)
 
         self.review_graph = workflow.compile()
@@ -299,164 +303,164 @@ class ReviewAgent:
         state.current_step = "security_complete"
         return state
 
-    async def _find_critical_bugs(
-        self, state: LogicalReviewState
-    ) -> LogicalReviewState:
-        """Find critical bugs and potential zero-days."""
-        self.logger.info("Finding critical bugs", pr=state.review_data.pr_number)
+    # async def _find_critical_bugs(
+    #     self, state: LogicalReviewState
+    # ) -> LogicalReviewState:
+    #     """Find critical bugs and potential zero-days."""
+    #     self.logger.info("Finding critical bugs", pr=state.review_data.pr_number)
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=prompts.FIND_CRITICAL_BUGS_PROMPT),
-                HumanMessage(
-                    content=f"""Hunt for critical bugs in this code change:
+    #     prompt = ChatPromptTemplate.from_messages(
+    #         [
+    #             SystemMessage(content=prompts.FIND_CRITICAL_BUGS_PROMPT),
+    #             HumanMessage(
+    #                 content=f"""Hunt for critical bugs in this code change:
             
-            {state.diff_content}
+    #         {state.diff_content}
             
-            Focus on exploitable vulnerabilities and critical system failures."""
-                ),
-            ]
-        )
+    #         Focus on exploitable vulnerabilities and critical system failures."""
+    #             ),
+    #         ]
+    #     )
 
-        try:
-            chain = prompt | self.llm | JsonOutputParser()
-            response = await chain.ainvoke({})
+    #     try:
+    #         chain = prompt | self.llm | JsonOutputParser()
+    #         response = await chain.ainvoke({})
 
-            findings = self._parse_ai_response(response, "critical_bug")
-            state.findings.extend(findings)
+    #         findings = self._parse_ai_response(response, "critical_bug")
+    #         state.findings.extend(findings)
 
-            self.logger.info(
-                "Critical bug analysis completed",
-                findings_count=len(findings),
-                pr=state.review_data.pr_number,
-            )
+    #         self.logger.info(
+    #             "Critical bug analysis completed",
+    #             findings_count=len(findings),
+    #             pr=state.review_data.pr_number,
+    #         )
 
-        except Exception as e:
-            self.logger.error("Bug hunting failed", error=str(e))
+    #     except Exception as e:
+    #         self.logger.error("Bug hunting failed", error=str(e))
 
-        state.current_step = "bugs_complete"
-        return state
+    #     state.current_step = "bugs_complete"
+    #     return state
 
-    async def _review_naming_conventions(
-        self, state: LogicalReviewState
-    ) -> LogicalReviewState:
-        """Review naming conventions that impact readability."""
-        self.logger.info("Reviewing naming conventions", pr=state.review_data.pr_number)
+    # async def _review_naming_conventions(
+    #     self, state: LogicalReviewState
+    # ) -> LogicalReviewState:
+    #     """Review naming conventions that impact readability."""
+    #     self.logger.info("Reviewing naming conventions", pr=state.review_data.pr_number)
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=prompts.REVIEW_NAMING_CONVENTIONS_PROMPT),
-                HumanMessage(
-                    content=f"""Review naming in this code change:
+    #     prompt = ChatPromptTemplate.from_messages(
+    #         [
+    #             SystemMessage(content=prompts.REVIEW_NAMING_CONVENTIONS_PROMPT),
+    #             HumanMessage(
+    #                 content=f"""Review naming in this code change:
             
-            {state.diff_content}
+    #         {state.diff_content}
             
-            Focus on clarity, domain appropriateness, and maintainability."""
-                ),
-            ]
-        )
+    #         Focus on clarity, domain appropriateness, and maintainability."""
+    #             ),
+    #         ]
+    #     )
 
-        try:
-            chain = prompt | self.llm | JsonOutputParser()
-            response = await chain.ainvoke({})
+    #     try:
+    #         chain = prompt | self.llm | JsonOutputParser()
+    #         response = await chain.ainvoke({})
 
-            findings = self._parse_ai_response(response, "naming")
-            state.findings.extend(findings)
+    #         findings = self._parse_ai_response(response, "naming")
+    #         state.findings.extend(findings)
 
-            self.logger.info(
-                "Naming review completed",
-                findings_count=len(findings),
-                pr=state.review_data.pr_number,
-            )
+    #         self.logger.info(
+    #             "Naming review completed",
+    #             findings_count=len(findings),
+    #             pr=state.review_data.pr_number,
+    #         )
 
-        except Exception as e:
-            self.logger.error("Naming review failed", error=str(e))
+    #     except Exception as e:
+    #         self.logger.error("Naming review failed", error=str(e))
 
-        state.current_step = "naming_complete"
-        return state
+    #     state.current_step = "naming_complete"
+    #     return state
 
-    async def _check_code_optimization(
-        self, state: LogicalReviewState
-    ) -> LogicalReviewState:
-        """Check for code optimization opportunities."""
-        self.logger.info(
-            "Checking optimization opportunities", pr=state.review_data.pr_number
-        )
+    # async def _check_code_optimization(
+    #     self, state: LogicalReviewState
+    # ) -> LogicalReviewState:
+    #     """Check for code optimization opportunities."""
+    #     self.logger.info(
+    #         "Checking optimization opportunities", pr=state.review_data.pr_number
+    #     )
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=prompts.CHECK_CODE_OPTIMIZATION_PROMPT),
-                HumanMessage(
-                    content=f"""Analyze optimization opportunities in:
+    #     prompt = ChatPromptTemplate.from_messages(
+    #         [
+    #             SystemMessage(content=prompts.CHECK_CODE_OPTIMIZATION_PROMPT),
+    #             HumanMessage(
+    #                 content=f"""Analyze optimization opportunities in:
             
-            {state.diff_content}
+    #         {state.diff_content}
             
-            Consider the application context and user impact."""
-                ),
-            ]
-        )
+    #         Consider the application context and user impact."""
+    #             ),
+    #         ]
+    #     )
 
-        try:
-            chain = prompt | self.llm | JsonOutputParser()
-            response = await chain.ainvoke({})
+    #     try:
+    #         chain = prompt | self.llm | JsonOutputParser()
+    #         response = await chain.ainvoke({})
 
-            findings = self._parse_ai_response(response, "optimization")
-            state.findings.extend(findings)
+    #         findings = self._parse_ai_response(response, "optimization")
+    #         state.findings.extend(findings)
 
-            self.logger.info(
-                "Optimization analysis completed",
-                findings_count=len(findings),
-                pr=state.review_data.pr_number,
-            )
+    #         self.logger.info(
+    #             "Optimization analysis completed",
+    #             findings_count=len(findings),
+    #             pr=state.review_data.pr_number,
+    #         )
 
-        except Exception as e:
-            self.logger.error("Optimization analysis failed", error=str(e))
+    #     except Exception as e:
+    #         self.logger.error("Optimization analysis failed", error=str(e))
 
-        state.current_step = "optimization_complete"
-        return state
+    #     state.current_step = "optimization_complete"
+    #     return state
 
-    async def _verify_design_principles(
-        self, state: LogicalReviewState
-    ) -> LogicalReviewState:
-        """Verify adherence to DRY and KISS principles."""
-        self.logger.info("Verifying design principles", pr=state.review_data.pr_number)
+    # async def _verify_design_principles(
+    #     self, state: LogicalReviewState
+    # ) -> LogicalReviewState:
+    #     """Verify adherence to DRY and KISS principles."""
+    #     self.logger.info("Verifying design principles", pr=state.review_data.pr_number)
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=prompts.VERIFY_DESIGN_PRINCIPLES_PROMPT),
-                HumanMessage(
-                    content=f"""Evaluate design principle adherence in:
+    #     prompt = ChatPromptTemplate.from_messages(
+    #         [
+    #             SystemMessage(content=prompts.VERIFY_DESIGN_PRINCIPLES_PROMPT),
+    #             HumanMessage(
+    #                 content=f"""Evaluate design principle adherence in:
             
-            {state.diff_content}
+    #         {state.diff_content}
             
-            Suggest concrete refactoring improvements."""
-                ),
-            ]
-        )
+    #         Suggest concrete refactoring improvements."""
+    #             ),
+    #         ]
+    #     )
 
-        try:
-            chain = prompt | self.llm | JsonOutputParser()
-            response = await chain.ainvoke({})
+    #     try:
+    #         chain = prompt | self.llm | JsonOutputParser()
+    #         response = await chain.ainvoke({})
 
-            findings = self._parse_ai_response(response, "principles")
-            state.findings.extend(findings)
+    #         findings = self._parse_ai_response(response, "principles")
+    #         state.findings.extend(findings)
 
-            self.logger.info(
-                "Design principles analysis completed",
-                findings_count=len(findings),
-                pr=state.review_data.pr_number,
-            )
+    #         self.logger.info(
+    #             "Design principles analysis completed",
+    #             findings_count=len(findings),
+    #             pr=state.review_data.pr_number,
+    #         )
 
-        except Exception as e:
-            self.logger.error("Design principles analysis failed", error=str(e))
+    #     except Exception as e:
+    #         self.logger.error("Design principles analysis failed", error=str(e))
 
-        state.current_step = "principles_complete"
-        return state
+    #     state.current_step = "principles_complete"
+    #     return state
 
     async def _generate_review_summary(
         self, state: LogicalReviewState
     ) -> LogicalReviewState:
-        """Generate comprehensive review summary."""
+        """Generate simple review summary."""
         self.logger.info("Generating review summary", pr=state.review_data.pr_number)
 
         # Group findings by severity
@@ -475,80 +479,18 @@ class ReviewAgent:
         else:
             recommendation = "approve"
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=prompts.GENERATE_REVIEW_SUMMARY_PROMPT),
-                HumanMessage(
-                    content=f"""Create review summary for PR #{state.review_data.pr_number}:
-            
-            Critical findings ({len(critical_findings)}):
-            {[f.message for f in critical_findings]}
-            
-            High severity findings ({len(high_findings)}):
-            {[f.message for f in high_findings]}
-            
-            Medium severity findings ({len(medium_findings)}):
-            {[f.message for f in medium_findings]}
-            
-            Low severity findings ({len(low_findings)}):
-            {[f.message for f in low_findings]}
-            
-            Recommendation: {recommendation}"""
-                ),
-            ]
-        )
+        # Simple summary generation
+        total_findings = len(state.findings)
+        if total_findings == 0:
+            summary = "Code review completed. No major issues found."
+        else:
+            summary = f"Code review completed. Found {total_findings} findings: {len(critical_findings)} critical, {len(high_findings)} high, {len(medium_findings)} medium, {len(low_findings)} low severity issues."
 
-        try:
-            chain = prompt | self.llm
-            summary = await chain.ainvoke({})
-
-            # Store final results
-            state.current_step = "complete"
-
-            # Convert findings to review comments
-            review_comments = []
-            for finding in state.findings:
-                severity_map = {
-                    "critical": Severity.CRITICAL,
-                    "high": Severity.HIGH,
-                    "medium": Severity.MEDIUM,
-                    "low": Severity.LOW,
-                }
-
-                category_map = {
-                    "logic": ReviewCategory.LOGIC,
-                    "security": ReviewCategory.SECURITY,
-                    "performance": ReviewCategory.PERFORMANCE,
-                    "style": ReviewCategory.STYLE,
-                    "complexity": ReviewCategory.COMPLEXITY,
-                    "naming": ReviewCategory.STYLE,
-                    "optimization": ReviewCategory.PERFORMANCE,
-                    "principles": ReviewCategory.LOGIC,
-                }
-
-                comment = ReviewComment(
-                    category=category_map.get(
-                        finding.category.lower(), ReviewCategory.LOGIC
-                    ),
-                    message=finding.message,
-                    filename=finding.file_path,
-                    line_number=finding.line_number,
-                    severity=severity_map.get(
-                        finding.severity.lower(), Severity.MEDIUM
-                    ),
-                    suggestion=finding.suggestion,
-                    rule=finding.principle_violated,
-                )
-                review_comments.append(comment)
-
-            # Store for return
-            state.review_summary = summary
-            state.review_comments = review_comments
-            state.recommendation = recommendation
-
-        except Exception as e:
-            self.logger.error("Summary generation failed", error=str(e))
-            state.error = f"Summary generation failed: {e}"
+        # Store final results
+        state.current_step = "complete"
+        state.review_summary = summary
+        state.review_comments = []  # Simplified - no detailed comments for now
+        state.recommendation = recommendation
 
         return state
 
@@ -556,8 +498,8 @@ class ReviewAgent:
         self,
         review_data: ReviewData,
         diff_content: str = "",
-        file_contents: dict[str, str] = None,
-        project_structure: dict = None,
+        file_contents: dict[str, str] | None = None,
+        project_structure: dict | None = None,
     ) -> dict:
         """Perform comprehensive logical review of a pull request."""
         self.logger.info(
@@ -579,41 +521,55 @@ class ReviewAgent:
             # Run review workflow
             final_state = await self.review_graph.ainvoke(state)
 
-            # Return structured results
+            # Return minimal structure for GitHub posting
+            total_findings = len(final_state.findings)
+            critical_count = len([f for f in final_state.findings if f.severity == "critical"])
+            high_count = len([f for f in final_state.findings if f.severity == "high"])
+            medium_count = len([f for f in final_state.findings if f.severity == "medium"])
+            low_count = len([f for f in final_state.findings if f.severity == "low"])
+            
             return {
-                "repository": final_state.review_data.repository,
-                "pr_number": final_state.review_data.pr_number,
-                "findings": [finding.dict() for finding in final_state.findings],
-                "summary": getattr(final_state, "review_summary", "Review completed"),
-                "recommendation": getattr(final_state, "recommendation", "comment"),
-                "comments": [
-                    comment.dict()
-                    for comment in getattr(final_state, "review_comments", [])
-                ],
-                "critical_count": len(
-                    [f for f in final_state.findings if f.severity == "critical"]
-                ),
-                "high_count": len(
-                    [f for f in final_state.findings if f.severity == "high"]
-                ),
-                "medium_count": len(
-                    [f for f in final_state.findings if f.severity == "medium"]
-                ),
-                "low_count": len(
-                    [f for f in final_state.findings if f.severity == "low"]
-                ),
-                "total_findings": len(final_state.findings),
-                "error": final_state.error,
+                "summary": final_state.review_summary,
+                "recommendation": final_state.recommendation,
+                "comments": final_state.review_comments,
+                "total_findings": total_findings,
+                "critical_count": critical_count,
+                "high_count": high_count,
+                "medium_count": medium_count,
+                "low_count": low_count,
             }
+            # return {
+            #     "repository": final_state.review_data.repository,
+            #     "pr_number": final_state.review_data.pr_number,
+            #     "findings": [finding.model_dump() for finding in final_state.findings],
+            #     "summary": final_state.review_summary,
+            #     "recommendation": final_state.recommendation,
+            #     "comments": final_state.review_comments,
+            #     "critical_count": len(
+            #         [f for f in final_state.findings if f.severity == "critical"]
+            #     ),
+            #     "high_count": len(
+            #         [f for f in final_state.findings if f.severity == "high"]
+            #     ),
+            #     "medium_count": len(
+            #         [f for f in final_state.findings if f.severity == "medium"]
+            #     ),
+            #     "low_count": len(
+            #         [f for f in final_state.findings if f.severity == "low"]
+            #     ),
+            #     "total_findings": len(final_state.findings),
+            #     "error": final_state.error,
+            # }
 
         except Exception as e:
             self.logger.error("Logical review failed", error=str(e))
             return {
-                "repository": review_data.repository,
-                "pr_number": review_data.pr_number,
-                "findings": [],
                 "summary": f"Review failed: {e}",
                 "recommendation": "comment",
                 "comments": [],
-                "error": str(e),
+                "total_findings": 0,
+                "critical_count": 0,
+                "high_count": 0,
+                "medium_count": 0,
+                "low_count": 0,
             }

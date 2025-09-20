@@ -39,6 +39,7 @@ class ReviewService:
             review_result = await review_agent.review_pull_request(
                 review_data=review_data
             )
+            print("Review result:", review_result)
 
             self.logger.info(
                 "PR review completed",

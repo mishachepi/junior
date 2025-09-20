@@ -158,7 +158,7 @@ class GitHubClient:
     ) -> dict:
         """Submit a complete review for a pull request."""
         self.logger.info(
-            "Submitting review", repo=repository, pr=pr_number, event=event
+            "Submitting review", repo=repository, pr=pr_number, review_event=event
         )
 
         try:
