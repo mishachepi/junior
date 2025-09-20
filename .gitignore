@@ -212,3 +212,5 @@ logs/
 temp/
 .junior/
 tmp/
+
+/.claude/settings.local.json
