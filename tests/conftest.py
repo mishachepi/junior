@@ -1,15 +1,14 @@
 """Pytest configuration and fixtures."""
 
-import os
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from langchain_openai import ChatOpenAI
 
-from junior.review_agent import LogicalReviewAgent
+from junior.agent import ReviewAgent
 from junior.config import Settings
-from junior.github_client import GitHubClient
 from junior.models import CodeReviewRequest, FileChange, FileStatus
+from junior.services import GitHubClient
 
 
 @pytest.fixture
@@ -93,11 +92,11 @@ def mock_llm():
 def code_review_agent(mock_settings, monkeypatch):
     """Code review agent with mocked dependencies."""
     monkeypatch.setattr("junior.config.settings", mock_settings)
-    
-    agent = LogicalReviewAgent()
+
+    agent = ReviewAgent()
     agent.llm = MagicMock()
     agent.llm.ainvoke = AsyncMock(return_value="Mock review response")
-    
+
     return agent
 
 

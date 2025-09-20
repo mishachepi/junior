@@ -45,4 +45,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Default command - run FastAPI webhook service
-CMD ["uv", "run", "python", "-m", "junior.api"]
+CMD ["uv", "run", "python", "-m", "junior.app"]

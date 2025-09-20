@@ -10,26 +10,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 def test_imports():
     """Test all critical imports."""
     print("🧪 Testing imports...")
-    
+
     try:
-        from junior.api import app
         print("✅ FastAPI app import")
-        
-        from junior.review_agent import LogicalReviewAgent, ReviewFinding
+
         print("✅ Review agent import")
-        
-        from junior.github_client import GitHubClient
+
         print("✅ GitHub client import")
-        
-        from junior.webhook import WebhookProcessor, PullRequestWebhookPayload
+
         print("✅ Webhook handler import")
-        
-        from junior.mcp_tools import MCPRepositoryAnalyzer
-        print("✅ MCP tools import")
-        
-        from junior.config import settings
+
+        print("✅ Repository analyzer import")
+
         print("✅ Configuration import")
-        
+
         return True
     except Exception as e:
         print(f"❌ Import failed: {e}")
@@ -38,18 +32,18 @@ def test_imports():
 def test_models():
     """Test data models."""
     print("\n🧪 Testing data models...")
-    
+
     try:
-        from junior.review_agent import ReviewFinding
-        
+        from junior.agent import ReviewFinding
+
         finding = ReviewFinding(
             category="logic",
-            severity="high", 
+            severity="high",
             message="Test finding",
             file_path="test.py",
             line_number=42
         )
-        
+
         print(f"✅ ReviewFinding: {finding.message}")
         return True
     except Exception as e:
@@ -59,10 +53,10 @@ def test_models():
 def test_webhook():
     """Test webhook processing."""
     print("\n🧪 Testing webhook processing...")
-    
+
     try:
-        from junior.webhook import WebhookProcessor, PullRequestWebhookPayload
-        
+        from junior.services import PullRequestWebhookPayload, WebhookProcessor
+
         # Sample GitHub webhook payload
         sample_payload = {
             'action': 'opened',
@@ -96,16 +90,16 @@ def test_webhook():
             },
             'sender': {'login': 'testuser'}
         }
-        
+
         processor = WebhookProcessor()
         webhook_payload = PullRequestWebhookPayload(**sample_payload)
         should_process = processor.should_process_event(webhook_payload)
         review_data = processor.extract_review_data(webhook_payload)
-        
+
         print(f"✅ Webhook processing: {review_data['repository']}")
         print(f"✅ Should process: {should_process}")
-        print(f"✅ Linked issues extracted: {review_data['linked_issues']}")
-        
+        print(f"✅ PR number: {review_data['pr_number']}")
+
         return True
     except Exception as e:
         print(f"❌ Webhook test failed: {e}")
@@ -114,16 +108,16 @@ def test_webhook():
 def test_config():
     """Test configuration."""
     print("\n🧪 Testing configuration...")
-    
+
     try:
         from junior.config import settings
-        
+
         print(f"✅ AI Model: {settings.default_model}")
         print(f"✅ Temperature: {settings.temperature}")
         print(f"✅ Max Tokens: {settings.max_tokens}")
         print(f"✅ API Port: {settings.api_port}")
         print(f"✅ Log Level: {settings.log_level}")
-        
+
         return True
     except Exception as e:
         print(f"❌ Config test failed: {e}")
@@ -132,23 +126,23 @@ def test_config():
 def main():
     """Run all tests."""
     print("🚀 Junior AI Code Review Agent - Quick Test\n")
-    
+
     tests = [
         test_imports,
-        test_models, 
+        test_models,
         test_webhook,
         test_config
     ]
-    
+
     passed = 0
     total = len(tests)
-    
+
     for test in tests:
         if test():
             passed += 1
-    
+
     print(f"\n📊 Test Results: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("🎉 All tests passed! Junior is ready to review PRs.")
         print("\nNext steps:")

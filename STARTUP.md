@@ -53,7 +53,7 @@ uv run junior webhook-server --port 8000
 
 ### Option 3: Direct FastAPI
 ```bash
-uv run uvicorn src.junior.api:app --host 0.0.0.0 --port 8000
+uv run uvicorn junior.app:app --host 0.0.0.0 --port 8000
 ```
 
 ## 🔌 **GitHub Webhook Configuration**
@@ -122,13 +122,13 @@ uv run junior --help
 - Collects commit history and file changes
 - Gathers repository context
 
-✅ **3. Repository Analysis** (`MCPRepositoryAnalyzer`)
+✅ **3. Repository Analysis** (`RepositoryAnalyzer`)
 - Clones repository to temporary directory
 - Analyzes project structure (Python, Node.js, etc.)
 - Prioritizes files: changed → config → context → entry points
 - Extracts relevant file contents with smart limits
 
-✅ **4. AI Review Pipeline** (`LogicalReviewAgent`)
+✅ **4. AI Review Pipeline** (`ReviewAgent`)
 - **Logic Analysis**: Business logic, conditional flows, edge cases
 - **Security Review**: Authentication logic, business vulnerabilities
 - **Critical Bug Detection**: Memory safety, race conditions, zero-day potential
@@ -186,22 +186,3 @@ docker run -p 8000:8000 --env-file .env junior
 # Or use docker-compose
 docker-compose up -d
 ```
-
-## ☸️ **Kubernetes Deployment**
-
-```bash
-# Deploy to k8s
-helm install junior helm/junior \
-  --set secrets.githubToken="$GITHUB_TOKEN" \
-  --set secrets.openaiApiKey="$OPENAI_API_KEY"
-```
-
-## 🎉 **You're Ready!**
-
-Your Junior agent is now:
-- ✅ **Tested**: All components working
-- ✅ **Optimized**: Clean, focused codebase  
-- ✅ **Production-Ready**: Proper error handling and logging
-- ✅ **Documented**: Clear setup and usage instructions
-
-Just add your API keys and start reviewing PRs! 🚀
