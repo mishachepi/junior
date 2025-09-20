@@ -186,6 +186,17 @@ The `agent/tools.py` implements repository analysis without external dependencie
 - Project type detection via configuration files (package.json, pyproject.toml, etc.)
 - Throttled file reading (10 ops/second) to prevent resource exhaustion
 
+### Logging Strategy
+
+The system uses **structlog** for structured logging throughout:
+- **Structured data**: All logs include contextual information (repo, PR number, timing, etc.)
+- **Machine-readable**: JSON output for production monitoring and alerting
+- **Context binding**: Component-specific loggers with automatic context injection
+- **Performance tracking**: Built-in timing and request correlation
+- **Error correlation**: Trace errors across service boundaries with request IDs
+
+**Important**: Avoid using `event` as a parameter name in logging calls - structlog reserves this for the log message itself. Use descriptive alternatives like `review_event`, `github_event`, etc.
+
 Key architectural principle: The system maintains separation between the general-purpose review agent (for CLI use) and the specialized logical review agent (for webhook automation), allowing different review criteria and workflows while sharing common infrastructure.
 
 
