@@ -1,0 +1,17 @@
+apiVersion: v2
+name: junior
+description: AI Agent for Code Review
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - ai
+  - code-review
+  - langchain
+  - automation
+home: https://github.com/yourusername/junior
+sources:
+  - https://github.com/yourusername/junior
+maintainers:
+  - name: Your Name
+    email: your.email@example.com

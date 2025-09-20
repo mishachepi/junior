@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  junior:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: junior
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - SECRET_KEY=${SECRET_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
+      - DATABASE_URL=postgresql://junior:junior@postgres:5432/junior
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - junior-network
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: junior-postgres
+    environment:
+      - POSTGRES_DB=junior
+      - POSTGRES_USER=junior
+      - POSTGRES_PASSWORD=junior
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - junior-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: junior-redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - junior-network
+    restart: unless-stopped
+
+  # Optional: Web API service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: junior-api
+    command: ["uv", "run", "python", "-m", "junior.api"]
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - SECRET_KEY=${SECRET_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
+      - DATABASE_URL=postgresql://junior:junior@postgres:5432/junior
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - junior-network
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  junior-network:
+    driver: bridge
