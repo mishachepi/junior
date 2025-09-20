@@ -9,8 +9,8 @@ load_dotenv()  # loads from .env
 import pytest
 from fastapi.testclient import TestClient
 
-from junior.api import app
-from junior.github_client import GitHubClient
+from junior.app import app
+from junior.services import GitHubClient
 
 
 @pytest.fixture
@@ -152,7 +152,9 @@ class TestUtilityFunctions:
     
     def test_format_review_summary_no_issues(self):
         """Test formatting review summary with no issues."""
-        from junior.api import format_review_summary
+        from junior.services.github_service import GitHubService
+        github_service = GitHubService()
+        format_review_summary = github_service._format_review_summary
         
         review_result = {
             "summary": "Great code!",
@@ -171,7 +173,9 @@ class TestUtilityFunctions:
     
     def test_format_review_summary_with_issues(self):
         """Test formatting review summary with issues."""
-        from junior.api import format_review_summary
+        from junior.services.github_service import GitHubService
+        github_service = GitHubService()
+        format_review_summary = github_service._format_review_summary
         
         review_result = {
             "summary": "Several issues found",

@@ -186,22 +186,3 @@ docker run -p 8000:8000 --env-file .env junior
 # Or use docker-compose
 docker-compose up -d
 ```
-
-## ☸️ **Kubernetes Deployment**
-
-```bash
-# Deploy to k8s
-helm install junior helm/junior \
-  --set secrets.githubToken="$GITHUB_TOKEN" \
-  --set secrets.openaiApiKey="$OPENAI_API_KEY"
-```
-
-## 🎉 **You're Ready!**
-
-Your Junior agent is now:
-- ✅ **Tested**: All components working
-- ✅ **Optimized**: Clean, focused codebase  
-- ✅ **Production-Ready**: Proper error handling and logging
-- ✅ **Documented**: Clear setup and usage instructions
-
-Just add your API keys and start reviewing PRs! 🚀

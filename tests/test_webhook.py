@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from junior.webhook import PullRequestWebhookPayload, WebhookProcessor
+from junior.services import PullRequestWebhookPayload, WebhookProcessor
 
 
 class TestWebhookProcessor:
@@ -276,8 +276,9 @@ class TestWebhookProcessor:
             sender={"login": "testuser"}
         )
         
-        review_data = processor.extract_review_data(payload)
+        review_data = processor.extract_minimal_review_data(payload)
         
+        # Test minimal review data structure
         assert review_data["repository"] == "test/repo"
         assert review_data["pr_number"] == 123
         assert review_data["title"] == "Test PR"
@@ -289,7 +290,9 @@ class TestWebhookProcessor:
         assert review_data["head_sha"] == "def456"
         assert review_data["diff_url"] == "https://github.com/test/repo/pull/123.diff"
         assert review_data["clone_url"] == "https://github.com/test/repo.git"
-        assert review_data["language"] == "Python"
-        assert review_data["additions"] == 50
-        assert review_data["deletions"] == 10
-        assert review_data["changed_files"] == 3
+        
+        # These fields are no longer in minimal data (will be fetched on demand)
+        assert "language" not in review_data
+        assert "additions" not in review_data
+        assert "deletions" not in review_data
+        assert "changed_files" not in review_data

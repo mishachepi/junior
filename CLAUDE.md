@@ -51,10 +51,10 @@ uv run pre-commit run --all-files
 ./dev.sh
 
 # Manual debug mode with uv
-DEBUG=true uv run python -m junior.api
+DEBUG=true uv run python -m junior.app
 
 # With uvicorn directly for more control
-DEBUG=true uv run uvicorn junior.api:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+DEBUG=true uv run uvicorn junior.app:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 ```
 
 #### Production Mode
@@ -62,7 +62,7 @@ DEBUG=true uv run uvicorn junior.api:app --host 0.0.0.0 --port 8000 --reload --l
 # Start webhook server (main service)
 junior webhook-server --port 8000
 # OR
-python -m junior.api
+python -m junior.app
 
 # Quick start script
 ./scripts/start.sh
@@ -102,20 +102,26 @@ Junior is a webhook-based AI code review agent with two distinct processing path
 
 ### Core Components Architecture
 
-**Service Layer:**
-- `api.py` - FastAPI webhook service that receives GitHub PR events and orchestrates reviews
-- `webhook.py` - GitHub webhook processing and validation logic
+**Application Layer:**
+- `app.py` - FastAPI application factory with clean configuration and router setup
 - `cli.py` - Command-line interface for manual operations
 
-**AI Review Pipeline:**
-- `review_agent.py` - Specialized AI agent implementing logical review workflow via LangGraph
-- `agent.py` - Original general-purpose review agent (legacy, kept for CLI operations)
-- Both agents use structured LangGraph workflows but focus on different review criteria
+**API Routers:**
+- `routers/webhook.py` - GitHub webhook endpoints and event processing
+- `routers/review.py` - Manual review endpoints for CLI operations
+- `routers/health.py` - Health check and monitoring endpoints
 
-**Repository Analysis:**
-- `mcp_tools.py` - MCP (Model Context Protocol) integration for deep repository analysis
-- `repository_analyzer.py` - Orchestrates repo structure analysis and context enrichment
-- `github_client.py` / `git_client.py` - GitHub API and local Git operations
+**Business Logic Services:**
+- `services/webhook.py` - GitHub webhook processing and validation logic
+- `services/github_service.py` - GitHub API integration and review formatting
+- `services/review_service.py` - Review processing orchestration
+- `services/repository_service.py` - Repository analysis coordination
+- `services/github_client.py` - GitHub API client operations
+- `services/git_client.py` - Local Git operations
+
+**AI Agent Pipeline:**
+- `agent/review_agent.py` - Specialized AI agent implementing logical review workflow via LangGraph
+- `agent/tools.py` - Repository analysis tools for deep code understanding and context enrichment
 
 **Data Layer:**
 - `models.py` - Pydantic models for all data structures with extensive enum definitions
@@ -135,25 +141,25 @@ The system specifically targets logical and architectural issues, NOT linting:
 
 ### Webhook Processing Flow
 
-1. **GitHub Event Reception** (`api.py` `/webhook/github`)
-   - Signature verification via HMAC
+1. **GitHub Event Reception** (`routers/webhook.py` `/webhook/github`)
+   - Signature verification via HMAC through `services/webhook.py`
    - Event filtering (only PR opens/updates/ready-for-review)
-   - Background task queuing
+   - Background task queuing via FastAPI background tasks
 
-2. **Repository Analysis** (`mcp_tools.py` + `repository_analyzer.py`)
-   - Temporary repo cloning
+2. **Repository Analysis** (`agent/tools.py` + `services/repository_service.py`)
+   - Temporary repo cloning via `services/git_client.py`
    - Project structure detection (Python/Node.js/Java/etc.)
    - Risk factor assessment (security files, config changes, etc.)
    - File content extraction with smart filtering
 
-3. **AI Review Pipeline** (`review_agent.py` LangGraph workflow)
+3. **AI Review Pipeline** (`agent/review_agent.py` LangGraph workflow)
    - Logic analysis → Security review → Critical bug detection → Naming review → Optimization → Design principles
    - Each step uses specialized prompts and JSON-structured responses
-   - Findings aggregated with severity levels
+   - Findings aggregated with severity levels using `models.ReviewData`
 
-4. **GitHub Integration** (back to `api.py`)
-   - Review summary formatting
-   - Inline comment posting (limited to 20 per PR)
+4. **GitHub Integration** (`services/github_service.py`)
+   - Review summary formatting via `_format_review_summary`
+   - Inline comment posting (limited to 20 per PR) through `services/github_client.py`
    - Review submission with approve/request-changes/comment status
 
 ### Configuration Strategy
@@ -172,9 +178,9 @@ Test structure mirrors src/ with comprehensive mocking:
 - Integration tests marked with `@pytest.mark.integration`
 - Test data uses realistic GitHub webhook payloads and git diffs
 
-### MCP Integration Pattern
+### Repository Analysis Pattern
 
-The `mcp_tools.py` implements repository analysis without external MCP servers:
+The `agent/tools.py` implements repository analysis without external dependencies:
 - Direct git operations via GitPython
 - File system analysis with smart filtering by extension/size
 - Project type detection via configuration files (package.json, pyproject.toml, etc.)
