@@ -329,7 +329,7 @@ def format_review_summary(review_result: Dict) -> str:
 {findings_summary}
 
 ---
-*Reviewed by [Junior AI Agent](https://github.com/yourusername/junior) - Focusing on logic, security, and code quality*
+*Reviewed by Junior AI Agent - Focusing on logic, security, and code quality*
 """
     
     return formatted_summary
