@@ -165,6 +165,14 @@ async def process_pr_review(review_data: Dict):
         
         # Step 3: Perform AI review
         review_agent = get_review_agent()
+        with open(f"./review_data_{datetime.utcnow().timestamp()}.json", "w") as f:
+            json.dump({
+                "review_data": review_data,
+                "diff_content": diff_content,
+                "file_contents": file_contents,
+                "project_structure": project_structure
+            }, f, indent=4)
+        # return 0
         review_result = await review_agent.review_pull_request(
             review_data=review_data,
             diff_content=diff_content,
@@ -386,10 +394,26 @@ async def manual_review(request: Dict):
 if __name__ == "__main__":
     import uvicorn
     
+    # Check if we should enable reload (for development)
+    reload = settings.debug
+    
+    # If running with debugger or in development, force reload
+    import sys
+    if any('debug' in arg.lower() for arg in sys.argv) or settings.debug:
+        reload = True
+    
+    print(f"🚀 Starting Junior API server...")
+    print(f"   Mode: {'DEBUG' if settings.debug else 'PRODUCTION'}")
+    print(f"   Host: {settings.api_host}")
+    print(f"   Port: {settings.api_port}")
+    print(f"   Reload: {reload}")
+    print(f"   Docs: {'http://127.0.0.1:8000/docs' if settings.debug else 'Disabled'}")
+    print(f"   Health: http://127.0.0.1:8000/health")
+    
     uvicorn.run(
         "junior.api:app",
         host=settings.api_host,
         port=settings.api_port,
-        reload=settings.debug,
+        reload=reload,
         log_level=settings.log_level.lower(),
     )

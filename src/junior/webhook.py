@@ -21,6 +21,7 @@ class PullRequestWebhookPayload(BaseModel):
     pull_request: Dict = Field(..., description="Pull request data")
     repository: Dict = Field(..., description="Repository data")
     sender: Dict = Field(..., description="User who triggered the event")
+    label: Optional[Dict] = Field(None, description="Label data for labeled action")
 
 
 class WebhookProcessor:
@@ -71,7 +72,8 @@ class WebhookProcessor:
             "opened",
             "synchronize",  # New commits pushed
             "reopened",
-            "ready_for_review"  # When draft is marked ready
+            "ready_for_review",  # When draft is marked ready
+            "labeled"  # When a label is added
         }
         
         if payload.action not in valid_actions:
@@ -99,7 +101,7 @@ class WebhookProcessor:
         
         # Extract commits information
         commits = []
-        if "commits" in pr:
+        if "commits" in pr and isinstance(pr["commits"], list):
             for commit in pr["commits"]:
                 commits.append({
                     "sha": commit["sha"],
@@ -117,6 +119,15 @@ class WebhookProcessor:
         labels = []
         if "labels" in pr:
             labels = [label["name"] for label in pr["labels"]]
+        
+        # Extract new label if this is a labeled action
+        new_label = None
+        if payload.action == "labeled" and payload.label:
+            new_label = {
+                "name": payload.label["name"],
+                "color": payload.label["color"],
+                "description": payload.label.get("description", "")
+            }
         
         # Extract requested reviewers
         requested_reviewers = []
@@ -140,7 +151,7 @@ class WebhookProcessor:
             "title": pr["title"],
             "description": pr.get("body", ""),
             "author": pr["user"]["login"],
-            "author_id": pr["user"]["id"],
+            "author_id": pr["user"].get("id"),
             
             # Branch and SHA info
             "base_branch": pr["base"]["ref"],
@@ -149,15 +160,15 @@ class WebhookProcessor:
             "head_sha": pr["head"]["sha"],
             
             # URLs for data fetching
-            "diff_url": pr["diff_url"],
-            "patch_url": pr["patch_url"],
-            "pr_url": pr["html_url"],
-            "issue_url": pr["issue_url"],
+            "diff_url": pr.get("diff_url", ""),
+            "patch_url": pr.get("patch_url", ""),
+            "pr_url": pr.get("html_url", ""),
+            "issue_url": pr.get("issue_url", ""),
             
             # Repository info
-            "clone_url": repo["clone_url"],
-            "ssh_url": repo["ssh_url"],
-            "default_branch": repo["default_branch"],
+            "clone_url": repo.get("clone_url", ""),
+            "ssh_url": repo.get("ssh_url", ""),
+            "default_branch": repo.get("default_branch", "main"),
             "language": repo.get("language"),
             "size": repo.get("size", 0),
             "is_private": repo.get("private", False),
@@ -192,6 +203,7 @@ class WebhookProcessor:
             
             # Review metadata
             "labels": labels,
+            "new_label": new_label,
             "requested_reviewers": requested_reviewers,
             "assignees": [assignee["login"] for assignee in pr.get("assignees", [])],
             

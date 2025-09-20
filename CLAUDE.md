@@ -44,20 +44,48 @@ uv run pre-commit run --all-files
 ```
 
 ### Running the Application
+
+#### Development Mode (with docs and auto-reload)
+```bash
+# Quick development startup
+./dev.sh
+
+# Manual debug mode with uv
+DEBUG=true uv run python -m junior.api
+
+# With uvicorn directly for more control
+DEBUG=true uv run uvicorn junior.api:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+```
+
+#### Production Mode
 ```bash
 # Start webhook server (main service)
 junior webhook-server --port 8000
 # OR
 python -m junior.api
 
-# CLI commands for manual testing
-junior review-pr owner/repo 123
-junior review-local --base main
-junior config-check
-
 # Quick start script
 ./scripts/start.sh
 ```
+
+#### CLI Commands
+```bash
+# Manual testing commands
+junior review-pr owner/repo 123
+junior review-local --base main
+junior config-check
+```
+
+#### VSCode Development
+- **F5** or **Run → Start Debugging** with these configurations:
+  - "Junior API - Debug Mode" - Run with debugger and docs enabled
+  - "Uvicorn - Junior API (with reload)" - Run with auto-reload
+  - "Junior CLI - Review Local" - Debug CLI commands
+- **Ctrl+Shift+P** → "Tasks: Run Task" for:
+  - "Junior API - Debug with Reload (uv)" 
+  - "Run Tests"
+  - "Lint Code" 
+  - "Format Code"
 
 ### Docker
 ```bash
