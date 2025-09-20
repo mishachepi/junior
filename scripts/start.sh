@@ -58,4 +58,4 @@ echo "Health check: http://${API_HOST:-0.0.0.0}:${API_PORT:-8000}/health"
 echo ""
 
 # Run the webhook server
-uv run python -m junior.api
+uv run python -m junior.app

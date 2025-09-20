@@ -12,20 +12,20 @@ def test_imports():
     print("🧪 Testing imports...")
     
     try:
-        from junior.api import app
+        from junior.app import app
         print("✅ FastAPI app import")
         
-        from junior.review_agent import LogicalReviewAgent, ReviewFinding
+        from junior.agent import LogicalReviewAgent, ReviewFinding
         print("✅ Review agent import")
         
-        from junior.github_client import GitHubClient
+        from junior.services import GitHubClient
         print("✅ GitHub client import")
         
-        from junior.webhook import WebhookProcessor, PullRequestWebhookPayload
+        from junior.services import WebhookProcessor, PullRequestWebhookPayload
         print("✅ Webhook handler import")
         
-        from junior.mcp_tools import MCPRepositoryAnalyzer
-        print("✅ MCP tools import")
+        from junior.agent import RepositoryAnalyzer
+        print("✅ Repository analyzer import")
         
         from junior.config import settings
         print("✅ Configuration import")
@@ -40,7 +40,7 @@ def test_models():
     print("\n🧪 Testing data models...")
     
     try:
-        from junior.review_agent import ReviewFinding
+        from junior.agent import ReviewFinding
         
         finding = ReviewFinding(
             category="logic",
@@ -61,7 +61,7 @@ def test_webhook():
     print("\n🧪 Testing webhook processing...")
     
     try:
-        from junior.webhook import WebhookProcessor, PullRequestWebhookPayload
+        from junior.services import WebhookProcessor, PullRequestWebhookPayload
         
         # Sample GitHub webhook payload
         sample_payload = {
@@ -104,7 +104,7 @@ def test_webhook():
         
         print(f"✅ Webhook processing: {review_data['repository']}")
         print(f"✅ Should process: {should_process}")
-        print(f"✅ Linked issues extracted: {review_data['linked_issues']}")
+        print(f"✅ PR number: {review_data['pr_number']}")
         
         return True
     except Exception as e:

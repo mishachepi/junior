@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_openai import ChatOpenAI
 
-from junior.review_agent import LogicalReviewAgent
+from junior.agent import LogicalReviewAgent
 from junior.config import Settings
-from junior.github_client import GitHubClient
+from junior.services import GitHubClient
 from junior.models import CodeReviewRequest, FileChange, FileStatus
 
 

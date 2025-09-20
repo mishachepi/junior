@@ -3,8 +3,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from junior.review_agent import LogicalReviewAgent, LogicalReviewState, ReviewFinding
-from junior.models import ReviewCategory, Severity
+from junior.agent import LogicalReviewAgent, LogicalReviewState, ReviewFinding
+from junior.models import ReviewCategory, Severity, ReviewData
 
 
 class TestLogicalReviewAgent:
@@ -19,20 +19,36 @@ class TestLogicalReviewAgent:
             github_token="test-token",
             secret_key="test-secret"
         )
-        monkeypatch.setattr("junior.review_agent.settings", test_settings)
+        monkeypatch.setattr("junior.agent.review_agent.settings", test_settings)
         
-        with patch("junior.review_agent.ChatOpenAI"):
+        with patch("junior.agent.review_agent.ChatOpenAI"):
             agent = LogicalReviewAgent()
             agent.llm = MagicMock()
             agent.llm.ainvoke = AsyncMock()
             return agent
     
     @pytest.fixture
-    def sample_state(self):
-        """Sample review state for testing."""
-        return LogicalReviewState(
+    def sample_review_data(self):
+        """Sample review data for testing."""
+        return ReviewData(
             repository="test/repo",
             pr_number=123,
+            title="Test PR",
+            description="Test PR description",
+            author="testuser",
+            base_branch="main",
+            head_branch="feature",
+            base_sha="abc123",
+            head_sha="def456",
+            diff_url="https://github.com/test/repo/pull/123.diff",
+            clone_url="https://github.com/test/repo.git"
+        )
+    
+    @pytest.fixture
+    def sample_state(self, sample_review_data):
+        """Sample review state for testing."""
+        return LogicalReviewState(
+            review_data=sample_review_data,
             diff_content="@@ -1,3 +1,3 @@\n def test():\n-    print('old')\n+    print('new')",
             file_contents={"test.py": "def test():\n    print('new')"},
             project_structure={"project_type": "python", "main_language": "python"}
@@ -207,7 +223,7 @@ class TestLogicalReviewAgent:
         assert result_state.recommendation == "request_changes"  # Due to critical finding
     
     @pytest.mark.asyncio
-    async def test_review_pull_request_integration(self, review_agent):
+    async def test_review_pull_request_integration(self, review_agent, sample_review_data):
         """Test complete pull request review workflow."""
         # Mock all LLM responses
         responses = [
@@ -222,13 +238,8 @@ class TestLogicalReviewAgent:
         
         review_agent.llm.ainvoke = AsyncMock(side_effect=responses)
         
-        review_data = {
-            "repository": "test/repo",
-            "pr_number": 123
-        }
-        
         result = await review_agent.review_pull_request(
-            review_data=review_data,
+            review_data=sample_review_data,
             diff_content="test diff",
             file_contents={"test.py": "test content"},
             project_structure={"project_type": "python"}
@@ -242,18 +253,13 @@ class TestLogicalReviewAgent:
         assert result["total_findings"] >= 0
     
     @pytest.mark.asyncio
-    async def test_review_pull_request_error_handling(self, review_agent):
+    async def test_review_pull_request_error_handling(self, review_agent, sample_review_data):
         """Test error handling in pull request review."""
         # Mock LLM to fail
         review_agent.review_graph.ainvoke = AsyncMock(side_effect=Exception("Workflow failed"))
         
-        review_data = {
-            "repository": "test/repo",
-            "pr_number": 123
-        }
-        
         result = await review_agent.review_pull_request(
-            review_data=review_data,
+            review_data=sample_review_data,
             diff_content="test diff",
             file_contents={},
             project_structure={}
@@ -308,16 +314,29 @@ class TestLogicalReviewState:
     
     def test_state_creation(self):
         """Test creating LogicalReviewState."""
-        state = LogicalReviewState(
+        review_data = ReviewData(
             repository="test/repo",
             pr_number=123,
+            title="Test PR",
+            description="Test PR description",
+            author="testuser",
+            base_branch="main",
+            head_branch="feature",
+            base_sha="abc123",
+            head_sha="def456",
+            diff_url="https://github.com/test/repo/pull/123.diff",
+            clone_url="https://github.com/test/repo.git"
+        )
+        
+        state = LogicalReviewState(
+            review_data=review_data,
             diff_content="test diff",
             file_contents={"test.py": "content"},
             project_structure={"type": "python"}
         )
         
-        assert state.repository == "test/repo"
-        assert state.pr_number == 123
+        assert state.review_data.repository == "test/repo"
+        assert state.review_data.pr_number == 123
         assert state.diff_content == "test diff"
         assert len(state.file_contents) == 1
         assert state.current_step == "start"
@@ -326,6 +345,20 @@ class TestLogicalReviewState:
     
     def test_state_with_findings(self):
         """Test LogicalReviewState with findings."""
+        review_data = ReviewData(
+            repository="test/repo",
+            pr_number=123,
+            title="Test PR",
+            description="Test PR description",
+            author="testuser",
+            base_branch="main",
+            head_branch="feature",
+            base_sha="abc123",
+            head_sha="def456",
+            diff_url="https://github.com/test/repo/pull/123.diff",
+            clone_url="https://github.com/test/repo.git"
+        )
+        
         finding = ReviewFinding(
             category="security",
             severity="high",
@@ -333,8 +366,7 @@ class TestLogicalReviewState:
         )
         
         state = LogicalReviewState(
-            repository="test/repo",
-            pr_number=123,
+            review_data=review_data,
             diff_content="test diff",
             findings=[finding]
         )

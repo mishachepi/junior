@@ -11,10 +11,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from junior.webhook import WebhookProcessor, PullRequestWebhookPayload
-from junior.review_agent import LogicalReviewAgent
-from junior.mcp_tools import MCPRepositoryAnalyzer
-from junior.github_client import GitHubClient
+from junior.services import WebhookProcessor, PullRequestWebhookPayload
+from junior.agent import LogicalReviewAgent
+from junior.agent import RepositoryAnalyzer
+from junior.services import GitHubClient
 
 
 # Mock webhook payload (simplified but realistic)
@@ -196,7 +196,7 @@ async def test_mcp_analysis():
     
     try:
         # Mock the repository analyzer
-        with patch.object(MCPRepositoryAnalyzer, 'analyze_repository') as mock_analyze:
+        with patch.object(RepositoryAnalyzer, 'analyze_repository') as mock_analyze:
             mock_analyze.return_value = {
                 "file_contents": MOCK_FILE_CONTENTS,
                 "project_structure": MOCK_PROJECT_STRUCTURE,
@@ -204,7 +204,7 @@ async def test_mcp_analysis():
                 "analysis_time": 2.5
             }
             
-            analyzer = MCPRepositoryAnalyzer()
+            analyzer = RepositoryAnalyzer()
             result = await analyzer.analyze_repository(
                 repository="testorg/testapp",
                 head_sha="def456",
@@ -297,7 +297,7 @@ async def test_ai_review():
             mock_final_state.review_comments = []
             
             # Add some mock findings
-            from junior.review_agent import ReviewFinding
+            from junior.agent import ReviewFinding
             mock_findings = [
                 ReviewFinding(
                     category="security",
