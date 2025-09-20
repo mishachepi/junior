@@ -1,0 +1,121 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/yourusername/junior
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: junior.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Application specific configuration
+config:
+  logLevel: "INFO"
+  debug: false
+  maxFileSize: 100000
+  maxFilesPerPr: 50
+  reviewTimeout: 300
+  enableSecurityChecks: true
+  enablePerformanceChecks: true
+  enableStyleChecks: true
+  enableComplexityChecks: true
+
+# Secrets (should be provided via --set or external secret management)
+secrets:
+  openaiApiKey: ""
+  anthropicApiKey: ""
+  githubToken: ""
+  secretKey: ""
+
+# Database configuration
+database:
+  type: "postgresql"
+  host: "junior-postgresql"
+  port: 5432
+  name: "junior"
+  username: "junior"
+  existingSecret: ""
+  existingSecretKey: "password"
+
+# PostgreSQL dependency
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres"
+    username: "junior"
+    password: "junior"
+    database: "junior"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+# Redis dependency  
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+
+# Monitoring
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
