@@ -48,35 +48,48 @@ services:
       - junior-network
     restart: unless-stopped
 
-  # Optional: Web API service
-  api:
+  # Webhook API service (main service)
+  webhook-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: junior-api
-    command: ["uv", "run", "python", "-m", "junior.api"]
+    container_name: junior-webhook-api
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
       - SECRET_KEY=${SECRET_KEY}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-false}
       - DATABASE_URL=postgresql://junior:junior@postgres:5432/junior
       - API_HOST=0.0.0.0
       - API_PORT=8000
+      - MAX_FILES_PER_PR=${MAX_FILES_PER_PR:-50}
+      - REVIEW_TIMEOUT=${REVIEW_TIMEOUT:-300}
+      - ENABLE_SECURITY_CHECKS=${ENABLE_SECURITY_CHECKS:-true}
+      - ENABLE_PERFORMANCE_CHECKS=${ENABLE_PERFORMANCE_CHECKS:-true}
+      - ENABLE_STYLE_CHECKS=${ENABLE_STYLE_CHECKS:-true}
+      - ENABLE_COMPLEXITY_CHECKS=${ENABLE_COMPLEXITY_CHECKS:-true}
     env_file:
       - .env
     ports:
       - "8000:8000"
     volumes:
       - ./logs:/app/logs
+      - ./temp:/app/temp
     networks:
       - junior-network
     depends_on:
       - postgres
       - redis
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:

@@ -1,129 +1,166 @@
 # Junior - AI Code Review Agent
 
-An intelligent AI agent built with LangChain and LangGraph for automated code review of pull requests. Junior provides comprehensive analysis including security, performance, style, and complexity checks.
+An intelligent, webhook-based AI agent that provides comprehensive code reviews for GitHub pull requests, focusing on logic, security, critical bugs, and code quality.
 
-## Features
+## 🚀 Quick Start
 
-- 🔍 **Comprehensive Code Analysis**
-  - Security vulnerability detection
-  - Performance bottleneck identification
-  - Code style and formatting checks
-  - Complexity analysis and refactoring suggestions
+1. **Clone and setup:**
+   ```bash
+   git clone <repository-url>
+   cd junior
+   uv sync --all-extras
+   ```
 
-- 🤖 **AI-Powered Reviews**
-  - Support for OpenAI and Anthropic models
-  - Structured workflow using LangGraph
-  - Context-aware analysis with LangChain
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys
+   ```
 
-- 🔧 **GitHub Integration**
-  - Automatic PR review triggering
-  - Inline code comments
-  - Review summaries and recommendations
+3. **Test the setup:**
+   ```bash
+   uv run python scripts/quick_test.py
+   ```
 
-- 📊 **Flexible Configuration**
-  - Customizable review criteria
-  - Configurable AI models and parameters
-  - Environment-based settings
+4. **Start the webhook server:**
+   ```bash
+   ./scripts/start.sh
+   # OR
+   uv run junior webhook-server --port 8000
+   ```
 
-## Quick Start
+## 🔧 Configuration
 
-### Prerequisites
+Required environment variables:
+- `GITHUB_TOKEN` - GitHub Personal Access Token with repo permissions
+- Either `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` - AI provider API key
 
-- Python 3.11+
-- uv (recommended) or pip
-- GitHub token with repo access
-- OpenAI or Anthropic API key
+Optional:
+- `GITHUB_WEBHOOK_SECRET` - GitHub webhook secret for security
+- `SECRET_KEY` - Application secret key
 
-### Installation
+## 📋 How It Works
 
+### The Review Flow
+
+1. **GitHub PR Event** → Webhook receives PR opened/updated/ready-for-review
+2. **Data Extraction** → Comprehensive PR information extraction including:
+   - PR metadata (title, description, author, branches)
+   - Commit history and linked issues  
+   - File changes and diff content
+   - Repository context and dependencies
+
+3. **MCP Repository Analysis** → Smart analysis with:
+   - Temporary repository cloning
+   - Project structure detection (Python, Node.js, etc.)
+   - Priority-based file content extraction
+   - Framework and dependency analysis
+
+4. **AI Review Pipeline** → Specialized review focusing on:
+   - **Logic Analysis** - Business logic, conditional flows, edge cases
+   - **Security Review** - Authentication logic, business logic vulnerabilities
+   - **Critical Bug Detection** - Memory safety, race conditions, zero-day potential
+   - **Naming Review** - Semantic clarity, domain appropriateness  
+   - **Optimization** - Algorithmic improvements, performance bottlenecks
+   - **Design Principles** - DRY, KISS, SOLID adherence
+
+5. **GitHub Integration** → Structured review submission:
+   - Review summary with severity breakdown
+   - Inline comments (limited to 20 most critical)
+   - Approve/Request Changes/Comment status
+
+### What Makes Junior Different
+
+- **Logic-Focused**: Unlike linters, Junior analyzes business logic and architectural decisions
+- **Security-Aware**: Identifies logical security vulnerabilities, not just code patterns  
+- **Context-Rich**: Uses repository structure and project dependencies for informed reviews
+- **Structured Output**: Consistent, actionable feedback with severity levels and suggestions
+
+## 🔌 GitHub Integration
+
+### Webhook Setup
+
+1. Go to your repository → Settings → Webhooks → Add webhook
+2. Set Payload URL to: `https://your-server.com/webhook/github`
+3. Content type: `application/json`
+4. Select: "Pull requests" events
+5. Add webhook secret (optional but recommended)
+
+### Required GitHub Token Permissions
+
+- `repo` - Repository access
+- `pull_requests:write` - Create reviews and comments
+
+## 🧪 Testing
+
+Run the comprehensive test suite:
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/junior.git
-cd junior
-
-# Install with uv (recommended)
-uv sync
-
-# Or with pip
-pip install -e .
+uv run python scripts/quick_test.py
 ```
 
-### Configuration
-
-1. Copy the environment template:
+Manual PR review:
 ```bash
-cp .env.example .env
+uv run junior review-pr owner/repo 123
 ```
 
-2. Edit `.env` with your API keys:
-```env
-OPENAI_API_KEY=your_openai_api_key
-GITHUB_TOKEN=your_github_token
-SECRET_KEY=your_secret_key
-```
-
-### Usage
-
-#### Review a Pull Request
+Check configuration:
 ```bash
-junior review-pr owner/repo 123
+uv run junior config-check
 ```
 
-#### Review Local Changes
-```bash
-junior review-local --base main
-```
-
-#### Check Configuration
-```bash
-junior config-check
-```
-
-## Development
-
-### Setup Development Environment
-
-```bash
-# Install with development dependencies
-uv sync --all-extras
-
-# Install pre-commit hooks
-uv run pre-commit install
-
-# Run tests
-uv run pytest
-
-# Run linting
-uv run ruff check .
-uv run ruff format .
-
-# Type checking
-uv run mypy src/
-```
-
-### Project Structure
+## 📁 Project Structure
 
 ```
 junior/
-├── src/junior/           # Main application code
-│   ├── __init__.py
-│   ├── agent.py         # Core AI agent logic
-│   ├── config.py        # Configuration management
-│   ├── models.py        # Data models
-│   ├── cli.py           # Command line interface
-│   ├── github_client.py # GitHub API client
-│   └── git_client.py    # Local Git operations
-├── tests/               # Test files
+├── src/junior/
+│   ├── api.py              # FastAPI webhook service
+│   ├── webhook.py          # GitHub webhook processing
+│   ├── review_agent.py     # Specialized AI review pipeline
+│   ├── mcp_tools.py        # Repository analysis tools
+│   ├── github_client.py    # GitHub API integration
+│   ├── models.py           # Data models and schemas
+│   ├── config.py          # Configuration management
+│   └── cli.py             # Command-line interface
+├── tests/                 # Test suite
+├── scripts/              # Utility scripts
 ├── helm/                # Kubernetes deployment
-├── .github/workflows/   # CI/CD pipelines
-├── pyproject.toml       # Project configuration
-└── README.md
+└── docs/                # Documentation
 ```
 
-## Docker
+## 🚨 Review Categories
+
+Junior focuses on high-impact issues:
+
+- **Logic Issues** - Incorrect business logic, missing edge cases
+- **Security** - Authentication flaws, business logic vulnerabilities  
+- **Critical Bugs** - Memory safety, race conditions, data corruption
+- **Naming** - Semantic clarity, domain appropriateness
+- **Optimization** - Performance bottlenecks, algorithmic improvements
+- **Principles** - DRY, KISS, SOLID violations
+
+## 🛠️ Development
+
+### Running Tests
+```bash
+uv run pytest
+uv run pytest --cov=src/junior --cov-report=xml
+```
+
+### Code Quality
+```bash
+uv run ruff check .
+uv run ruff format .
+uv run mypy src/
+```
+
+### Development Server
+```bash
+uv run junior webhook-server --reload --debug
+```
+
+## 🐳 Docker
 
 ### Build and Run
-
 ```bash
 # Build image
 docker build -t junior .
@@ -132,18 +169,7 @@ docker build -t junior .
 docker-compose up -d
 ```
 
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OPENAI_API_KEY` | OpenAI API key | - |
-| `ANTHROPIC_API_KEY` | Anthropic API key | - |
-| `GITHUB_TOKEN` | GitHub token | - |
-| `SECRET_KEY` | Application secret | - |
-| `LOG_LEVEL` | Logging level | `INFO` |
-| `DEBUG` | Debug mode | `false` |
-
-## Kubernetes Deployment
+## ☸️ Kubernetes Deployment
 
 Deploy to Kubernetes using Helm:
 
@@ -158,12 +184,9 @@ helm install junior helm/junior \
   --set secrets.secretKey="your-secret"
 ```
 
-## Configuration
+## ⚙️ Advanced Configuration
 
 ### Review Settings
-
-Configure review behavior in your `.env` file:
-
 ```env
 # Review toggles
 ENABLE_SECURITY_CHECKS=true
@@ -178,7 +201,6 @@ REVIEW_TIMEOUT=300
 ```
 
 ### AI Model Settings
-
 ```env
 # Model configuration
 DEFAULT_MODEL=gpt-4o
@@ -186,26 +208,26 @@ TEMPERATURE=0.1
 MAX_TOKENS=4000
 ```
 
-## Architecture
+## 🏗️ Architecture
 
-Junior is built using modern Python patterns and AI frameworks:
+Junior uses a modern, webhook-driven architecture:
 
-- **LangChain**: For LLM integration and prompt management
-- **LangGraph**: For structured AI workflows
-- **Pydantic**: For data validation and settings
-- **uv**: For fast dependency management
-- **Kubernetes**: For scalable deployment
+- **FastAPI** - Webhook endpoints and API services
+- **LangChain + LangGraph** - Structured AI workflows  
+- **MCP Tools** - Repository analysis and understanding
+- **Pydantic** - Data validation and settings
+- **GitPython** - Git operations and repository analysis
 
-The review process follows a structured workflow:
+### Review Pipeline Architecture
 
-1. **File Analysis**: Parse and categorize changed files
-2. **Security Review**: Check for vulnerabilities
-3. **Performance Review**: Identify bottlenecks
-4. **Style Review**: Enforce coding standards
-5. **Complexity Review**: Suggest refactoring
-6. **Summary Generation**: Create actionable feedback
+```
+GitHub PR Event → Webhook Validation → Repository Cloning → 
+File Analysis → AI Review Pipeline → GitHub API Response
+```
 
-## Contributing
+Each step is optimized for accuracy and performance, with comprehensive error handling and logging.
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -214,12 +236,12 @@ The review process follows a structured workflow:
 5. Run the test suite
 6. Submit a pull request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Support
+## 📞 Support
 
-- 📖 [Documentation](https://github.com/yourusername/junior/wiki)
 - 🐛 [Issue Tracker](https://github.com/yourusername/junior/issues)
 - 💬 [Discussions](https://github.com/yourusername/junior/discussions)
+- 📖 [Documentation](https://github.com/yourusername/junior/wiki)

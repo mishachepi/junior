@@ -92,6 +92,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "junior.fullname" . }}-secrets
                   key: github-token
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "junior.fullname" . }}-secrets
+                  key: github-webhook-secret
             - name: SECRET_KEY
               valueFrom:
                 secretKeyRef:

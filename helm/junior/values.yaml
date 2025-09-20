@@ -79,6 +79,7 @@ secrets:
   openaiApiKey: ""
   anthropicApiKey: ""
   githubToken: ""
+  githubWebhookSecret: ""
   secretKey: ""
 
 # Database configuration

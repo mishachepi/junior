@@ -41,5 +41,8 @@ USER junior
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import junior; print('OK')" || exit 1
 
-# Default command
-CMD ["uv", "run", "junior", "--help"]
+# Expose port for FastAPI
+EXPOSE 8000
+
+# Default command - run FastAPI webhook service
+CMD ["uv", "run", "python", "-m", "junior.api"]
