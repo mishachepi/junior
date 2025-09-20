@@ -8,8 +8,8 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from ..models import ReviewData
 from ..services import (
     GitHubService,
-    ReviewService,
     PullRequestWebhookPayload,
+    ReviewService,
     WebhookProcessor,
 )
 

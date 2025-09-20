@@ -7,7 +7,7 @@ __email__ = "your.email@example.com"
 from .agent import LogicalReviewAgent
 from .app import app
 from .config import Settings
-from .models import ReviewData, ReviewCategory, Severity
+from .models import ReviewCategory, ReviewData, Severity
 from .services import GitHubService, RepositoryService, ReviewService
 
 __all__ = [

@@ -15,7 +15,7 @@ class TestSettings:
             github_token="test-token",
             secret_key="test-secret",
         )
-        
+
         assert settings.github_token == "test-token"
         assert settings.secret_key == "test-secret"
         assert settings.default_model == "gpt-4o"  # Default
@@ -35,7 +35,7 @@ class TestSettings:
             log_level="DEBUG",
             debug=True,
         )
-        
+
         assert settings.openai_api_key == "openai-key"
         assert settings.anthropic_api_key == "anthropic-key"
         assert settings.default_model == "gpt-3.5-turbo"
@@ -48,7 +48,7 @@ class TestSettings:
         """Test settings validation with missing required fields."""
         with pytest.raises(ValidationError) as exc_info:
             Settings()
-        
+
         errors = exc_info.value.errors()
         required_fields = {error["loc"][0] for error in errors if error["type"] == "missing"}
         assert "github_token" in required_fields
@@ -67,7 +67,7 @@ class TestSettings:
             max_files_per_pr=25,
             review_timeout=600,
         )
-        
+
         assert settings.enable_security_checks is False
         assert settings.enable_performance_checks is True
         assert settings.enable_style_checks is False
@@ -83,7 +83,7 @@ class TestSettings:
             secret_key="test-secret",
             database_url="postgresql://user:pass@localhost/junior",
         )
-        
+
         assert settings.database_url == "postgresql://user:pass@localhost/junior"
 
     def test_settings_api_configuration(self):
@@ -94,7 +94,7 @@ class TestSettings:
             api_host="127.0.0.1",
             api_port=9000,
         )
-        
+
         assert settings.api_host == "127.0.0.1"
         assert settings.api_port == 9000
 
@@ -104,21 +104,21 @@ class TestSettings:
             github_token="test-token",
             secret_key="test-secret",
         )
-        
+
         # AI settings defaults
         assert settings.default_model == "gpt-4o"
         assert settings.temperature == 0.1
         assert settings.max_tokens == 4000
-        
+
         # Application defaults
         assert settings.log_level == "INFO"
         assert settings.debug is False
         assert settings.database_url == "sqlite:///junior.db"
-        
+
         # API defaults
         assert settings.api_host == "0.0.0.0"
         assert settings.api_port == 8000
-        
+
         # Code review defaults
         assert settings.max_file_size == 100000
         assert settings.max_files_per_pr == 50
@@ -138,7 +138,7 @@ class TestSettings:
                 log_level=level,
             )
             assert settings.log_level == level
-        
+
         # Invalid log level should raise validation error
         with pytest.raises(ValidationError):
             Settings(
@@ -159,13 +159,13 @@ DEFAULT_MODEL=gpt-3.5-turbo
 TEMPERATURE=0.7
 DEBUG=true
 """)
-        
+
         # Change to the temp directory
         monkeypatch.chdir(tmp_path)
-        
+
         # Create settings (should load from .env file)
         settings = Settings()
-        
+
         assert settings.github_token == "env-github-token"
         assert settings.secret_key == "env-secret-key"
         assert settings.openai_api_key == "env-openai-key"

@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from junior.github_client import GitHubClient
@@ -68,7 +69,7 @@ async def debug_test_post_review_comment():
         print("\n✅ Test PASSED!")
 
     except Exception as e:
-        print(f"\n❌ Test FAILED!")
+        print("\n❌ Test FAILED!")
         print(f"Error: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()

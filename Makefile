@@ -70,7 +70,7 @@ clean:
 run: webhook
 
 webhook:
-	python3 -m junior.api
+	python3 -m junior.app
 
 # Docker operations
 docker-build:
@@ -99,7 +99,7 @@ ci: lint typecheck test coverage
 
 # Development server with auto-reload
 dev:
-	uvicorn junior.api:app --reload --port 8000
+	uvicorn junior.app:app --reload --port 8000
 
 # Setup environment from template
 setup-env:

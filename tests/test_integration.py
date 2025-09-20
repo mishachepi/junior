@@ -1,7 +1,5 @@
 """Tests for FastAPI webhook endpoints."""
 
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
 from dotenv import load_dotenv
 
 load_dotenv()  # loads from .env
@@ -131,7 +129,7 @@ async def test_post_review_comment_real_debug():
             body=body,
         )
 
-        print(f"\nSuccess! Response:")
+        print("\nSuccess! Response:")
         print(f"  Comment ID: {response.get('id')}")
         print(f"  Comment body: {response.get('body')}")
         print(f"  Created at: {response.get('created_at')}")
@@ -149,13 +147,13 @@ async def test_post_review_comment_real_debug():
 
 class TestUtilityFunctions:
     """Tests for utility functions."""
-    
+
     def test_format_review_summary_no_issues(self):
         """Test formatting review summary with no issues."""
         from junior.services.github_service import GitHubService
         github_service = GitHubService()
         format_review_summary = github_service._format_review_summary
-        
+
         review_result = {
             "summary": "Great code!",
             "total_findings": 0,
@@ -164,19 +162,19 @@ class TestUtilityFunctions:
             "medium_count": 0,
             "low_count": 0
         }
-        
+
         formatted = format_review_summary(review_result)
-        
+
         assert "Great code!" in formatted
         assert "✅ No issues found!" in formatted
         assert "Junior Code Review" in formatted
-    
+
     def test_format_review_summary_with_issues(self):
         """Test formatting review summary with issues."""
         from junior.services.github_service import GitHubService
         github_service = GitHubService()
         format_review_summary = github_service._format_review_summary
-        
+
         review_result = {
             "summary": "Several issues found",
             "total_findings": 5,
@@ -185,9 +183,9 @@ class TestUtilityFunctions:
             "medium_count": 1,
             "low_count": 1
         }
-        
+
         formatted = format_review_summary(review_result)
-        
+
         assert "Several issues found" in formatted
         assert "📊 **Findings Summary**: 5 total" in formatted
         assert "🔴 1 critical" in formatted

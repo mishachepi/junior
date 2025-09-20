@@ -10,8 +10,8 @@ from junior.models import (
     CodeReviewResult,
     FileChange,
     FileStatus,
-    ReviewComment,
     ReviewCategory,
+    ReviewComment,
     Severity,
 )
 
@@ -27,7 +27,7 @@ class TestFileChange:
             additions=10,
             deletions=5,
         )
-        
+
         assert file_change.filename == "test.py"
         assert file_change.status == FileStatus.MODIFIED
         assert file_change.additions == 10
@@ -43,7 +43,7 @@ class TestFileChange:
             diff="@@ test diff @@",
             content="print('hello')",
         )
-        
+
         assert file_change.diff == "@@ test diff @@"
         assert file_change.content == "print('hello')"
 
@@ -61,7 +61,7 @@ class TestReviewComment:
             severity=Severity.HIGH,
             suggestion="Use parameterized queries",
         )
-        
+
         assert comment.category == ReviewCategory.SECURITY
         assert comment.message == "Potential SQL injection vulnerability"
         assert comment.filename == "db.py"
@@ -75,7 +75,7 @@ class TestReviewComment:
             category=ReviewCategory.STYLE,
             message="Use consistent naming",
         )
-        
+
         assert comment.category == ReviewCategory.STYLE
         assert comment.message == "Use consistent naming"
         assert comment.severity == Severity.MEDIUM  # Default
@@ -94,7 +94,7 @@ class TestCodeReviewRequest:
             head_branch="feature/test",
             files=[sample_file_change],
         )
-        
+
         assert request.repository == "test/repo"
         assert request.pr_number == 123
         assert request.title == "Test PR"
@@ -122,7 +122,7 @@ class TestCodeReviewResult:
             ReviewComment(category=ReviewCategory.SECURITY, message="Security issue"),
             ReviewComment(category=ReviewCategory.PERFORMANCE, message="Performance issue"),
         ]
-        
+
         result = CodeReviewResult(
             pr_number=123,
             repository="test/repo",
@@ -131,7 +131,7 @@ class TestCodeReviewResult:
             security_issues_count=1,
             performance_issues_count=1,
         )
-        
+
         assert result.pr_number == 123
         assert result.repository == "test/repo"
         assert len(result.comments) == 2
@@ -147,38 +147,38 @@ class TestCodeReviewResult:
             ReviewComment(category=ReviewCategory.SECURITY, message="Issue 1"),
             ReviewComment(category=ReviewCategory.STYLE, message="Issue 2"),
         ]
-        
+
         result = CodeReviewResult(
             pr_number=123,
             repository="test/repo",
             comments=comments,
             summary="Test",
         )
-        
+
         assert result.total_issues == 2
 
     def test_critical_issues_property(self):
         """Test critical_issues property."""
         comments = [
             ReviewComment(
-                category=ReviewCategory.SECURITY, 
+                category=ReviewCategory.SECURITY,
                 message="Critical issue",
                 severity=Severity.CRITICAL
             ),
             ReviewComment(
-                category=ReviewCategory.STYLE, 
+                category=ReviewCategory.STYLE,
                 message="Low issue",
                 severity=Severity.LOW
             ),
         ]
-        
+
         result = CodeReviewResult(
             pr_number=123,
             repository="test/repo",
             comments=comments,
             summary="Test",
         )
-        
+
         critical_issues = result.critical_issues
         assert len(critical_issues) == 1
         assert critical_issues[0].severity == Severity.CRITICAL
@@ -187,29 +187,29 @@ class TestCodeReviewResult:
         """Test high_issues property."""
         comments = [
             ReviewComment(
-                category=ReviewCategory.SECURITY, 
+                category=ReviewCategory.SECURITY,
                 message="High issue",
                 severity=Severity.HIGH
             ),
             ReviewComment(
-                category=ReviewCategory.PERFORMANCE, 
+                category=ReviewCategory.PERFORMANCE,
                 message="High issue 2",
                 severity=Severity.HIGH
             ),
             ReviewComment(
-                category=ReviewCategory.STYLE, 
+                category=ReviewCategory.STYLE,
                 message="Medium issue",
                 severity=Severity.MEDIUM
             ),
         ]
-        
+
         result = CodeReviewResult(
             pr_number=123,
             repository="test/repo",
             comments=comments,
             summary="Test",
         )
-        
+
         high_issues = result.high_issues
         assert len(high_issues) == 2
         assert all(issue.severity == Severity.HIGH for issue in high_issues)
