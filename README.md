@@ -50,7 +50,7 @@ Optional:
    - File changes and diff content
    - Repository context and dependencies
 
-3. **MCP Repository Analysis** → Smart analysis with:
+3. **Repository Analysis** → Smart analysis with:
    - Temporary repository cloning
    - Project structure detection (Python, Node.js, etc.)
    - Priority-based file content extraction
@@ -113,18 +113,27 @@ uv run junior webhook-server
 ```
 junior/
 ├── src/junior/
-│   ├── api.py              # FastAPI webhook service  
-│   ├── webhook.py          # GitHub webhook processing
-│   ├── review_agent.py     # Specialized AI review pipeline
-│   ├── mcp_tools.py        # Repository analysis tools
-│   ├── github_client.py    # GitHub API integration
-│   ├── models.py           # Data models and schemas
-│   ├── config.py          # Configuration management
-│   └── cli.py             # CLI (config-check, webhook-server)
-├── tests/                 # Test suite
-├── scripts/              # Utility scripts  
-├── helm/                # Kubernetes deployment
-└── docs/                # Documentation
+│   ├── agent/                # AI Agent Components
+│   │   ├── review_agent.py   # Specialized AI review pipeline (LangGraph)
+│   │   └── tools.py          # Repository analysis tools
+│   ├── services/             # Business Logic Services
+│   │   ├── git_client.py     # Local Git operations
+│   │   ├── github_client.py  # GitHub API integration
+│   │   ├── github_service.py # GitHub integration service
+│   │   ├── repository_service.py # Repository analysis service
+│   │   ├── review_service.py # Review processing service
+│   │   └── webhook.py        # Webhook processing logic
+│   ├── routers/              # FastAPI Endpoints
+│   │   ├── health.py         # Health check endpoints
+│   │   ├── review.py         # Manual review endpoints
+│   │   └── webhook.py        # Webhook endpoints
+│   ├── app.py                # FastAPI application factory
+│   ├── models.py             # Data models and schemas
+│   ├── config.py             # Configuration management
+│   └── cli.py                # CLI (config-check, webhook-server)
+├── tests/                    # Test suite
+├── scripts/                  # Utility scripts  
+└── helm/                     # Kubernetes deployment
 ```
 
 ## 🚨 Review Categories
@@ -214,7 +223,7 @@ Junior uses a modern, webhook-driven architecture:
 
 - **FastAPI** - Webhook endpoints and API services
 - **LangChain + LangGraph** - Structured AI workflows  
-- **MCP Tools** - Repository analysis and understanding
+- **Repository Tools** - Code analysis and understanding
 - **Pydantic** - Data validation and settings
 - **GitPython** - Git operations and repository analysis
 

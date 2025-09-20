@@ -5,7 +5,7 @@
       "name": "Junior API - Debug Mode",
       "type": "debugpy",
       "request": "launch",
-      "module": "junior.api",
+      "module": "junior.app",
       "cwd": "${workspaceFolder}",
       "env": {
         "DEBUG": "true",
@@ -24,7 +24,7 @@
       "name": "Junior API - Production Mode",
       "type": "debugpy",
       "request": "launch",
-      "module": "junior.api",
+      "module": "junior.app",
       "cwd": "${workspaceFolder}",
       "env": {
         "DEBUG": "false",
@@ -61,7 +61,7 @@
       "console": "integratedTerminal",
       "justMyCode": false,
       "args": [
-        "junior.api:app",
+        "junior.app:app",
         "--host",
         "0.0.0.0",
         "--port",
