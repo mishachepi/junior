@@ -39,15 +39,6 @@ services:
       - junior-network
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    container_name: junior-redis
-    volumes:
-      - redis_data:/data
-    networks:
-      - junior-network
-    restart: unless-stopped
-
   # Webhook API service (main service)
   webhook-api:
     build:
@@ -93,7 +84,6 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
 
 networks:
   junior-network:
