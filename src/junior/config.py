@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     max_tokens: int = Field(4000, description="Maximum tokens for AI responses")
 
     # GitHub Configuration
-    github_token: str = Field(..., description="GitHub personal access token")
+    github_token: Optional[str] = Field(None, description="GitHub personal access token")
     github_webhook_secret: Optional[str] = Field(None, description="GitHub webhook secret")
 
     # Application Configuration
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     api_port: int = Field(8000, description="API port")
 
     # Security
-    secret_key: str = Field(..., description="Secret key for security")
+    secret_key: Optional[str] = Field(None, description="Secret key for security")
 
     # Code Review Settings
     max_file_size: int = Field(100000, description="Maximum file size to review (bytes)")

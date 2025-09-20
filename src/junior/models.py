@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -35,6 +35,11 @@ class ReviewCategory(str, Enum):
     LOGIC = "logic"
     DOCUMENTATION = "documentation"
     TESTING = "testing"
+    CRITICAL_BUG = "critical_bug"
+    NAMING = "naming"
+    OPTIMIZATION = "optimization"
+    DRY_VIOLATION = "dry_violation"
+    KISS_VIOLATION = "kiss_violation"
 
 
 class FileChange(BaseModel):
@@ -136,3 +141,61 @@ class ReviewJob(BaseModel):
     completed_at: Optional[datetime] = Field(None, description="When the job completed")
     error_message: Optional[str] = Field(None, description="Error message if failed")
     result: Optional[CodeReviewResult] = Field(None, description="Review result")
+
+
+class RepositoryAnalysis(BaseModel):
+    """Repository analysis results."""
+    
+    project_type: str = Field(..., description="Type of project (python, nodejs, etc.)")
+    main_language: str = Field(..., description="Primary programming language")
+    frameworks: List[str] = Field(default_factory=list, description="Detected frameworks")
+    dependencies: Dict[str, List[str]] = Field(default_factory=dict, description="Project dependencies")
+    directory_structure: Dict = Field(default_factory=dict, description="Directory structure")
+    config_files: List[str] = Field(default_factory=list, description="Configuration files")
+    test_directories: List[str] = Field(default_factory=list, description="Test directories")
+    total_files_analyzed: int = Field(0, description="Number of files analyzed")
+    changed_files_count: int = Field(0, description="Number of changed files")
+
+
+class LogicalReviewRequest(BaseModel):
+    """Request for logical code review."""
+    
+    repository: str = Field(..., description="Repository name")
+    pr_number: int = Field(..., description="Pull request number")
+    diff_content: str = Field(..., description="Git diff content")
+    file_contents: Dict[str, str] = Field(default_factory=dict, description="File contents")
+    project_structure: RepositoryAnalysis = Field(..., description="Project structure analysis")
+    focus_areas: List[str] = Field(
+        default=["logic", "security", "critical_bugs", "naming", "optimization", "principles"],
+        description="Areas to focus review on"
+    )
+
+
+class LogicalReviewResult(BaseModel):
+    """Result of logical code review."""
+    
+    repository: str = Field(..., description="Repository name")
+    pr_number: int = Field(..., description="Pull request number")
+    findings: List[Dict] = Field(default_factory=list, description="Raw findings from review")
+    summary: str = Field(..., description="Review summary")
+    recommendation: Literal["approve", "request_changes", "comment"] = Field(..., description="Review recommendation")
+    comments: List[ReviewComment] = Field(default_factory=list, description="Structured review comments")
+    
+    # Counts by severity
+    critical_count: int = Field(0, description="Number of critical issues")
+    high_count: int = Field(0, description="Number of high severity issues") 
+    medium_count: int = Field(0, description="Number of medium severity issues")
+    low_count: int = Field(0, description="Number of low severity issues")
+    total_findings: int = Field(0, description="Total number of findings")
+    
+    # Counts by category
+    logic_issues: int = Field(0, description="Logic-related issues")
+    security_issues: int = Field(0, description="Security-related issues")
+    critical_bugs: int = Field(0, description="Critical bugs found")
+    naming_issues: int = Field(0, description="Naming convention issues")
+    optimization_opportunities: int = Field(0, description="Optimization opportunities")
+    principle_violations: int = Field(0, description="Design principle violations")
+    
+    reviewed_at: datetime = Field(default_factory=datetime.utcnow)
+    processing_time_ms: Optional[int] = Field(None, description="Processing time in milliseconds")
+    error: Optional[str] = Field(None, description="Error message if review failed")

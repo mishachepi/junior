@@ -4,7 +4,7 @@ __version__ = "0.1.0"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 
-from .agent import CodeReviewAgent
 from .config import Settings
+from .review_agent import LogicalReviewAgent
 
-__all__ = ["CodeReviewAgent", "Settings"]
+__all__ = ["LogicalReviewAgent", "Settings"]

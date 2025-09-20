@@ -9,10 +9,10 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .agent import CodeReviewAgent
 from .config import settings
 from .github_client import GitHubClient
 from .models import CodeReviewRequest
+from .review_agent import LogicalReviewAgent
 
 app = typer.Typer(help="Junior - AI Agent for Code Review")
 console = Console()
@@ -49,7 +49,7 @@ def review_pr(
             
             # Initialize clients
             github_client = GitHubClient()
-            agent = CodeReviewAgent()
+            agent = LogicalReviewAgent()
             
             # Fetch PR data
             console.print("Fetching pull request data...")
@@ -98,7 +98,7 @@ def review_local(
             
             # Initialize clients
             git_client = GitClient(Path(path))
-            agent = CodeReviewAgent()
+            agent = LogicalReviewAgent()
             
             # Get current branch and changes
             current_branch = git_client.get_current_branch()
@@ -136,6 +136,30 @@ def review_local(
             raise typer.Exit(1)
     
     asyncio.run(_review_local())
+
+
+@app.command()
+def webhook_server(
+    host: str = typer.Option("0.0.0.0", "--host", help="Host to bind to"),
+    port: int = typer.Option(8000, "--port", help="Port to bind to"),
+    reload: bool = typer.Option(False, "--reload", help="Enable auto-reload"),
+    debug: bool = typer.Option(False, "--debug", help="Enable debug logging"),
+) -> None:
+    """Start the webhook server."""
+    setup_logging(debug)
+    
+    import uvicorn
+    from .api import app as fastapi_app
+    
+    console.print(f"[bold blue]Starting Junior webhook server on {host}:{port}[/bold blue]")
+    
+    uvicorn.run(
+        fastapi_app,
+        host=host,
+        port=port,
+        reload=reload,
+        log_level=settings.log_level.lower()
+    )
 
 
 @app.command()

@@ -26,13 +26,17 @@ class GitHubClient:
 
     async def get_authenticated_user(self) -> Dict:
         """Get authenticated user information."""
-        user = self.github.get_user()
-        return {
-            "login": user.login,
-            "name": user.name,
-            "email": user.email,
-            "id": user.id,
-        }
+        try:
+            user = self.github.get_user()
+            return {
+                "login": user.login,
+                "name": user.name or user.login,
+                "email": user.email,
+                "id": user.id,
+            }
+        except Exception as e:
+            self.logger.error("Failed to get authenticated user", error=str(e))
+            raise
 
     async def get_pull_request(self, repository: str, pr_number: int) -> Dict:
         """Get pull request information."""
@@ -65,6 +69,10 @@ class GitHubClient:
             "additions": pr.additions,
             "deletions": pr.deletions,
             "changed_files": pr.changed_files,
+            # Add diff_url for fetching
+            "diff_url": f"https://api.github.com/repos/{repository}/pulls/{pr_number}.diff",
+            "patch_url": f"https://api.github.com/repos/{repository}/pulls/{pr_number}.patch",
+            "html_url": pr.html_url,
         }
 
     async def get_pr_files(self, repository: str, pr_number: int) -> List[FileChange]:
@@ -151,33 +159,59 @@ class GitHubClient:
         """Submit a complete review for a pull request."""
         self.logger.info("Submitting review", repo=repository, pr=pr_number, event=event)
         
-        repo = self.github.get_repo(repository)
-        pr = repo.get_pull(pr_number)
-        
-        # Prepare review comments
-        review_comments = []
-        if comments:
-            for comment in comments:
-                if all(k in comment for k in ["path", "line", "body"]):
-                    review_comments.append({
-                        "path": comment["path"],
-                        "line": comment["line"],
-                        "body": comment["body"],
-                    })
-        
-        # Submit review
-        review = pr.create_review(
-            body=body,
-            event=event,
-            comments=review_comments,
-        )
-        
-        return {
-            "id": review.id,
-            "state": review.state,
-            "body": review.body,
-            "submitted_at": review.submitted_at,
-        }
+        try:
+            repo = self.github.get_repo(repository)
+            pr = repo.get_pull(pr_number)
+            
+            # Get the latest commit SHA for the review
+            commit_sha = pr.head.sha
+            
+            # Prepare review comments with commit SHA
+            review_comments = []
+            if comments:
+                for comment in comments:
+                    if all(k in comment for k in ["path", "line", "body"]):
+                        review_comments.append({
+                            "path": comment["path"],
+                            "line": comment["line"],
+                            "body": comment["body"],
+                        })
+            
+            # Submit review with commit SHA
+            if review_comments:
+                # Submit review with inline comments
+                review = pr.create_review(
+                    body=body,
+                    event=event,
+                    commit=repo.get_commit(commit_sha),
+                    comments=review_comments,
+                )
+            else:
+                # Submit review without inline comments
+                review = pr.create_review(
+                    body=body,
+                    event=event,
+                )
+            
+            self.logger.info("Review submitted successfully", 
+                           review_id=review.id, 
+                           comments_count=len(review_comments))
+            
+            return {
+                "id": review.id,
+                "state": review.state,
+                "body": review.body,
+                "submitted_at": review.submitted_at,
+                "commit_sha": commit_sha,
+                "comments_count": len(review_comments),
+            }
+            
+        except Exception as e:
+            self.logger.error("Failed to submit review", 
+                            repo=repository, 
+                            pr=pr_number, 
+                            error=str(e))
+            raise
 
     async def check_permissions(self, repository: str) -> Dict[str, bool]:
         """Check user permissions for a repository."""
