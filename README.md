@@ -98,14 +98,14 @@ Run the comprehensive test suite:
 uv run python scripts/quick_test.py
 ```
 
-Manual PR review:
-```bash
-uv run junior review-pr owner/repo 123
-```
-
 Check configuration:
 ```bash
 uv run junior config-check
+```
+
+Start webhook server:
+```bash
+uv run junior webhook-server
 ```
 
 ## 📁 Project Structure
@@ -113,16 +113,16 @@ uv run junior config-check
 ```
 junior/
 ├── src/junior/
-│   ├── api.py              # FastAPI webhook service
+│   ├── api.py              # FastAPI webhook service  
 │   ├── webhook.py          # GitHub webhook processing
 │   ├── review_agent.py     # Specialized AI review pipeline
 │   ├── mcp_tools.py        # Repository analysis tools
 │   ├── github_client.py    # GitHub API integration
 │   ├── models.py           # Data models and schemas
 │   ├── config.py          # Configuration management
-│   └── cli.py             # Command-line interface
+│   └── cli.py             # CLI (config-check, webhook-server)
 ├── tests/                 # Test suite
-├── scripts/              # Utility scripts
+├── scripts/              # Utility scripts  
 ├── helm/                # Kubernetes deployment
 └── docs/                # Documentation
 ```
