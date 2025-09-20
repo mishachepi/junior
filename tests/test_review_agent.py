@@ -4,12 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from junior.agent import LogicalReviewAgent, LogicalReviewState, ReviewFinding
+from junior.agent import LogicalReviewState, ReviewAgent, ReviewFinding
 from junior.models import ReviewData
 
 
-class TestLogicalReviewAgent:
-    """Tests for LogicalReviewAgent."""
+class TestReviewAgent:
+    """Tests for ReviewAgent."""
 
     @pytest.fixture
     def review_agent(self, monkeypatch):
@@ -23,7 +23,7 @@ class TestLogicalReviewAgent:
         monkeypatch.setattr("junior.agent.review_agent.settings", test_settings)
 
         with patch("junior.agent.review_agent.ChatOpenAI"):
-            agent = LogicalReviewAgent()
+            agent = ReviewAgent()
             agent.llm = MagicMock()
             agent.llm.ainvoke = AsyncMock()
             return agent

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_openai import ChatOpenAI
 
-from junior.agent import LogicalReviewAgent
+from junior.agent import ReviewAgent
 from junior.config import Settings
 from junior.models import CodeReviewRequest, FileChange, FileStatus
 from junior.services import GitHubClient
@@ -93,7 +93,7 @@ def code_review_agent(mock_settings, monkeypatch):
     """Code review agent with mocked dependencies."""
     monkeypatch.setattr("junior.config.settings", mock_settings)
 
-    agent = LogicalReviewAgent()
+    agent = ReviewAgent()
     agent.llm = MagicMock()
     agent.llm.ainvoke = AsyncMock(return_value="Mock review response")
 
