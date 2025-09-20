@@ -5,7 +5,7 @@ from datetime import datetime
 
 import structlog
 
-from ..agent import LogicalReviewAgent
+from ..agent import ReviewAgent
 from ..config import settings
 from ..models import ReviewData
 
@@ -27,7 +27,7 @@ class ReviewService:
 
         try:
             # Perform AI review with minimal data - agent will fetch additional data on demand
-            review_agent = LogicalReviewAgent()
+            review_agent = ReviewAgent()
 
             # Save minimal review data for debugging
             if settings.debug:
@@ -70,7 +70,7 @@ class ReviewService:
         )
 
         try:
-            review_agent = LogicalReviewAgent()
+            review_agent = ReviewAgent()
             review_result = await review_agent.review_pull_request(
                 review_data=review_data,
                 diff_content=diff_content,

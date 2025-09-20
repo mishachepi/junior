@@ -128,7 +128,7 @@ uv run junior --help
 - Prioritizes files: changed → config → context → entry points
 - Extracts relevant file contents with smart limits
 
-✅ **4. AI Review Pipeline** (`LogicalReviewAgent`)
+✅ **4. AI Review Pipeline** (`ReviewAgent`)
 - **Logic Analysis**: Business logic, conditional flows, edge cases
 - **Security Review**: Authentication logic, business vulnerabilities
 - **Critical Bug Detection**: Memory safety, race conditions, zero-day potential

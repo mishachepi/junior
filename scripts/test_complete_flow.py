@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from junior.agent import LogicalReviewAgent, RepositoryAnalyzer
+from junior.agent import RepositoryAnalyzer, ReviewAgent
 from junior.services import GitHubClient, PullRequestWebhookPayload, WebhookProcessor
 
 # Mock webhook payload (simplified but realistic)
@@ -273,10 +273,10 @@ async def test_ai_review():
         }
 
         # Mock the LLM and graph setup
-        with patch.object(LogicalReviewAgent, '_setup_llm'), \
-             patch.object(LogicalReviewAgent, '_setup_review_graph'):
+        with patch.object(ReviewAgent, '_setup_llm'), \
+             patch.object(ReviewAgent, '_setup_review_graph'):
 
-            agent = LogicalReviewAgent()
+            agent = ReviewAgent()
 
             # Manually set the mocked LLM attribute
             agent.llm = MagicMock()
