@@ -1,43 +1,70 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug Integration Test",
-            "type": "python",
-            "request": "launch",
-            "module": "pytest",
-            "args": [
-                "tests/test_integration.py::test_post_review_comment_integration",
-                "-v",
-                "-s",
-                "--no-cov"
-            ],
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
-            }
-        },
-        {
-            "name": "Debug Specific Test (with breakpoint)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/tests/test_integration.py",
-            "args": [],
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/src"
-            },
-            "stopOnEntry": false
-        },
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": false
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Junior API - Debug Mode",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "junior.api",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "args": []
+    },
+    {
+      "name": "Junior API - Production Mode",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "junior.api",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "false",
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "args": []
+    },
+    {
+      "name": "Junior CLI - Review Local",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "junior.cli",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "args": ["review-local", "--base", "main"]
+    },
+    {
+      "name": "Uvicorn - Junior API (with reload)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DEBUG": "true",
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "args": [
+        "junior.api:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8005",
+        "--reload",
+        "--log-level",
+        "debug"
+      ]
+    }
+  ]
 }
