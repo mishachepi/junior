@@ -91,6 +91,11 @@ async def manual_review(request: dict):
             project_structure=request.get("project_structure", {}),
         )
 
+        # Post review to GitHub
+        await github_service.post_review_to_github(
+            review_data.repository, review_data.pr_number, review_result
+        )
+
         return review_result
 
     except KeyError as e:
