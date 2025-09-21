@@ -24,25 +24,62 @@ async def manual_review(request: dict):
         repository = request["repository"]
         pr_number = request["pr_number"]
 
-        # Extract minimal review data
+        # Fetch PR data from GitHub if other parameters are missing
+        github_service = GitHubService()
+
+        # Check if we need to fetch PR data
+        missing_params = not all([
+            request.get("title"),
+            request.get("base_branch"),
+            request.get("head_branch"),
+            request.get("base_sha"),
+            request.get("head_sha")
+        ])
+
+        if missing_params:
+            github_client = github_service._get_client()
+            pr_data = await github_client.get_pull_request(repository, pr_number)
+
+            # Use fetched data to fill missing parameters
+            title = request.get("title", pr_data.get("title", "Review"))
+            description = request.get("description", pr_data.get("body", ""))
+            author = request.get("author", pr_data.get("user", {}).get("login", "manual"))
+            base_branch = request.get("base_branch", pr_data.get("base", {}).get("ref", "main"))
+            head_branch = request.get("head_branch", pr_data.get("head", {}).get("ref", "feature"))
+            base_sha = request.get("base_sha", pr_data.get("base", {}).get("sha", ""))
+            head_sha = request.get("head_sha", pr_data.get("head", {}).get("sha", ""))
+            diff_url = request.get("diff_url", pr_data.get("diff_url", ""))
+            clone_url = request.get("clone_url", f"https://github.com/{repository}.git")
+        else:
+            # Use provided or default values
+            title = request.get("title", "Review")
+            description = request.get("description", "")
+            author = request.get("author", "manual")
+            base_branch = request.get("base_branch", "main")
+            head_branch = request.get("head_branch", "feature")
+            base_sha = request.get("base_sha", "")
+            head_sha = request.get("head_sha", "")
+            diff_url = request.get("diff_url", "")
+            clone_url = request.get("clone_url", "")
+
+        # Create review data with computed/fetched parameters
         review_data = ReviewData(
             repository=repository,
             pr_number=pr_number,
-            title=request.get("title", "Review"),
-            description=request.get("description", ""),
-            author=request.get("author", "manual"),
-            base_branch=request.get("base_branch", "main"),
-            head_branch=request.get("head_branch", "feature"),
-            base_sha=request.get("base_sha", ""),
-            head_sha=request.get("head_sha", ""),
-            diff_url=request.get("diff_url", ""),
-            clone_url=request.get("clone_url", ""),
+            title=title,
+            description=description,
+            author=author,
+            base_branch=base_branch,
+            head_branch=head_branch,
+            base_sha=base_sha,
+            head_sha=head_sha,
+            diff_url=diff_url,
+            clone_url=clone_url,
         )
 
         # Get diff content if not provided
         diff_content = request.get("diff_content", "")
         if not diff_content:
-            github_service = GitHubService()
             diff_content = await github_service.get_pr_diff(repository, pr_number)
 
         # Perform review with optional pre-fetched data
