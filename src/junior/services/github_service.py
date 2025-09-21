@@ -135,6 +135,7 @@ class GitHubService:
     def _format_review_summary(self, review_result: dict) -> str:
         """Format review results into a GitHub comment."""
         summary = review_result.get("summary", "Review completed")
+        recommendation = review_result.get("recommendation", "comment")
 
         # Add findings summary
         total = review_result.get("total_findings", 0)
@@ -143,28 +144,39 @@ class GitHubService:
         medium = review_result.get("medium_count", 0)
         low = review_result.get("low_count", 0)
 
+        # Create enhanced findings breakdown
         if total == 0:
-            findings_summary = "✅ No issues found! Great work!"
+            findings_section = ""  # No need for findings section if no issues
+            action_section = "\n🎯 **Next Steps**: This PR is ready for merge! No issues found during logic, security, and architecture review."
         else:
-            findings_summary = f"📊 **Findings Summary**: {total} total"
+            # Findings breakdown
+            findings_parts = []
             if critical > 0:
-                findings_summary += f" • 🔴 {critical} critical"
+                findings_parts.append(f"🔴 **{critical} Critical** - Requires immediate attention")
             if high > 0:
-                findings_summary += f" • 🟠 {high} high"
+                findings_parts.append(f"🟠 **{high} High** - Should be addressed before merge")
             if medium > 0:
-                findings_summary += f" • 🟡 {medium} medium"
+                findings_parts.append(f"🟡 **{medium} Medium** - Recommended improvements")
             if low > 0:
-                findings_summary += f" • 🟢 {low} low"
+                findings_parts.append(f"🟢 **{low} Low** - Minor suggestions")
+            
+            findings_section = f"\n📊 **Issues Found**: {total} total\n" + "\n".join([f"- {part}" for part in findings_parts])
+            
+            # Action recommendations
+            if recommendation == "request_changes":
+                action_section = "\n🚨 **Action Required**: Please address the critical/high-priority issues above before merging."
+            elif recommendation == "comment":
+                action_section = "\n💡 **Suggestions**: Consider reviewing the issues above to improve code quality."
+            else:
+                action_section = "\n✅ **Ready to Merge**: Minor issues found but nothing blocking."
 
-        # Format final comment
+        # Format final comment with better structure
         formatted_summary = f"""## 🤖 Junior Code Review
 
-{summary}
-
-{findings_summary}
+{summary}{findings_section}{action_section}
 
 ---
-*Reviewed by Junior AI Agent - Focusing on logic, security, and code quality*
+*🔍 Analyzed for logic flaws, security vulnerabilities, and critical bugs • [Learn more about Junior](https://github.com/your-org/junior)*
 """
 
         return formatted_summary

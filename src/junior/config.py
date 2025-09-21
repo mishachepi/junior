@@ -63,6 +63,17 @@ class Settings(BaseSettings):
     )
     enable_style_checks: bool = Field(True, description="Enable code style checks")
     enable_complexity_checks: bool = Field(True, description="Enable complexity checks")
+    
+    # AI Token Management
+    max_tokens_per_request: int = Field(
+        25000, description="Maximum tokens per AI request to prevent rate limits"
+    )
+    max_diff_chars: int = Field(
+        50000, description="Maximum characters for diff content sent to AI"
+    )
+    max_structure_chars: int = Field(
+        10000, description="Maximum characters for project structure context"
+    )
 
 
 # Global settings instance

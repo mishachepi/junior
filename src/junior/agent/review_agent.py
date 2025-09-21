@@ -37,8 +37,8 @@ class ReviewFindings(BaseModel):
     overall_recommendation: str  # "approve", "request_changes", "comment"
 
 
-class LogicalReviewState(BaseModel):
-    """State for logical review workflow."""
+class ReviewState(BaseModel):
+    """State for review workflow."""
 
     review_data: ReviewData
     diff_content: str = ""
@@ -86,7 +86,7 @@ class ReviewAgent:
 
     def _setup_review_graph(self) -> None:
         """Set up specialized review workflow."""
-        workflow = StateGraph(LogicalReviewState)
+        workflow = StateGraph(ReviewState)
 
         # Add review steps
         workflow.add_node("analyze_logic", self._analyze_project_logic)
@@ -112,8 +112,21 @@ class ReviewAgent:
 
         self.review_graph = workflow.compile()
 
+    def _truncate_content(self, content: str, max_chars: int) -> str:
+        """Truncate content to prevent token limit issues."""
+        if len(content) <= max_chars:
+            return content
+        
+        # Try to truncate at a logical boundary (line break)
+        truncated = content[:max_chars]
+        last_newline = truncated.rfind('\n')
+        if last_newline > max_chars * 0.8:  # If we can truncate at 80%+ of max
+            truncated = truncated[:last_newline]
+        
+        return truncated + f"\n\n[TRUNCATED - Content was {len(content)} chars, showing first {len(truncated)} chars]"
+
     async def _fetch_additional_data(
-        self, state: LogicalReviewState, data_type: str
+        self, state: ReviewState, data_type: str
     ) -> dict:
         """Fetch additional data on demand using MCP tools."""
         try:
@@ -143,7 +156,13 @@ class ReviewAgent:
                     state.review_data.base_branch,
                     state.review_data.head_sha,
                 )
-                state.project_structure = analysis.dict()
+                # Handle both dict and object responses
+                if hasattr(analysis, 'dict'):
+                    state.project_structure = analysis.dict()
+                elif hasattr(analysis, 'model_dump'):
+                    state.project_structure = analysis.model_dump()
+                else:
+                    state.project_structure = analysis if isinstance(analysis, dict) else {}
 
             elif data_type == "file_contents" and not state.file_contents:
                 self.logger.info(
@@ -151,10 +170,14 @@ class ReviewAgent:
                 )
                 # Get file contents for changed files from the cloned repo
                 if hasattr(state, "mcp_analyzer") and state.mcp_analyzer:
-                    file_contents = await state.mcp_analyzer.get_changed_file_contents(
-                        state.review_data.base_sha, state.review_data.head_sha
-                    )
-                    state.file_contents = file_contents
+                    if hasattr(state.mcp_analyzer, 'get_changed_file_contents'):
+                        file_contents = await state.mcp_analyzer.get_changed_file_contents(
+                            state.review_data.base_sha, state.review_data.head_sha
+                        )
+                        state.file_contents = file_contents
+                    else:
+                        # Method doesn't exist, skip file contents fetching
+                        self.logger.warning("get_changed_file_contents method not available")
 
             return {"status": "success", "data_type": data_type}
 
@@ -210,8 +233,8 @@ class ReviewAgent:
         return findings
 
     async def _analyze_project_logic(
-        self, state: LogicalReviewState
-    ) -> LogicalReviewState:
+        self, state: ReviewState
+    ) -> ReviewState:
         """Analyze overall project logic and architecture."""
         self.logger.info("Analyzing project logic", pr=state.review_data.pr_number)
 
@@ -221,6 +244,10 @@ class ReviewAgent:
         if not state.project_structure:
             await self._fetch_additional_data(state, "project_structure")
 
+        # Truncate content to prevent token limits
+        truncated_diff = self._truncate_content(state.diff_content, settings.max_diff_chars)
+        truncated_structure = self._truncate_content(str(state.project_structure), settings.max_structure_chars)
+        
         prompt = ChatPromptTemplate.from_messages(
             [
                 SystemMessage(content=prompts.ANALYZE_PROJECT_LOGIC_PROMPT),
@@ -231,10 +258,10 @@ class ReviewAgent:
             Author: {state.review_data.author}
             
             Diff content:
-            {state.diff_content}
+            {truncated_diff}
             
             Project structure context:
-            {state.project_structure}
+            {truncated_structure}
             
             Analyze the logic and architecture implications of these changes."""
                 ),
@@ -262,8 +289,8 @@ class ReviewAgent:
         return state
 
     async def _check_logical_security(
-        self, state: LogicalReviewState
-    ) -> LogicalReviewState:
+        self, state: ReviewState
+    ) -> ReviewState:
         """Check for logical security vulnerabilities."""
         self.logger.info("Checking logical security", pr=state.review_data.pr_number)
 
@@ -271,13 +298,16 @@ class ReviewAgent:
         if not state.diff_content:
             await self._fetch_additional_data(state, "diff_content")
 
+        # Truncate content to prevent token limits
+        truncated_diff = self._truncate_content(state.diff_content, settings.max_diff_chars)
+        
         prompt = ChatPromptTemplate.from_messages(
             [
                 SystemMessage(content=prompts.CHECK_LOGICAL_SECURITY_PROMPT),
                 HumanMessage(
                     content=f"""Analyze this diff for logical security vulnerabilities:
             
-            {state.diff_content}
+            {truncated_diff}
             
             Consider the broader application context and potential attack scenarios."""
                 ),
@@ -304,8 +334,8 @@ class ReviewAgent:
         return state
 
     # async def _find_critical_bugs(
-    #     self, state: LogicalReviewState
-    # ) -> LogicalReviewState:
+    #     self, state: ReviewState
+    # ) -> ReviewState:
     #     """Find critical bugs and potential zero-days."""
     #     self.logger.info("Finding critical bugs", pr=state.review_data.pr_number)
 
@@ -342,8 +372,8 @@ class ReviewAgent:
     #     return state
 
     # async def _review_naming_conventions(
-    #     self, state: LogicalReviewState
-    # ) -> LogicalReviewState:
+    #     self, state: ReviewState
+    # ) -> ReviewState:
     #     """Review naming conventions that impact readability."""
     #     self.logger.info("Reviewing naming conventions", pr=state.review_data.pr_number)
 
@@ -380,8 +410,8 @@ class ReviewAgent:
     #     return state
 
     # async def _check_code_optimization(
-    #     self, state: LogicalReviewState
-    # ) -> LogicalReviewState:
+    #     self, state: ReviewState
+    # ) -> ReviewState:
     #     """Check for code optimization opportunities."""
     #     self.logger.info(
     #         "Checking optimization opportunities", pr=state.review_data.pr_number
@@ -420,8 +450,8 @@ class ReviewAgent:
     #     return state
 
     # async def _verify_design_principles(
-    #     self, state: LogicalReviewState
-    # ) -> LogicalReviewState:
+    #     self, state: ReviewState
+    # ) -> ReviewState:
     #     """Verify adherence to DRY and KISS principles."""
     #     self.logger.info("Verifying design principles", pr=state.review_data.pr_number)
 
@@ -458,8 +488,8 @@ class ReviewAgent:
     #     return state
 
     async def _generate_review_summary(
-        self, state: LogicalReviewState
-    ) -> LogicalReviewState:
+        self, state: ReviewState
+    ) -> ReviewState:
         """Generate simple review summary."""
         self.logger.info("Generating review summary", pr=state.review_data.pr_number)
 
@@ -467,7 +497,6 @@ class ReviewAgent:
         critical_findings = [f for f in state.findings if f.severity == "critical"]
         high_findings = [f for f in state.findings if f.severity == "high"]
         medium_findings = [f for f in state.findings if f.severity == "medium"]
-        low_findings = [f for f in state.findings if f.severity == "low"]
 
         # Determine recommendation
         if critical_findings:
@@ -479,12 +508,22 @@ class ReviewAgent:
         else:
             recommendation = "approve"
 
-        # Simple summary generation
+        # Enhanced summary generation
         total_findings = len(state.findings)
         if total_findings == 0:
-            summary = "Code review completed. No major issues found."
+            summary = "✅ **Review Complete**: This PR looks good! No significant logic, security, or critical issues found during analysis."
         else:
-            summary = f"Code review completed. Found {total_findings} findings: {len(critical_findings)} critical, {len(high_findings)} high, {len(medium_findings)} medium, {len(low_findings)} low severity issues."
+            # Create context-aware summary
+            if critical_findings:
+                summary = f"🚨 **Critical Issues Found**: This PR requires immediate attention before merging. Found {len(critical_findings)} critical security/logic issue(s) that could impact system reliability."
+            elif len(high_findings) >= 3:
+                summary = f"⚠️ **Multiple High-Priority Issues**: This PR has {len(high_findings)} high-severity issues that should be addressed before merging to maintain code quality."
+            elif high_findings:
+                summary = f"📋 **Issues Identified**: Found {len(high_findings)} high-priority and {len(medium_findings)} medium-priority issues. Please review the suggestions below."
+            elif len(medium_findings) >= 5:
+                summary = f"📝 **Several Improvements Suggested**: Found {len(medium_findings)} medium-priority improvements that would enhance code quality and maintainability."
+            else:
+                summary = f"🔍 **Minor Issues Found**: Found {total_findings} minor issue(s). Consider addressing these for improved code quality."
 
         # Store final results
         state.current_step = "complete"
@@ -510,7 +549,7 @@ class ReviewAgent:
 
         try:
             # Initialize state with minimal data - additional data fetched on demand
-            state = LogicalReviewState(
+            state = ReviewState(
                 review_data=review_data,
                 diff_content=diff_content,
                 file_contents=file_contents or {},
@@ -519,20 +558,42 @@ class ReviewAgent:
             )
 
             # Run review workflow
-            final_state = await self.review_graph.ainvoke(state)
+            final_state_result = await self.review_graph.ainvoke(state)
+
+            # Handle both dict and ReviewState objects
+            if isinstance(final_state_result, dict):
+                # Convert dict back to ReviewState if needed
+                findings = final_state_result.get("findings", [])
+                review_summary = final_state_result.get("review_summary", "Review completed")
+                recommendation = final_state_result.get("recommendation", "comment")
+                review_comments = final_state_result.get("review_comments", [])
+            else:
+                # Use object attributes directly
+                findings = final_state_result.findings
+                review_summary = final_state_result.review_summary
+                recommendation = final_state_result.recommendation
+                review_comments = final_state_result.review_comments
+
+            # Helper function to safely get severity
+            def get_severity(finding):
+                if hasattr(finding, 'severity'):
+                    return finding.severity
+                elif isinstance(finding, dict):
+                    return finding.get('severity', 'medium')
+                else:
+                    return 'medium'
 
             # Return minimal structure for GitHub posting
-            findings = final_state.get("findings", [])
             total_findings = len(findings)
-            critical_count = len([f for f in findings if f.severity == "critical"])
-            high_count = len([f for f in findings if f.severity == "high"])
-            medium_count = len([f for f in findings if f.severity == "medium"])
-            low_count = len([f for f in findings if f.severity == "low"])
-
+            critical_count = len([f for f in findings if get_severity(f) == "critical"])
+            high_count = len([f for f in findings if get_severity(f) == "high"])
+            medium_count = len([f for f in findings if get_severity(f) == "medium"])
+            low_count = len([f for f in findings if get_severity(f) == "low"])
+            
             return {
-                "summary": final_state.get("review_summary", ""),
-                "recommendation": final_state.get("recommendation", "comment"),
-                "comments": final_state.get("review_comments", []),
+                "summary": review_summary,
+                "recommendation": recommendation,
+                "comments": review_comments,
                 "total_findings": total_findings,
                 "critical_count": critical_count,
                 "high_count": high_count,
