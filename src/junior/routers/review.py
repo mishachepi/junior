@@ -28,7 +28,7 @@ async def manual_review(request: dict):
         review_data = ReviewData(
             repository=repository,
             pr_number=pr_number,
-            title=request.get("title", "Manual Review"),
+            title=request.get("title", "Review"),
             description=request.get("description", ""),
             author=request.get("author", "manual"),
             base_branch=request.get("base_branch", "main"),

@@ -522,16 +522,17 @@ class ReviewAgent:
             final_state = await self.review_graph.ainvoke(state)
 
             # Return minimal structure for GitHub posting
-            total_findings = len(final_state.findings)
-            critical_count = len([f for f in final_state.findings if f.severity == "critical"])
-            high_count = len([f for f in final_state.findings if f.severity == "high"])
-            medium_count = len([f for f in final_state.findings if f.severity == "medium"])
-            low_count = len([f for f in final_state.findings if f.severity == "low"])
-            
+            findings = final_state.get("findings", [])
+            total_findings = len(findings)
+            critical_count = len([f for f in findings if f.severity == "critical"])
+            high_count = len([f for f in findings if f.severity == "high"])
+            medium_count = len([f for f in findings if f.severity == "medium"])
+            low_count = len([f for f in findings if f.severity == "low"])
+
             return {
-                "summary": final_state.review_summary,
-                "recommendation": final_state.recommendation,
-                "comments": final_state.review_comments,
+                "summary": final_state.get("review_summary", ""),
+                "recommendation": final_state.get("recommendation", "comment"),
+                "comments": final_state.get("review_comments", []),
                 "total_findings": total_findings,
                 "critical_count": critical_count,
                 "high_count": high_count,
