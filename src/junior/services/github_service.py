@@ -156,13 +156,67 @@ class GitHubService:
             if low > 0:
                 findings_summary += f" • 🟢 {low} low"
 
+        # Format detailed findings
+        findings_details = ""
+        findings = review_result.get("findings", [])
+        if findings:
+            findings_details = "\n\n## 📋 Detailed Findings\n"
+
+            # Group findings by severity for better organization
+            severity_groups = {
+                "critical": [],
+                "high": [],
+                "medium": [],
+                "low": []
+            }
+
+            for finding in findings:
+                severity = finding.get("severity", "low")
+                if severity in severity_groups:
+                    severity_groups[severity].append(finding)
+
+            # Format each severity group
+            severity_emojis = {
+                "critical": "🔴",
+                "high": "🟠",
+                "medium": "🟡",
+                "low": "🟢"
+            }
+
+            for severity in ["critical", "high", "medium", "low"]:
+                if severity_groups[severity]:
+                    findings_details += f"\n### {severity_emojis[severity]} {severity.capitalize()} Issues\n"
+                    for finding in severity_groups[severity]:
+                        category = finding.get("category", "general").replace("_", " ").title()
+                        message = finding.get("message", "")
+                        file_path = finding.get("file_path", "")
+                        line_num = finding.get("line_number", "")
+                        suggestion = finding.get("suggestion", "")
+                        principle = finding.get("principle_violated", "")
+
+                        findings_details += f"\n**[{category}]** {message}"
+
+                        if file_path:
+                            location = f"`{file_path}`"
+                            if line_num:
+                                location += f" (line {line_num})"
+                            findings_details += f"\n📍 Location: {location}"
+
+                        if suggestion:
+                            findings_details += f"\n💡 **Suggestion:** {suggestion}"
+
+                        if principle:
+                            findings_details += f"\n📐 **Principle:** {principle}"
+
+                        findings_details += "\n"
+
         # Format final comment
         formatted_summary = f"""## 🤖 Junior Code Review
 
 {summary}
 
 {findings_summary}
-
+{findings_details}
 ---
 *Reviewed by Junior AI Agent - Focusing on logic, security, and code quality*
 """
