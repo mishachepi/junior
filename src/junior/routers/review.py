@@ -91,6 +91,21 @@ async def do_review_by_repo_and_pr(request: dict):
             project_structure=request.get("project_structure", {}),
         )
 
+        # Log the review result before posting
+        logger.info(
+            "Review result to be posted",
+            repo=review_data.repository,
+            pr=review_data.pr_number,
+            total_findings=review_result.get("total_findings", 0),
+            has_findings_details="findings" in review_result,
+            findings_count=len(review_result.get("findings", [])),
+        )
+
+        logger.debug(
+            "Full review result",
+            review_result=review_result,
+        )
+
         # Post review to GitHub
         await github_service.post_review_to_github(
             review_data.repository, review_data.pr_number, review_result
