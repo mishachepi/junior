@@ -88,7 +88,7 @@ class ReviewAgent:
         """Set up specialized review workflow."""
         workflow = StateGraph(LogicalReviewState)
 
-        # Add review steps
+        # Review steps
         workflow.add_node("analyze_logic", self._analyze_project_logic)
         workflow.add_node("check_security", self._check_logical_security)
         # workflow.add_node("find_critical_bugs", self._find_critical_bugs)

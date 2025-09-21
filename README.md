@@ -178,21 +178,6 @@ docker build -t junior .
 docker-compose up -d
 ```
 
-## ☸️ Kubernetes Deployment
-
-Deploy to Kubernetes using Helm:
-
-```bash
-# Install dependencies
-helm dependency update helm/junior
-
-# Deploy
-helm install junior helm/junior \
-  --set secrets.openaiApiKey="your-key" \
-  --set secrets.githubToken="your-token" \
-  --set secrets.secretKey="your-secret"
-```
-
 ## ⚙️ Advanced Configuration
 
 ### Review Settings
