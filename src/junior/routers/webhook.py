@@ -7,6 +7,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 
 from ..models import ReviewData
 from ..services import (
+    CommentWebhookPayload,
     GitHubService,
     PullRequestWebhookPayload,
     ReviewService,
@@ -37,32 +38,15 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
         # Parse payload
         payload_json = json.loads(payload_bytes.decode("utf-8"))
 
-        # Check if it's a pull request event
-        if "pull_request" not in payload_json:
-            return {"message": "Not a pull request event, ignoring"}
-
-        # Validate payload structure
-        webhook_payload = PullRequestWebhookPayload(**payload_json)
-
-        # Check if we should process this event
-        if not webhook_processor.should_process_event(webhook_payload):
-            return {"message": f"Skipping action: {webhook_payload.action}"}
-
-        # Extract minimal review data
-        review_data_dict = webhook_processor.extract_minimal_review_data(
-            webhook_payload
-        )
-        review_data = ReviewData(**review_data_dict)
-
-        # Process review in background
-        background_tasks.add_task(_process_webhook_review, review_data)
-
-        return {
-            "message": "PR review queued",
-            "repository": review_data.repository,
-            "pr_number": review_data.pr_number,
-            "action": webhook_payload.action,
-        }
+        # Determine event type and process accordingly
+        if "pull_request" in payload_json and "comment" not in payload_json:
+            # This is a PR event
+            return await _handle_pr_event(payload_json, background_tasks)
+        elif "comment" in payload_json and payload_json.get("issue", {}).get("pull_request"):
+            # This is a PR comment event
+            return await _handle_comment_event(payload_json, background_tasks)
+        else:
+            return {"message": "Not a supported event type, ignoring"}
 
     except json.JSONDecodeError as e:
         raise HTTPException(
@@ -74,6 +58,54 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
         ) from e
+
+
+async def _handle_pr_event(payload_json: dict, background_tasks: BackgroundTasks):
+    """Handle pull request events."""
+    # Validate payload structure
+    webhook_payload = PullRequestWebhookPayload(**payload_json)
+
+    # Check if we should process this event
+    if not webhook_processor.should_process_event(webhook_payload):
+        return {"message": f"Skipping action: {webhook_payload.action}"}
+
+    # Extract minimal review data
+    review_data_dict = webhook_processor.extract_minimal_review_data(webhook_payload)
+    review_data = ReviewData(**review_data_dict)
+
+    # Process review in background
+    background_tasks.add_task(_process_webhook_review, review_data)
+
+    return {
+        "message": "PR review queued",
+        "repository": review_data.repository,
+        "pr_number": review_data.pr_number,
+        "action": webhook_payload.action,
+    }
+
+
+async def _handle_comment_event(payload_json: dict, background_tasks: BackgroundTasks):
+    """Handle comment events on pull requests."""
+    # Validate payload structure
+    webhook_payload = CommentWebhookPayload(**payload_json)
+
+    # Check if we should process this comment event
+    if not webhook_processor.should_process_comment_event(webhook_payload):
+        return {"message": f"Skipping comment action: {webhook_payload.action}"}
+
+    # Extract review data from comment
+    review_data_dict = webhook_processor.extract_review_data_from_comment(webhook_payload)
+    review_data = ReviewData(**review_data_dict)
+
+    # Process review in background
+    background_tasks.add_task(_process_webhook_review, review_data)
+
+    return {
+        "message": "PR review queued from mention",
+        "repository": review_data.repository,
+        "pr_number": review_data.pr_number,
+        "comment_author": webhook_payload.sender["login"],
+    }
 
 
 async def _process_webhook_review(review_data: ReviewData):

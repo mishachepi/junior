@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # GitHub Configuration
     github_token: str | None = Field(None, description="GitHub personal access token")
     github_webhook_secret: str | None = Field(None, description="GitHub webhook secret")
+    mention_username: str | None = Field(None, description="Username to trigger review on mention")
 
     # Application Configuration
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(

@@ -23,6 +23,17 @@ class PullRequestWebhookPayload(BaseModel):
     label: dict | None = Field(None, description="Label data for labeled action")
 
 
+class CommentWebhookPayload(BaseModel):
+    """GitHub issue/PR comment webhook payload."""
+
+    action: str = Field(..., description="The action that was performed")
+    comment: dict = Field(..., description="Comment data")
+    issue: dict | None = Field(None, description="Issue data (for issue comments)")
+    pull_request: dict | None = Field(None, description="Pull request data (for PR comments)")
+    repository: dict = Field(..., description="Repository data")
+    sender: dict = Field(..., description="User who triggered the event")
+
+
 class WebhookProcessor:
     """Process GitHub webhook events."""
 
@@ -85,16 +96,74 @@ class WebhookProcessor:
             self.logger.info("Skipping draft PR", pr_number=payload.number)
             return False
 
-        # Skip if PR is already merged or closed
+        # Do not skip if PR is already merged or closed
+        # if payload.pull_request.get("state") != "open":
+        #     self.logger.info(
+        #         "Skipping non-open PR",
+        #         pr_number=payload.number,
+        #         state=payload.pull_request.get("state"),
+        #     )
+        #     return False
+
+        return True
+
+    def should_process_comment_event(self, payload: CommentWebhookPayload) -> bool:
+        """Determine if we should process this comment event."""
+        # Only process comment creation
+        if payload.action != "created":
+            self.logger.info("Skipping comment action", action=payload.action)
+            return False
+
+        # Must be a PR comment (not issue comment)
+        if not payload.pull_request:
+            self.logger.info("Skipping non-PR comment")
+            return False
+
+        # PR must be open
         if payload.pull_request.get("state") != "open":
             self.logger.info(
-                "Skipping non-open PR",
-                pr_number=payload.number,
+                "Skipping comment on non-open PR",
+                pr_number=payload.pull_request.get("number"),
                 state=payload.pull_request.get("state"),
             )
             return False
 
+        # Check for mention
+        if not self._has_mention(payload.comment.get("body", "")):
+            self.logger.info("No mention found in comment")
+            return False
+
         return True
+
+    def _has_mention(self, comment_body: str) -> bool:
+        """Check if comment contains a mention of the configured username."""
+        if not settings.mention_username:
+            self.logger.warning("No mention username configured")
+            return False
+
+        # Look for @username mention
+        import re
+        pattern = rf"@{re.escape(settings.mention_username)}\b"
+        return bool(re.search(pattern, comment_body, re.IGNORECASE))
+
+    def extract_review_data_from_comment(self, payload: CommentWebhookPayload) -> dict:
+        """Extract review data from comment webhook payload."""
+        pr = payload.pull_request
+        repo = payload.repository
+
+        return {
+            "repository": repo["full_name"],
+            "pr_number": pr["number"],
+            "title": pr["title"],
+            "description": pr.get("body", ""),
+            "author": pr["user"]["login"],
+            "base_branch": pr["base"]["ref"],
+            "head_branch": pr["head"]["ref"],
+            "base_sha": pr["base"]["sha"],
+            "head_sha": pr["head"]["sha"],
+            "diff_url": pr.get("diff_url", ""),
+            "clone_url": repo.get("clone_url", ""),
+        }
 
     def extract_minimal_review_data(self, payload: PullRequestWebhookPayload) -> dict:
         """Extract minimal data required for code review with on-demand fetching."""

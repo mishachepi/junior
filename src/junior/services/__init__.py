@@ -5,7 +5,7 @@ from .github_client import GitHubClient
 from .github_service import GitHubService
 from .repository_service import RepositoryService
 from .review_service import ReviewService
-from .webhook import PullRequestWebhookPayload, WebhookProcessor
+from .webhook import CommentWebhookPayload, PullRequestWebhookPayload, WebhookProcessor
 
 __all__ = [
     "ReviewService",
@@ -15,4 +15,5 @@ __all__ = [
     "GitHubClient",
     "WebhookProcessor",
     "PullRequestWebhookPayload",
+    "CommentWebhookPayload",
 ]
