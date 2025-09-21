@@ -56,16 +56,16 @@ class ReviewService:
             )
             raise
 
-    async def manual_review(
+    async def do_review_by_repo_and_pr(
         self,
         review_data: ReviewData,
         diff_content: str = "",
         file_contents: dict[str, str] | None = None,
         project_structure: dict | None = None,
     ) -> dict:
-        """Perform manual review with optional pre-fetched data."""
+        """Perform Review by repo and PR number with optional pre-fetched data."""
         self.logger.info(
-            "Starting manual review",
+            "Starting Review by repo and PR number",
             repo=review_data.repository,
             pr=review_data.pr_number,
         )
@@ -80,7 +80,7 @@ class ReviewService:
             )
 
             self.logger.info(
-                "Manual review completed",
+                "Review by repo and PR number completed",
                 repo=review_data.repository,
                 pr=review_data.pr_number,
                 findings=review_result["total_findings"],
@@ -90,7 +90,7 @@ class ReviewService:
 
         except Exception as e:
             self.logger.error(
-                "Manual review failed",
+                "Review by repo and PR number failed",
                 repo=review_data.repository,
                 pr=review_data.pr_number,
                 error=str(e),

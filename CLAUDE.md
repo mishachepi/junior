@@ -108,7 +108,7 @@ Junior is a webhook-based AI code review agent with two distinct processing path
 
 **API Routers:**
 - `routers/webhook.py` - GitHub webhook endpoints and event processing
-- `routers/review.py` - Manual review endpoints for CLI operations
+- `routers/review.py` - Review by repo and PR number endpoints for CLI operations
 - `routers/health.py` - Health check and monitoring endpoints
 
 **Business Logic Services:**

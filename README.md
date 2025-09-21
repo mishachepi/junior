@@ -125,7 +125,7 @@ junior/
 │   │   └── webhook.py        # Webhook processing logic
 │   ├── routers/              # FastAPI Endpoints
 │   │   ├── health.py         # Health check endpoints
-│   │   ├── review.py         # Manual review endpoints
+│   │   ├── review.py         # Review by repo and PR number endpoints
 │   │   └── webhook.py        # Webhook endpoints
 │   ├── app.py                # FastAPI application factory
 │   ├── models.py             # Data models and schemas

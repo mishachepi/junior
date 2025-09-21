@@ -81,7 +81,7 @@ uv run uvicorn junior.app:app --host 0.0.0.0 --port 8000
 | `/health` | GET | Health check - always works |
 | `/ready` | GET | Readiness check - requires GitHub token |
 | `/webhook/github` | POST | Main webhook endpoint for PR events |
-| `/review` | POST | Manual review endpoint (debug mode only) |
+| `/review` | POST | Review by repo and PR number endpoint (debug mode only) |
 
 ## 🧪 **Testing Commands**
 
