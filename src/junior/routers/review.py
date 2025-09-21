@@ -1,4 +1,4 @@
-"""Manual review endpoints."""
+"""Review by repo and PR number endpoints."""
 
 import structlog
 from fastapi import APIRouter, HTTPException, status
@@ -12,8 +12,8 @@ router = APIRouter(prefix="/review", tags=["review"])
 
 
 @router.post("")
-async def manual_review(request: dict):
-    """Manual review endpoint for testing."""
+async def do_review_by_repo_and_pr(request: dict):
+    """Review by repo and PR number endpoint for testing."""
     if not settings.debug:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -84,7 +84,7 @@ async def manual_review(request: dict):
 
         # Perform review with optional pre-fetched data
         review_service = ReviewService()
-        review_result = await review_service.manual_review(
+        review_result = await review_service.do_review_by_repo_and_pr(
             review_data=review_data,
             diff_content=diff_content,
             file_contents=request.get("file_contents", {}),
@@ -104,7 +104,7 @@ async def manual_review(request: dict):
             detail=f"Missing required field: {e}",
         ) from e
     except Exception as e:
-        logger.error("Manual review failed", error=str(e))
+        logger.error("Review by repo and PR number failed", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         ) from e
