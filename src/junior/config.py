@@ -74,6 +74,17 @@ class Settings(BaseSettings):
     max_structure_chars: int = Field(
         10000, description="Maximum characters for project structure context"
     )
+    
+    # ReAct Agent Settings
+    enable_react_agent: bool = Field(
+        True, description="Enable ReAct agent for dynamic repository analysis during reviews"
+    )
+    react_agent_max_iterations: int = Field(
+        3, description="Maximum iterations for ReAct agent to prevent runaway execution"
+    )
+    react_agent_timeout: int = Field(
+        45, description="Timeout in seconds for ReAct agent execution"
+    )
 
 
 # Global settings instance
