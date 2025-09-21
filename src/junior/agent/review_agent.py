@@ -533,6 +533,7 @@ class ReviewAgent:
                 "summary": final_state.get("review_summary", ""),
                 "recommendation": final_state.get("recommendation", "comment"),
                 "comments": final_state.get("review_comments", []),
+                "findings": [finding.model_dump() for finding in findings],
                 "total_findings": total_findings,
                 "critical_count": critical_count,
                 "high_count": high_count,
