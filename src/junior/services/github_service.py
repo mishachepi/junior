@@ -94,6 +94,22 @@ class GitHubService:
                         }
                     )
 
+            # Log the review text before posting
+            self.logger.info(
+                "Review text to be posted to GitHub",
+                repo=repository,
+                pr=pr_number,
+                review_body=summary,
+                inline_comments_count=len(inline_comments),
+            )
+
+            # Also log the full review text for debugging
+            self.logger.debug(
+                "Full review content",
+                review_text=summary,
+                findings=review_result.get("findings", []),
+            )
+
             # Submit review
             github_client = self._get_client()
             await github_client.submit_review(
