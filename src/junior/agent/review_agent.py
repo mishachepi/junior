@@ -124,12 +124,13 @@ class ReviewAgent:
                 # Fetch diff from GitHub URL
                 import aiohttp
 
+                # Use the diff_url directly since it already contains .diff
+                diff_url = state.review_data.diff_url
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(
-                        f"{state.review_data.diff_url}.diff"
-                    ) as response:
+                    async with session.get(diff_url) as response:
                         if response.status == 200:
                             state.diff_content = await response.text()
+                            print(state.diff_content)
                         else:
                             raise Exception(f"Failed to fetch diff: {response.status}")
 
@@ -140,22 +141,25 @@ class ReviewAgent:
                 # Clone repo and analyze structure
                 analysis = await self.mcp_analyzer.analyze_repository(
                     state.review_data.clone_url,
-                    state.review_data.base_branch,
                     state.review_data.head_sha,
+                    state.review_data.base_sha,
                 )
-                state.project_structure = analysis.dict()
+                state.project_structure = analysis
+                print(state.project_structure)
 
             elif data_type == "file_contents" and not state.file_contents:
                 self.logger.info(
                     "Fetching changed file contents", pr=state.review_data.pr_number
                 )
-                # Get file contents for changed files from the cloned repo
-                if hasattr(state, "mcp_analyzer") and state.mcp_analyzer:
-                    file_contents = await state.mcp_analyzer.get_changed_file_contents(
-                        state.review_data.base_sha, state.review_data.head_sha
-                    )
-                    state.file_contents = file_contents
-
+                # File contents are already included in project_structure analysis
+                # The analyze_repository method returns both structure and file contents
+                if not state.project_structure:
+                    await self._fetch_additional_data(state, "project_structure")
+                
+                # Extract file contents from project structure analysis
+                if state.project_structure and "file_contents" in state.project_structure:
+                    state.file_contents = state.project_structure["file_contents"]
+                    print(state.file_contents)
             return {"status": "success", "data_type": data_type}
 
         except Exception as e:

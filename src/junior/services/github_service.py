@@ -63,16 +63,8 @@ class GitHubService:
     ):
         """Post review results to GitHub."""
         try:
-            # Determine review event
-            recommendation = review_result.get("recommendation", "comment")
-
-            github_event_map = {
-                "approve": "APPROVE",
-                "request_changes": "REQUEST_CHANGES",
-                "comment": "COMMENT",
-            }
-
-            event = github_event_map.get(recommendation, "COMMENT")
+            # Always use COMMENT event to avoid GitHub's restriction on approving own PRs
+            event = "COMMENT"
 
             # Format review summary
             summary = self._format_review_summary(review_result)
