@@ -1,0 +1,188 @@
+# Junior — GitLab CI examples
+# Copy the relevant job(s) into your .gitlab-ci.yml
+#
+# Image variants:
+#   junior:pydantic — pydantic-ai backend only (default, smallest)
+#   junior:codex    — codex CLI backend (requires Node + @openai/codex)
+#   junior:full     — all backends (pydantic + codex + deepagents)
+
+# ==============================================================================
+# Option 1: pydantic + OpenAI
+#
+# CI/CD Variables required:
+#   OPENAI_API_KEY    — sk-proj-...          (masked)
+#   GITLAB_BOT_TOKEN  — glpat-... (api scope) (masked)
+# ==============================================================================
+code-review-pydantic-openai:
+  stage: review
+  image: registry.gitlab.com/mishachepi/junior-test-review/junior:pydantic
+  variables:
+    OPENAI_API_KEY: $OPENAI_API_KEY
+    GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+    AGENT_BACKEND: pydantic
+    MODEL_PROVIDER: openai
+    MODEL_NAME: gpt-5.4-mini
+    PROMPTS: security,logic,design
+  script:
+    - junior --publish
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+  allow_failure: true
+
+
+# ==============================================================================
+# Option 2: pydantic + Anthropic Claude
+#
+# CI/CD Variables required:
+#   ANTHROPIC_API_KEY — sk-ant-...           (masked)
+#   GITLAB_BOT_TOKEN  — glpat-... (api scope) (masked)
+# ==============================================================================
+# code-review-pydantic-anthropic:
+#   stage: review
+#   image: registry.gitlab.com/mishachepi/junior-test-review/junior:pydantic
+#   variables:
+#     ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+#     GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+#     AGENT_BACKEND: pydantic
+#     MODEL_PROVIDER: anthropic
+#     MODEL_NAME: claude-opus-4-6
+#     PROMPTS: security,logic,design
+#   script:
+#     - junior --publish
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#   allow_failure: true
+
+
+# ==============================================================================
+# Option 3: codex CLI backend
+# MODEL_PROVIDER not needed — codex reads OPENAI_API_KEY directly.
+#
+# CI/CD Variables required:
+#   OPENAI_API_KEY    — sk-proj-...          (masked)
+#   GITLAB_BOT_TOKEN  — glpat-... (api scope) (masked)
+# ==============================================================================
+# code-review-codex:
+#   stage: review
+#   image: registry.gitlab.com/mishachepi/junior-test-review/junior:codex
+#   variables:
+#     OPENAI_API_KEY: $OPENAI_API_KEY
+#     GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+#     AGENT_BACKEND: codex
+#     PROMPTS: common
+#   script:
+#     - junior --publish
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#   allow_failure: true
+
+
+# ==============================================================================
+# Option 4: deepagents — parallel subagents, each explores the repo
+# Slower but more thorough. Requires junior:full image.
+#
+# CI/CD Variables required:
+#   OPENAI_API_KEY    — sk-proj-...          (masked)
+#   GITLAB_BOT_TOKEN  — glpat-... (api scope) (masked)
+# ==============================================================================
+# code-review-deepagents:
+#   stage: review
+#   image: registry.gitlab.com/mishachepi/junior-test-review/junior:full
+#   variables:
+#     OPENAI_API_KEY: $OPENAI_API_KEY
+#     GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+#     AGENT_BACKEND: deepagents
+#     MODEL_PROVIDER: openai
+#     MODEL_NAME: gpt-5.4-mini
+#     PROMPTS: security,logic,design
+#   script:
+#     - junior --publish
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#   allow_failure: true
+#   timeout: 10m
+
+
+# ==============================================================================
+# Option 5: two providers in two jobs — openai for speed, anthropic for depth
+#
+# CI/CD Variables required:
+#   OPENAI_API_KEY    — sk-proj-...          (masked)
+#   ANTHROPIC_API_KEY — sk-ant-...           (masked)
+#   GITLAB_BOT_TOKEN  — glpat-... (api scope) (masked)
+# ==============================================================================
+# code-review-fast:
+#   stage: review
+#   image: registry.gitlab.com/mishachepi/junior-test-review/junior:pydantic
+#   variables:
+#     OPENAI_API_KEY: $OPENAI_API_KEY
+#     GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+#     AGENT_BACKEND: pydantic
+#     MODEL_PROVIDER: openai
+#     MODEL_NAME: gpt-5.4-mini
+#     PROMPTS: common
+#   script:
+#     - junior --publish
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#   allow_failure: true
+#
+# code-review-deep:
+#   stage: review
+#   image: registry.gitlab.com/mishachepi/junior-test-review/junior:pydantic
+#   variables:
+#     ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+#     GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+#     AGENT_BACKEND: pydantic
+#     MODEL_PROVIDER: anthropic
+#     MODEL_NAME: claude-opus-4-6
+#     PROMPTS: security
+#   script:
+#     - junior --publish
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#   allow_failure: true
+
+
+# ==============================================================================
+# Option 6: external ruff lint → passed to junior via -a lint_results=
+# Lint runs first as a separate job, results passed as artifact.
+#
+# CI/CD Variables required:
+#   OPENAI_API_KEY    — sk-proj-...          (masked)
+#   GITLAB_BOT_TOKEN  — glpat-... (api scope) (masked)
+# ==============================================================================
+# stages:
+#   - lint
+#   - review
+#
+# ruff:
+#   stage: lint
+#   image: python:3.12-slim
+#   script:
+#     - pip install ruff --quiet
+#     - ruff check --output-format json . > ruff.json || true
+#   artifacts:
+#     paths:
+#       - ruff.json
+#     expire_in: 1 hour
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#
+# code-review-with-lint:
+#   stage: review
+#   image: registry.gitlab.com/mishachepi/junior-test-review/junior:pydantic
+#   needs: [ruff]
+#   variables:
+#     OPENAI_API_KEY: $OPENAI_API_KEY
+#     GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+#     AGENT_BACKEND: pydantic
+#     MODEL_PROVIDER: openai
+#     MODEL_NAME: gpt-5.4-mini
+#     PROMPTS: security,logic,design
+#     ENABLE_LINTING: "false"
+#   script:
+#     - junior --publish -a lint_results=ruff.json
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#   allow_failure: true
