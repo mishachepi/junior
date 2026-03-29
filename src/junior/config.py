@@ -34,6 +34,7 @@ class CollectorBackend(_ModulePathEnum):
 class AgentBackend(_ModulePathEnum):
     PYDANTIC = "junior.agent.pydantic"
     CODEX = "junior.agent.codex"
+    CLAUDECODE = "junior.agent.claudecode"
     DEEPAGENTS = "junior.agent.deepagents"
 
 
@@ -201,8 +202,8 @@ class Settings(BaseSettings):
         return errors
 
     def _validate_review(self) -> list[str]:
-        if self.agent_backend == AgentBackend.CODEX:
-            return []  # codex manages its own auth
+        if self.agent_backend in (AgentBackend.CODEX, AgentBackend.CLAUDECODE):
+            return []  # these backends manage their own auth
 
         errors = []
         provider = self.resolved_provider
