@@ -10,6 +10,7 @@ See `README.md` for overview and quick start.
 | `docs/usage.md` | setup, CI, docker, env vars, CLI, prompts | Installation, CLI reference, configuration, prompts |
 | `docs/agent_backends.md` | backend, comparison, choose | Backend comparison table, when to use which |
 | `docs/agent_backends/pydantic.md` | pydantic, parallel, agents | Pydantic AI architecture, asyncio, tools |
+| `docs/agent_backends/claudecode.md` | claudecode, claude CLI, subprocess | Claude Code CLI architecture, structured output |
 | `docs/agent_backends/codex.md` | codex, CLI, subprocess | Codex CLI architecture, output schema |
 | `docs/agent_backends/deepagents.md` | deepagents, orchestrator, langchain | DeepAgents architecture, token breakdown |
 | `docs/adding_backends.md` | add backend, new backend, extend | How to add/remove backends |

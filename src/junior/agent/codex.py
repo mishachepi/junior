@@ -17,26 +17,12 @@ from junior.models import (
     CollectedContext,
     ReviewResult,
 )
-from junior.agent.core import build_user_message, read_project_instructions
+from junior.agent.core import build_review_prompt, build_user_message
 from junior.prompt_loader import Prompt
 
 logger = structlog.get_logger()
 
-# JSON Schema for ReviewResult — passed to codex via --output-schema
 _OUTPUT_SCHEMA = ReviewResult.model_json_schema()
-
-_BASE_RULES = """
-## Rules
-- Only report issues you are confident about
-- Focus on the CHANGED code (the diff), not pre-existing issues
-- Provide actionable suggestions with each finding
-- Be constructive, not pedantic
-- If the code looks good, say so — don't invent issues
-- Use "request_changes" only for critical or multiple high-severity issues
-- Use "approve" when the code is good or has only minor suggestions
-
-You can explore the repository files for additional context if needed.
-"""
 
 
 def _ensure_codex_auth(settings: Settings) -> None:
@@ -197,30 +183,10 @@ def _parse_token_usage(stderr: str) -> int:
 
 
 def _build_prompt(context: CollectedContext, settings: Settings, prompts: list[Prompt]) -> str:
-    """Build a compact prompt for codex — metadata only, no full diff.
-
-    Codex runs in the project directory with filesystem access,
-    so it can read files itself. We only provide:
-    - Review instructions (prompt bodies)
-    - MR metadata (title, description, branches)
-    - Changed file list with status
-    - Commit messages
-    - Diff stat summary
-    """
-    parts: list[str] = []
-
-    for p in prompts:
-        parts.append(f"## Analysis: {p.name}")
-        parts.append(p.body)
-        parts.append("")
-
-    parts.append(_BASE_RULES)
-
-    project_instructions = read_project_instructions(settings.ci_project_dir)
-    if project_instructions:
-        parts.append(f"## Project-Specific Instructions\n{project_instructions}\n")
-
-    parts.append("---\n")
-    parts.append(build_user_message(context, include_diff=False))
-
+    """Build a compact prompt for codex — instructions + metadata, no full diff."""
+    parts = [
+        build_review_prompt(prompts, settings.ci_project_dir),
+        "---\n",
+        build_user_message(context, include_diff=False),
+    ]
     return "\n".join(parts)
