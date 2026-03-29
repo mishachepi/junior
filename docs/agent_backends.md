@@ -5,11 +5,13 @@ Configured via `AGENT_BACKEND` env var. Default: `pydantic`.
 | Backend | Architecture | Tokens (hello world MR) |
 |---------|--------------|--------------------------|
 | `pydantic` | Parallel agents via asyncio.gather | ~5K |
+| `claudecode` | Single subprocess to `claude` CLI | ~120-240K |
 | `codex` | Single subprocess with JSON schema | ~22K |
 | `deepagents` | LLM orchestrator + subagents | ~88K |
 
 Detailed docs:
 - [pydantic.md](agent_backends/pydantic.md)
+- [claudecode.md](agent_backends/claudecode.md)
 - [codex.md](agent_backends/codex.md)
 - [deepagents.md](agent_backends/deepagents.md)
 
@@ -28,6 +30,7 @@ Detailed docs:
 |----------|---------|---------|-----|
 | CI pipeline (fast, cheap) | pydantic | common | parallel, low tokens |
 | CI pipeline (deeper) | pydantic | security,logic,design | parallel, cheap |
+| Claude Code (thorough) | claudecode | security,logic | file tools + git, structured output |
 | Large MR (50+ files) | deepagents | security,logic,design | explores repo |
 | Codex sandbox | codex | common | 1 subprocess call |
 
