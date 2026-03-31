@@ -55,6 +55,29 @@ code-review-pydantic-openai:
 
 
 # ==============================================================================
+# Option 2b: Claude Code CLI (subprocess to `claude` CLI)
+#
+# CI/CD Variables required:
+#   ANTHROPIC_API_KEY — sk-ant-...           (masked)
+#   GITLAB_BOT_TOKEN  — glpat-... (api scope) (masked)
+# Requires: claude CLI installed in image (npm install -g @anthropic-ai/claude-code)
+# ==============================================================================
+# code-review-claudecode:
+#   stage: review
+#   image: registry.gitlab.com/mishachepi/junior-test-review/junior:full
+#   variables:
+#     ANTHROPIC_API_KEY: $ANTHROPIC_API_KEY
+#     GITLAB_TOKEN: $GITLAB_BOT_TOKEN
+#     AGENT_BACKEND: claudecode
+#     PROMPTS: security,logic,design
+#   script:
+#     - junior --publish
+#   rules:
+#     - if: $CI_MERGE_REQUEST_IID
+#   allow_failure: true
+
+
+# ==============================================================================
 # Option 3: codex CLI backend
 # MODEL_PROVIDER not needed — codex reads OPENAI_API_KEY directly.
 #

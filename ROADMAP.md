@@ -35,6 +35,12 @@
 - Prompt validation: warn on missing frontmatter, empty body, excessive size
 - Prompt composition: `extends: security` to inherit built-ins
 
+### Split Pipeline (`--collect` / `--review`)
+- `junior --collect -o context.json` — run Phase 1 only, save CollectedContext as JSON
+- `junior --review context.json --prompts security,logic` — load context from file, run Phase 2+3
+- Enables separate CI jobs for collect and review
+- Useful for debugging, caching, and running multiple reviews on same context
+
 ### Other
 - Post-processing deduplication of duplicate findings across parallel agents
 - `--local` flag for working-tree review mode; `--staged` for staged-only changes
