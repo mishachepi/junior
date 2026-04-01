@@ -95,8 +95,7 @@ class Settings(BaseSettings):
     source: str = "auto"  # auto, staged, commit, branch
     max_file_size: int = 100_000
     max_concurrent_agents: int = 3
-    fail_on_critical: bool = False
-    log_level: str = "DEBUG"
+    log_level: str = "INFO"
 
     # Publish options
     publish_output: str = ""

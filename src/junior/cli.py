@@ -47,7 +47,7 @@ def _print_example_config() -> None:
         "AI Provider": ["model_provider", "model_name", "openai_api_key", "anthropic_api_key"],
         "Platform Tokens": ["gitlab_token", "github_token"],
         "Backend": ["agent_backend"],
-        "Review": ["prompts", "prompts_dir", "fail_on_critical", "max_file_size", "max_concurrent_agents", "log_level"],
+        "Review": ["prompts", "prompts_dir", "max_concurrent_agents"],
         "Output": ["publish_output"],
         "GitLab CI": [
             "ci_project_dir", "ci_project_id", "ci_merge_request_iid",
@@ -108,6 +108,10 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--backend",
         help="Agent backend: pydantic, claudecode, codex, deepagents (env: AGENT_BACKEND)",
+    )
+    parser.add_argument(
+        "--provider",
+        help="Model provider: openai, anthropic (env: MODEL_PROVIDER, auto-detected from API key)",
     )
     parser.add_argument(
         "--model",
@@ -189,6 +193,12 @@ def _parse_args() -> argparse.Namespace:
         "--output-file",
         help="Write review to file instead of stdout",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable debug logging",
+    )
     return parser.parse_args()
 
 
@@ -212,6 +222,8 @@ def main() -> None:
         cli_kwargs["_env_file"] = args.config
     if args.backend:
         cli_kwargs["agent_backend"] = args.backend
+    if args.provider:
+        cli_kwargs["model_provider"] = args.provider
     if args.model:
         cli_kwargs["model_name"] = args.model
     if args.source:
@@ -234,7 +246,8 @@ def main() -> None:
             print(f"config error: {err['msg']}", file=sys.stderr)
         sys.exit(2)
 
-    _setup_logging(settings.log_level)
+    log_level = "DEBUG" if args.verbose else settings.log_level
+    _setup_logging(log_level)
     logger = structlog.get_logger()
 
     # Load prompts (only when review phase will run)
@@ -382,7 +395,7 @@ def main() -> None:
             logger.error("publish failed", platform=platform, error=str(e))
             sys.exit(3)
 
-    if settings.fail_on_critical and result.has_blocking_issues:
+    if result.has_blocking_issues:
         logger.warning(
             "blocking issues found, failing pipeline",
             critical=result.critical_count,
