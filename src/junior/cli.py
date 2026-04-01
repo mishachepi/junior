@@ -10,7 +10,7 @@ from pydantic import ValidationError
 
 from junior import __version__
 from junior.config import Settings
-from junior.models import ReviewResult
+from junior.models import CollectedContext, ReviewResult
 from junior.prompt_loader import discover_prompts
 
 
@@ -159,6 +159,16 @@ def _parse_args() -> argparse.Namespace:
         help="Skip AI review phase (collect only)",
     )
     parser.add_argument(
+        "--collect",
+        action="store_true",
+        help="Run collect phase only, save CollectedContext as JSON. Use with -o.",
+    )
+    parser.add_argument(
+        "--review",
+        metavar="CONTEXT_FILE",
+        help="Load CollectedContext from JSON file, skip collect phase.",
+    )
+    parser.add_argument(
         "-o",
         "--output-file",
         help="Write review to file instead of stdout",
@@ -176,6 +186,10 @@ def main() -> None:
     if args.config == "__show__":
         _print_example_config()
         return
+
+    if args.collect and args.review:
+        print("error: --collect and --review are mutually exclusive", file=sys.stderr)
+        sys.exit(2)
 
     cli_kwargs: dict = {}
     if args.config:
@@ -205,9 +219,10 @@ def main() -> None:
     _setup_logging(settings.log_level)
     logger = structlog.get_logger()
 
-    # Load prompts (only when review is enabled)
+    # Load prompts (only when review phase will run)
     prompts = []
-    if not args.no_review:
+    needs_review = not args.no_review and not args.collect
+    if needs_review:
         prompt_names = args.prompts or settings.prompts
         try:
             from junior.prompt_loader import load_prompts, load_prompt_files
@@ -220,7 +235,7 @@ def main() -> None:
             sys.exit(2)
 
     config_errors = settings.preflight(
-        review=not args.no_review,
+        review=needs_review,
         publish=args.publish,
     )
     if config_errors:
@@ -242,23 +257,48 @@ def main() -> None:
     )
 
     # --- Phase 1: Collect ---
-    from junior.collect import collect
+    if args.review:
+        # Load pre-collected context from JSON file
+        try:
+            context = CollectedContext.model_validate_json(
+                Path(args.review).read_text(encoding="utf-8")
+            )
+        except FileNotFoundError:
+            logger.error("context file not found", path=args.review)
+            sys.exit(2)
+        except Exception as e:
+            logger.error("failed to load context file", path=args.review, error=str(e))
+            sys.exit(3)
+        logger.info(
+            "context loaded from file",
+            path=args.review,
+            changed_files=len(context.changed_files),
+        )
+    else:
+        from junior.collect import collect
 
-    logger.info("phase 1: collecting context")
-    try:
-        context = collect(settings)
-    except Exception as e:
-        logger.error("collection failed", error=str(e))
-        sys.exit(3)
+        logger.info("phase 1: collecting context")
+        try:
+            context = collect(settings)
+        except Exception as e:
+            logger.error("collection failed", error=str(e))
+            sys.exit(3)
 
-    logger.info(
-        "collection complete",
-        diff_size=len(context.full_diff),
-        changed_files=len(context.changed_files),
-        extra_context_keys=list(context.extra_context.keys()) or None,
-        mr_title=context.mr_title,
-        commits=len(context.commit_messages),
-    )
+        logger.info(
+            "collection complete",
+            diff_size=len(context.full_diff),
+            changed_files=len(context.changed_files),
+            extra_context_keys=list(context.extra_context.keys()) or None,
+            mr_title=context.mr_title,
+            commits=len(context.commit_messages),
+        )
+
+    # --collect: save context as JSON and exit
+    if args.collect:
+        output = settings.publish_output or "context.json"
+        Path(output).write_text(context.model_dump_json(indent=2), encoding="utf-8")
+        logger.info("context saved", path=output, changed_files=len(context.changed_files))
+        return
 
     if not context.full_diff:
         logger.info("no changes found, nothing to review")
@@ -267,8 +307,8 @@ def main() -> None:
     # --- Phase 2: AI review ---
     result: ReviewResult | None = None
 
-    if args.no_review:
-        logger.info("phase 2: skipped (--no-review)")
+    if not needs_review:
+        logger.info("phase 2: skipped")
     else:
         from junior.agent import review
 
