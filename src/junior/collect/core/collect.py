@@ -38,9 +38,10 @@ def collect_base(settings: Settings) -> CollectedContext:
     )
 
     # 1. Git diff
-    full_diff = get_diff(project_dir, target_branch, base_sha)
+    source = getattr(settings, "source", "auto")
+    full_diff, diff_desc = get_diff(project_dir, target_branch, base_sha, source=source)
     changed_files = parse_changed_files(full_diff, project_dir, settings.max_file_size)
-    logger.info("parsed diff", diff_size=len(full_diff), changed_files=len(changed_files))
+    logger.info("reviewing", source=diff_desc, diff_size=len(full_diff), changed_files=len(changed_files))
 
     # 2. Commit messages
     commit_messages = get_commit_messages(project_dir, target_branch, base_sha)

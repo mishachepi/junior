@@ -86,15 +86,21 @@ def _parse_args() -> argparse.Namespace:
         prog="junior",
         description="Junior — AI code review agent",
         epilog=(
-            "Quick start:\n"
-            "  junior --config > .env          # generate config, then edit .env\n"
-            "\n"
             "Examples:\n"
-            '  junior --context lang="Python 3.12 project" --prompts security,logic\n'
-            "  junior --prompt-file ./my_rules.md --publish\n"
-            "  junior --config my_project.env   # use custom config file\n"
+            "  junior --backend claudecode --prompts security   # review with Claude Code\n"
+            "  junior --source staged --prompts logic           # review staged changes\n"
+            "  junior --source commit                           # review last commit\n"
+            "  junior --dry-run                                 # show what would be reviewed\n"
+            "  junior --collect -o context.json                 # collect only\n"
+            "  junior --review context.json --prompts security  # review from file\n"
             "\n"
-            "Configuration is loaded from: env vars > .env > --config file."
+            "Source modes (--source):\n"
+            "  auto    smart detection: CI base, branch diff, or uncommitted (default)\n"
+            "  staged  staged changes only (git diff --cached)\n"
+            "  commit  last commit (git diff HEAD~1)\n"
+            "  branch  current branch vs target branch\n"
+            "\n"
+            "Config: env vars > .env > --config file. Run --config to generate."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -106,6 +112,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--model",
         help="Model name, e.g. claude-sonnet-4-6, gpt-5.4-mini (env: MODEL_NAME)",
+    )
+    parser.add_argument(
+        "--source",
+        choices=["auto", "staged", "commit", "branch"],
+        help="What to review: auto (default), staged, commit, branch",
     )
     parser.add_argument(
         "--project-dir",
@@ -159,6 +170,11 @@ def _parse_args() -> argparse.Namespace:
         help="Skip AI review phase (collect only)",
     )
     parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be reviewed without running AI.",
+    )
+    parser.add_argument(
         "--collect",
         action="store_true",
         help="Run collect phase only, save CollectedContext as JSON. Use with -o.",
@@ -198,6 +214,8 @@ def main() -> None:
         cli_kwargs["agent_backend"] = args.backend
     if args.model:
         cli_kwargs["model_name"] = args.model
+    if args.source:
+        cli_kwargs["source"] = args.source
     if args.project_dir:
         cli_kwargs["ci_project_dir"] = args.project_dir
     if args.target_branch:
@@ -221,7 +239,7 @@ def main() -> None:
 
     # Load prompts (only when review phase will run)
     prompts = []
-    needs_review = not args.no_review and not args.collect
+    needs_review = not args.no_review and not args.collect and not args.dry_run
     if needs_review:
         prompt_names = args.prompts or settings.prompts
         try:
@@ -292,6 +310,19 @@ def main() -> None:
             mr_title=context.mr_title,
             commits=len(context.commit_messages),
         )
+
+    # --dry-run: show what would be reviewed and exit
+    if args.dry_run:
+        print(f"Reviewing: {len(context.changed_files)} files, {len(context.full_diff)} chars diff")
+        if context.mr_title:
+            print(f"MR: {context.mr_title}")
+        if context.source_branch:
+            print(f"Branch: {context.source_branch} -> {context.target_branch}")
+        for f in context.changed_files:
+            added = sum(1 for l in f.diff.splitlines() if l.startswith("+") and not l.startswith("+++")) if f.diff else 0
+            removed = sum(1 for l in f.diff.splitlines() if l.startswith("-") and not l.startswith("---")) if f.diff else 0
+            print(f"  {f.status.value:8s} {f.path} +{added}/-{removed}")
+        return
 
     # --collect: save context as JSON and exit
     if args.collect:
