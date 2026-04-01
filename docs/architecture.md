@@ -87,6 +87,7 @@ class CollectorBackend(str, Enum):
 
 class AgentBackend(str, Enum):
     PYDANTIC   = "junior.agent.pydantic"
+    CLAUDECODE = "junior.agent.claudecode"
     CODEX      = "junior.agent.codex"
     DEEPAGENTS = "junior.agent.deepagents"
 
@@ -162,6 +163,6 @@ src/junior/
 | Code | Meaning |
 |------|---------|
 | 0 | Review completed |
-| 1 | Blocking issues found (only with `FAIL_ON_CRITICAL=true`) |
+| 1 | Blocking issues found (critical or multiple high-severity) |
 | 2 | Configuration error |
 | 3 | Runtime error |
