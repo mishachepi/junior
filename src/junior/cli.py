@@ -100,6 +100,14 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
+        "--backend",
+        help="Agent backend: pydantic, claudecode, codex, deepagents (env: AGENT_BACKEND)",
+    )
+    parser.add_argument(
+        "--model",
+        help="Model name, e.g. claude-sonnet-4-6, gpt-5.4-mini (env: MODEL_NAME)",
+    )
+    parser.add_argument(
         "--project-dir",
         help="Path to git repository (env: CI_PROJECT_DIR, default: '.')",
     )
@@ -172,6 +180,10 @@ def main() -> None:
     cli_kwargs: dict = {}
     if args.config:
         cli_kwargs["_env_file"] = args.config
+    if args.backend:
+        cli_kwargs["agent_backend"] = args.backend
+    if args.model:
+        cli_kwargs["model_name"] = args.model
     if args.project_dir:
         cli_kwargs["ci_project_dir"] = args.project_dir
     if args.target_branch:
