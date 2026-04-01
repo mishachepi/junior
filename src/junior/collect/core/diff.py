@@ -10,72 +10,81 @@ from junior.models import ChangedFile, FileStatus
 logger = structlog.get_logger()
 
 
-def get_diff(project_dir: Path, target_branch: str, base_sha: str | None) -> str:
-    """Get unified diff using the best available strategy.
+def get_diff(
+    project_dir: Path,
+    target_branch: str,
+    base_sha: str | None,
+    *,
+    source: str = "auto",
+) -> tuple[str, str]:
+    """Get unified diff and a human-readable description of what is being reviewed.
 
-    Branch-based strategies (MR/PR context):
-    1. base_sha...HEAD              — CI exact merge base
-    2. target_branch...HEAD         — local branch, three-dot
-    3. origin/target_branch...HEAD  — after remote fetch
-    4. target_branch HEAD           — two-dot fallback
+    Returns (diff_text, description) where description is e.g.
+    "staged changes" or "branch feat/x vs main".
 
-    If a branch strategy succeeds (even with empty output), we stop.
-    Empty diff from a valid branch comparison = no changes.
-
-    Local fallbacks (only if all branch strategies fail):
-    5. HEAD                         — uncommitted changes (staged + unstaged)
-    6. --cached                     — staged only (no commits yet)
+    Source modes:
+    - "staged"  — git diff --cached
+    - "commit"  — git diff HEAD~1
+    - "branch"  — target_branch...HEAD
+    - "auto"    — smart detection (default): CI base_sha, branch, uncommitted
     """
-    # base_sha from CI is always authoritative — try it first regardless of branch
+    if source == "staged":
+        diff = _run_git(project_dir, ["diff", "--cached"]) or ""
+        return diff, "staged changes"
+
+    if source == "commit":
+        diff = _run_git(project_dir, ["diff", "HEAD~1"]) or ""
+        msg = _run_git(project_dir, ["log", "-1", "--format=%h %s"])
+        desc = f"commit {msg.strip()}" if msg else "last commit"
+        return diff, desc
+
+    if source == "branch":
+        diff = _run_git(project_dir, ["diff", f"{target_branch}...HEAD"]) or ""
+        current = (_run_git(project_dir, ["rev-parse", "--abbrev-ref", "HEAD"]) or "").strip()
+        return diff, f"branch {current} vs {target_branch}"
+
+    # --- source == "auto" ---
+
+    current_branch = (_run_git(project_dir, ["rev-parse", "--abbrev-ref", "HEAD"]) or "").strip()
+    on_target = current_branch == target_branch
+
+    # base_sha from CI is always authoritative
     if base_sha:
         diff = _run_git(project_dir, ["diff", f"{base_sha}...HEAD"])
         if diff is not None:
-            logger.info("reviewing", strategy=f"{base_sha}...HEAD", has_changes=bool(diff.strip()))
-            return diff
-
-    # Check if we're on the target branch (no MR context)
-    current_branch = _run_git(project_dir, ["rev-parse", "--abbrev-ref", "HEAD"])
-    on_target = current_branch is not None and current_branch.strip() == target_branch
+            return diff, f"branch {current_branch} vs {target_branch} (CI base)"
 
     # Branch-based strategies (skip if on target branch)
     if not on_target:
         diff = _run_git(project_dir, ["diff", f"{target_branch}...HEAD"])
         if diff is not None and diff.strip():
-            logger.info("reviewing", strategy=f"{target_branch}...HEAD")
-            return diff
+            return diff, f"branch {current_branch} vs {target_branch}"
 
         if diff is not None and not diff.strip():
             local = _run_git(project_dir, ["diff", "HEAD"])
             if local is not None and local.strip():
-                logger.info("reviewing", strategy=f"{target_branch}...HEAD + uncommitted")
-                return diff + local
+                return diff + local, f"branch {current_branch} vs {target_branch} + uncommitted"
 
         _run_git(project_dir, ["fetch", "origin", target_branch], allow_failure=True)
         diff = _run_git(project_dir, ["diff", f"origin/{target_branch}...HEAD"])
         if diff is not None and diff.strip():
-            logger.info("reviewing", strategy=f"origin/{target_branch}...HEAD")
-            return diff
+            return diff, f"branch {current_branch} vs origin/{target_branch}"
 
         diff = _run_git(project_dir, ["diff", target_branch, "HEAD"])
         if diff is not None and diff.strip():
-            logger.info("reviewing", strategy=f"{target_branch} HEAD")
-            return diff
+            return diff, f"branch {current_branch} vs {target_branch}"
 
-    # --- Local fallbacks ---
-    logger.info("reviewing local changes", on_target_branch=on_target)
-
+    # Local fallbacks
     diff = _run_git(project_dir, ["diff", "HEAD"])
     if diff is not None and diff.strip():
-        logger.info("reviewing", strategy="HEAD (uncommitted)")
-        return diff
+        return diff, "uncommitted changes"
 
     diff = _run_git(project_dir, ["diff", "--cached"])
     if diff is not None and diff.strip():
-        logger.info("reviewing", strategy="--cached (staged only)")
-        return diff
+        return diff, "staged changes"
 
     logger.warning("no diff found with any strategy")
-    return ""
+    return "", "no changes"
 
 
 def parse_changed_files(

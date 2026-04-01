@@ -92,10 +92,10 @@ class Settings(BaseSettings):
     model_provider: str = ""
     prompts: str = "security,logic,design"
     prompts_dir: str = ""
+    source: str = "auto"  # auto, staged, commit, branch
     max_file_size: int = 100_000
-    max_concurrent_agents: int = 3 # TODO: rate limit per agent instead of it
-    fail_on_critical: bool = False
-    log_level: str = "DEBUG"
+    max_concurrent_agents: int = 3
+    log_level: str = "INFO"
 
     # Publish options
     publish_output: str = ""

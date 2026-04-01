@@ -13,34 +13,35 @@ uv tool install "junior[all]"       # all backends + gitlab
 ## Quick Start
 
 ```bash
-# Generate config template, then edit with your API keys
-junior --config > .env
+# Review current changes with Claude Code
+junior --backend claudecode --prompts security
 
-# Review current repo
-junior --target-branch main
+# Review staged changes before committing
+junior --source staged --backend pydantic --prompts logic
 
-# Review with specific prompts
-junior --prompts security,logic
+# Review last commit
+junior --source commit --prompts security,logic -o review.md
 
-# Save to file
-junior --target-branch main -o review.md
+# See what would be reviewed without running AI
+junior --dry-run
 
-# Publish to GitLab (requires GITLAB_TOKEN + junior[gitlab])
-junior --publish
+# Collect context and review separately
+junior --collect -o context.json
+junior --review context.json --backend claudecode --prompts security
 
-# Publish to GitHub (requires GITHUB_TOKEN)
+# Publish to GitLab/GitHub
 junior --publish
 ```
 
 ## How It Works
 
 ```
-Collect (deterministic)  ->  AI Review  ->  Publish
-------------------------    ----------    ------------
-git diff + changed files    pydantic      stdout / file
-commit messages             codex         GitLab MR notes
---context / --context-file  deepagents    GitHub PR comments
-platform API metadata
+Collect (deterministic)  ->  AI Review       ->  Publish
+------------------------    ---------------    ------------
+git diff + changed files    pydantic (SDK)     stdout / file
+commit messages             claudecode (CLI)   GitLab MR notes
+--context / --context-file  codex (CLI)        GitHub PR comments
+platform API metadata       deepagents (LLM)
 ```
 
 ## CI
@@ -65,17 +66,25 @@ code-review:
 ```
 junior [options]
 
-  --config [FILE]            Generate .env template (no arg) or load config file
-  --project-dir PATH         Git repo path (default: ".")
-  --target-branch BRANCH     Diff target (default: "main")
-  --prompts NAMES            Comma-separated: security, logic, design, docs, common
-  --prompt-file FILE         Extra .md prompt file. Repeatable
-  --context KEY="text"       Extra instructions for AI. Repeatable
-  --context-file KEY=path    Data files for context. Repeatable
-  --publish                  Post to GitLab/GitHub (auto-detected from tokens)
-  --no-review                Skip AI review (collect only)
-  -o, --output-file PATH     Write to file instead of stdout
-  --version                  Show version
+  --backend BACKEND        Agent backend: pydantic, claudecode, codex, deepagents
+  --provider PROVIDER      Model provider: openai, anthropic (auto-detected from key)
+  --model MODEL            Model name, e.g. claude-sonnet-4-6, gpt-5.4-mini
+  --source MODE            What to review: auto (default), staged, commit, branch
+  --project-dir PATH       Git repo path (default: ".")
+  --target-branch BRANCH   Diff target (default: "main")
+  --prompts NAMES          Comma-separated: security, logic, design, docs, common
+  --prompt-file FILE       Extra .md prompt file. Repeatable
+  --context KEY="text"     Extra instructions for AI. Repeatable
+  --context-file KEY=path  Data files for context. Repeatable
+  --dry-run                Show what would be reviewed, without running AI
+  --collect                Collect only, save context as JSON (use with -o)
+  --review CONTEXT_FILE    Load context from JSON file, skip collect phase
+  --publish                Post to GitLab/GitHub (auto-detected from tokens)
+  --no-review              Skip AI review (collect only)
+  -o, --output-file PATH   Write to file instead of stdout
+  -v, --verbose            Enable debug logging
+  --config [FILE]          Generate .env template (no arg) or load config file
+  --version                Show version
 ```
 
 ## Configuration
@@ -85,9 +94,7 @@ junior --config > .env    # generate template, then edit
 ```
 
 All settings via env vars, `.env` file, or `--config FILE`.
-
-When `--config FILE` is used, it **replaces** the default `.env` (not merged).
-Env vars always take priority over any file.
+CLI flags take priority over env vars. Env vars take priority over `.env`.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -97,13 +104,13 @@ Env vars always take priority over any file.
 | `MODEL_NAME` | `gpt-5.4-mini` / `claude-opus-4-6` | LLM model identifier |
 | `GITLAB_TOKEN` | — | GitLab token (api scope) |
 | `GITHUB_TOKEN` | — | GitHub token |
-| `AGENT_BACKEND` | `pydantic` | `pydantic`, `codex`, `deepagents` |
+| `AGENT_BACKEND` | `pydantic` | `pydantic`, `claudecode`, `codex`, `deepagents` |
 | `PROMPTS` | `security,logic,design` | Comma-separated prompt names |
-| `PROMPTS_DIR` | — | Extra directory with custom .md prompts |
-| `FAIL_ON_CRITICAL` | `false` | Exit code 1 on critical findings |
-| `MAX_FILE_SIZE` | `100000` | Skip files above this size (bytes) |
+| `SOURCE` | `auto` | `auto`, `staged`, `commit`, `branch` |
+| `MAX_CONCURRENT_AGENTS` | `3` | Limit parallel sub-agents (rate limit protection) |
 | `PUBLISH_OUTPUT` | — | Write review to file instead of stdout |
-| `LOG_LEVEL` | `DEBUG` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+
+Exit codes: 0=success, 1=blocking issues found, 2=config error, 3=runtime error.
 
 ## Docs
 

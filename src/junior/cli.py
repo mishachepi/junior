@@ -10,7 +10,7 @@ from pydantic import ValidationError
 
 from junior import __version__
 from junior.config import Settings
-from junior.models import ReviewResult
+from junior.models import CollectedContext, ReviewResult
 from junior.prompt_loader import discover_prompts
 
 
@@ -47,7 +47,7 @@ def _print_example_config() -> None:
         "AI Provider": ["model_provider", "model_name", "openai_api_key", "anthropic_api_key"],
         "Platform Tokens": ["gitlab_token", "github_token"],
         "Backend": ["agent_backend"],
-        "Review": ["prompts", "prompts_dir", "fail_on_critical", "max_file_size", "max_concurrent_agents", "log_level"],
+        "Review": ["prompts", "prompts_dir", "max_concurrent_agents"],
         "Output": ["publish_output"],
         "GitLab CI": [
             "ci_project_dir", "ci_project_id", "ci_merge_request_iid",
@@ -86,19 +86,42 @@ def _parse_args() -> argparse.Namespace:
         prog="junior",
         description="Junior — AI code review agent",
         epilog=(
-            "Quick start:\n"
-            "  junior --config > .env          # generate config, then edit .env\n"
-            "\n"
             "Examples:\n"
-            '  junior --context lang="Python 3.12 project" --prompts security,logic\n'
-            "  junior --prompt-file ./my_rules.md --publish\n"
-            "  junior --config my_project.env   # use custom config file\n"
+            "  junior --backend claudecode --prompts security   # review with Claude Code\n"
+            "  junior --source staged --prompts logic           # review staged changes\n"
+            "  junior --source commit                           # review last commit\n"
+            "  junior --dry-run                                 # show what would be reviewed\n"
+            "  junior --collect -o context.json                 # collect only\n"
+            "  junior --review context.json --prompts security  # review from file\n"
             "\n"
-            "Configuration is loaded from: env vars > .env > --config file."
+            "Source modes (--source):\n"
+            "  auto    smart detection: CI base, branch diff, or uncommitted (default)\n"
+            "  staged  staged changes only (git diff --cached)\n"
+            "  commit  last commit (git diff HEAD~1)\n"
+            "  branch  current branch vs target branch\n"
+            "\n"
+            "Config: env vars > .env > --config file. Run --config to generate."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--backend",
+        help="Agent backend: pydantic, claudecode, codex, deepagents (env: AGENT_BACKEND)",
+    )
+    parser.add_argument(
+        "--provider",
+        help="Model provider: openai, anthropic (env: MODEL_PROVIDER, auto-detected from API key)",
+    )
+    parser.add_argument(
+        "--model",
+        help="Model name, e.g. claude-sonnet-4-6, gpt-5.4-mini (env: MODEL_NAME)",
+    )
+    parser.add_argument(
+        "--source",
+        choices=["auto", "staged", "commit", "branch"],
+        help="What to review: auto (default), staged, commit, branch",
+    )
     parser.add_argument(
         "--project-dir",
         help="Path to git repository (env: CI_PROJECT_DIR, default: '.')",
@@ -151,9 +174,30 @@ def _parse_args() -> argparse.Namespace:
         help="Skip AI review phase (collect only)",
     )
     parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be reviewed without running AI.",
+    )
+    parser.add_argument(
+        "--collect",
+        action="store_true",
+        help="Run collect phase only, save CollectedContext as JSON. Use with -o.",
+    )
+    parser.add_argument(
+        "--review",
+        metavar="CONTEXT_FILE",
+        help="Load CollectedContext from JSON file, skip collect phase.",
+    )
+    parser.add_argument(
         "-o",
         "--output-file",
         help="Write review to file instead of stdout",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable debug logging",
     )
     return parser.parse_args()
 
@@ -169,9 +213,21 @@ def main() -> None:
         _print_example_config()
         return
 
+    if args.collect and args.review:
+        print("error: --collect and --review are mutually exclusive", file=sys.stderr)
+        sys.exit(2)
+
     cli_kwargs: dict = {}
     if args.config:
         cli_kwargs["_env_file"] = args.config
+    if args.backend:
+        cli_kwargs["agent_backend"] = args.backend
+    if args.provider:
+        cli_kwargs["model_provider"] = args.provider
+    if args.model:
+        cli_kwargs["model_name"] = args.model
+    if args.source:
+        cli_kwargs["source"] = args.source
     if args.project_dir:
         cli_kwargs["ci_project_dir"] = args.project_dir
     if args.target_branch:
@@ -190,12 +246,14 @@ def main() -> None:
             print(f"config error: {err['msg']}", file=sys.stderr)
         sys.exit(2)
 
-    _setup_logging(settings.log_level)
+    log_level = "DEBUG" if args.verbose else settings.log_level
+    _setup_logging(log_level)
     logger = structlog.get_logger()
 
-    # Load prompts (only when review is enabled)
+    # Load prompts (only when review phase will run)
     prompts = []
-    if not args.no_review:
+    needs_review = not args.no_review and not args.collect and not args.dry_run
+    if needs_review:
         prompt_names = args.prompts or settings.prompts
         try:
             from junior.prompt_loader import load_prompts, load_prompt_files
@@ -208,7 +266,7 @@ def main() -> None:
             sys.exit(2)
 
     config_errors = settings.preflight(
-        review=not args.no_review,
+        review=needs_review,
         publish=args.publish,
     )
     if config_errors:
@@ -230,23 +288,61 @@ def main() -> None:
     )
 
     # --- Phase 1: Collect ---
-    from junior.collect import collect
+    if args.review:
+        # Load pre-collected context from JSON file
+        try:
+            context = CollectedContext.model_validate_json(
+                Path(args.review).read_text(encoding="utf-8")
+            )
+        except FileNotFoundError:
+            logger.error("context file not found", path=args.review)
+            sys.exit(2)
+        except Exception as e:
+            logger.error("failed to load context file", path=args.review, error=str(e))
+            sys.exit(3)
+        logger.info(
+            "context loaded from file",
+            path=args.review,
+            changed_files=len(context.changed_files),
+        )
+    else:
+        from junior.collect import collect
 
-    logger.info("phase 1: collecting context")
-    try:
-        context = collect(settings)
-    except Exception as e:
-        logger.error("collection failed", error=str(e))
-        sys.exit(3)
+        logger.info("phase 1: collecting context")
+        try:
+            context = collect(settings)
+        except Exception as e:
+            logger.error("collection failed", error=str(e))
+            sys.exit(3)
 
-    logger.info(
-        "collection complete",
-        diff_size=len(context.full_diff),
-        changed_files=len(context.changed_files),
-        extra_context_keys=list(context.extra_context.keys()) or None,
-        mr_title=context.mr_title,
-        commits=len(context.commit_messages),
-    )
+        logger.info(
+            "collection complete",
+            diff_size=len(context.full_diff),
+            changed_files=len(context.changed_files),
+            extra_context_keys=list(context.extra_context.keys()) or None,
+            mr_title=context.mr_title,
+            commits=len(context.commit_messages),
+        )
+
+    # --dry-run: show what would be reviewed and exit
+    if args.dry_run:
+        print(f"Reviewing: {len(context.changed_files)} files, {len(context.full_diff)} chars diff")
+        if context.mr_title:
+            print(f"MR: {context.mr_title}")
+        if context.source_branch:
+            print(f"Branch: {context.source_branch} -> {context.target_branch}")
+        for f in context.changed_files:
+            added = sum(1 for l in f.diff.splitlines() if l.startswith("+") and not l.startswith("+++")) if f.diff else 0
+            removed = sum(1 for l in f.diff.splitlines() if l.startswith("-") and not l.startswith("---")) if f.diff else 0
+            print(f"  {f.status.value:8s} {f.path} +{added}/-{removed}")
+        return
+
+    # --collect: save context as JSON and exit
+    if args.collect:
+        output = settings.publish_output or "context.json"
+        Path(output).write_text(context.model_dump_json(indent=2), encoding="utf-8")
+        logger.info("context saved", path=output, changed_files=len(context.changed_files))
+        return
 
     if not context.full_diff:
         logger.info("no changes found, nothing to review")
@@ -255,8 +351,8 @@ def main() -> None:
     # --- Phase 2: AI review ---
     result: ReviewResult | None = None
 
-    if args.no_review:
-        logger.info("phase 2: skipped (--no-review)")
+    if not needs_review:
+        logger.info("phase 2: skipped")
     else:
         from junior.agent import review
 
@@ -299,7 +395,7 @@ def main() -> None:
             logger.error("publish failed", platform=platform, error=str(e))
             sys.exit(3)
 
-    if settings.fail_on_critical and result.has_blocking_issues:
+    if result.has_blocking_issues:
         logger.warning(
             "blocking issues found, failing pipeline",
             critical=result.critical_count,
