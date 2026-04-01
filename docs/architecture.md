@@ -36,9 +36,10 @@ flowchart TD
         M[load prompts/*.md] --> N[build user message]
         N --> O{AGENT_BACKEND?}
         O -->|pydantic| P[parallel agents\nvia asyncio.gather]
+        O -->|claudecode| Q2[claude code CLI\nsubprocess]
         O -->|codex| Q[codex exec\nsubprocess]
         O -->|deepagents| R[LLM orchestrator\n+ subagents]
-        P & Q & R --> S([ReviewResult])
+        P & Q2 & Q & R --> S([ReviewResult])
     end
 
     S --> T
@@ -66,6 +67,7 @@ junior --prompts common
 │   ├─ build user message (context_builder.py)
 │   └─ dispatch to agent backend:
 │       ├─ pydantic   → parallel agents via asyncio.gather
+│       ├─ claudecode → claude code CLI subprocess
 │       ├─ codex      → single codex exec subprocess
 │       └─ deepagents → LLM orchestrator + subagents
 │
