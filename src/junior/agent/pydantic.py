@@ -12,6 +12,7 @@ from pathlib import Path
 import structlog
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.usage import UsageLimits
 
 from junior.config import Settings
 from junior.models import (
@@ -152,6 +153,11 @@ async def _review_async(
     deps = ReviewDeps(project_dir=settings.ci_project_dir, max_file_size=settings.max_file_size)
     user_msg = build_user_message(context)
     project_instructions = read_project_instructions(settings.ci_project_dir)
+    usage_limits = (
+        UsageLimits(response_tokens_limit=settings.max_tokens_per_agent)
+        if settings.max_tokens_per_agent
+        else None
+    )
 
     logger.info(
         "invoking pydantic-ai review",
@@ -184,7 +190,7 @@ async def _review_async(
 
     async def _run_with_limit(agent):
         async with semaphore:
-            return await agent.run(user_msg, deps=deps)
+            return await agent.run(user_msg, deps=deps, usage_limits=usage_limits)
 
     raw_results = await asyncio.gather(
         *(_run_with_limit(agent) for agent in agents),
