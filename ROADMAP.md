@@ -38,4 +38,3 @@
 ### Other
 - Post-processing deduplication of duplicate findings across parallel agents
 - DeepAgents: diff chunking for large diffs, fix single-subagent orchestrator, retry logic
-- Pydantic: token budget management per agent

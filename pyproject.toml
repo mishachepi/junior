@@ -1,6 +1,6 @@
 [project]
 name = "junior"
-version = "0.1.0"
+version = "0.1.1"
 description = "AI code review agent for GitLab and GitHub CI"
 license = "MIT"
 requires-python = ">=3.12"
