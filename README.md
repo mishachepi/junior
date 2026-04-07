@@ -98,7 +98,6 @@ junior [options]
   --collect                Collect only, save context as JSON (use with -o)
   --review CONTEXT_FILE    Load context from JSON file, skip collect phase
   --publish                Post to GitLab/GitHub (auto-detected from tokens)
-  --no-review              Skip AI review (collect only)
   -o, --output-file PATH   Write to file instead of stdout
   -v, --verbose            Enable debug logging
   --config [FILE]          Generate .env template (no arg) or load config file

@@ -10,7 +10,7 @@ from pydantic import ValidationError
 
 from junior import __version__
 from junior.config import Settings
-from junior.models import CollectedContext, ReviewResult
+from junior.models import CollectedContext
 from junior.prompt_loader import discover_prompts
 
 
@@ -172,11 +172,6 @@ def _parse_args() -> argparse.Namespace:
         help="Also post review to GitLab/GitHub (auto-detect from tokens)",
     )
     parser.add_argument(
-        "--no-review",
-        action="store_true",
-        help="Skip AI review phase (collect only)",
-    )
-    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be reviewed without running AI.",
@@ -258,7 +253,7 @@ def main() -> None:
 
     # Load prompts (only when review phase will run)
     prompts = []
-    needs_review = not args.no_review and not args.collect and not args.dry_run
+    needs_review = not args.collect and not args.dry_run
     if needs_review:
         prompt_names = args.prompts or settings.prompts
         try:
@@ -338,8 +333,8 @@ def main() -> None:
         if context.source_branch:
             print(f"Branch: {context.source_branch} -> {context.target_branch}")
         for f in context.changed_files:
-            added = sum(1 for l in f.diff.splitlines() if l.startswith("+") and not l.startswith("+++")) if f.diff else 0
-            removed = sum(1 for l in f.diff.splitlines() if l.startswith("-") and not l.startswith("---")) if f.diff else 0
+            added = sum(1 for line in f.diff.splitlines() if line.startswith("+") and not line.startswith("+++")) if f.diff else 0
+            removed = sum(1 for line in f.diff.splitlines() if line.startswith("-") and not line.startswith("---")) if f.diff else 0
             print(f"  {f.status.value:8s} {f.path} +{added}/-{removed}")
         return
 
@@ -355,34 +350,26 @@ def main() -> None:
         return
 
     # --- Phase 2: AI review ---
-    result: ReviewResult | None = None
+    from junior.agent import review
 
-    if not needs_review:
-        logger.info("phase 2: skipped")
-    else:
-        from junior.agent import review
-
+    logger.info(
+        "phase 2: AI review starting",
+        backend=settings.agent_backend.name.lower(),
+        prompts=len(prompts),
+    )
+    try:
+        result = review(context, settings, prompts)
         logger.info(
-            "phase 2: AI review starting",
-            backend=settings.agent_backend.name.lower(),
-            prompts=len(prompts),
+            "review complete",
+            findings=len(result.comments),
+            recommendation=result.recommendation.value,
+            tokens_used=result.tokens_used,
+            critical=result.critical_count,
+            high=result.high_count,
         )
-        try:
-            result = review(context, settings, prompts)
-            logger.info(
-                "review complete",
-                findings=len(result.comments),
-                recommendation=result.recommendation.value,
-                tokens_used=result.tokens_used,
-                critical=result.critical_count,
-                high=result.high_count,
-            )
-        except Exception as e:
-            logger.error("AI review failed", error=str(e))
-            sys.exit(3)
-
-    if result is None:
-        result = ReviewResult(summary="", recommendation="comment")
+    except Exception as e:
+        logger.error("AI review failed", error=str(e))
+        sys.exit(3)
 
     # --- Phase 3: Output ---
     from junior.publish.local import post_review as local_publish
