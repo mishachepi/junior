@@ -123,8 +123,11 @@ def _parse_args() -> argparse.Namespace:
         help="What to review: auto (default), staged, commit, branch",
     )
     parser.add_argument(
-        "--project-dir",
-        help="Path to git repository (env: CI_PROJECT_DIR, default: '.')",
+        "project_dir",
+        nargs="?",
+        default=None,
+        metavar="PROJECT_DIR",
+        help="Path to git repository (default: current directory)",
     )
     parser.add_argument(
         "--target-branch",
@@ -199,6 +202,9 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable debug logging",
     )
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
     return parser.parse_args()
 
 
