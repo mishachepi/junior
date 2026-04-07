@@ -5,19 +5,28 @@ AI-powered code review for GitLab MRs and GitHub PRs. Runs as CLI or in CI.
 ## Install
 
 ```bash
-uv tool install junior              # default (pydantic backend)
-uv tool install "junior[gitlab]"    # + GitLab API support
-uv tool install "junior[all]"       # all backends + gitlab
+# From GitHub
+uv tool install "junior @ git+https://github.com/mishachepi/junior.git"
+uv tool install "junior[gitlab] @ git+https://github.com/mishachepi/junior.git"
+uv tool install "junior[all] @ git+https://github.com/mishachepi/junior.git"
+
+# From local clone
+git clone https://github.com/mishachepi/junior.git && cd junior
+uv tool install .
 ```
 
 ## Quick Start
 
 ```bash
-# Review current changes with Claude Code
+# Review current changes with Claude Code (uses claude CLI subscription)
 junior --backend claudecode --prompts security
 
-# Review staged changes before committing
-junior --source staged --backend pydantic --prompts logic
+# Review with Codex (uses codex CLI subscription)
+junior --backend codex --prompts security
+
+# Review with pydantic backend (requires API key)
+export ANTHROPIC_API_KEY=sk-ant-...   # or OPENAI_API_KEY
+junior --backend pydantic --source staged --prompts logic
 
 # Review last commit
 junior --source commit --prompts security,logic -o review.md
@@ -32,6 +41,15 @@ junior --review context.json --backend claudecode --prompts security
 # Publish to GitLab/GitHub
 junior --publish
 ```
+
+### Prerequisites by backend
+
+| Backend | Requires |
+|---------|----------|
+| `claudecode` | `claude` CLI installed and authenticated (subscription or API key) |
+| `codex` | `codex` CLI installed and authenticated (subscription or API key) |
+| `pydantic` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` env var |
+| `deepagents` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` env var |
 
 ## How It Works
 
@@ -64,7 +82,7 @@ code-review:
 ## CLI
 
 ```
-junior [options]
+junior [PROJECT_DIR] [options]
 
   --backend BACKEND        Agent backend: pydantic, claudecode, codex, deepagents
   --provider PROVIDER      Model provider: openai, anthropic (auto-detected from key)
@@ -80,7 +98,6 @@ junior [options]
   --collect                Collect only, save context as JSON (use with -o)
   --review CONTEXT_FILE    Load context from JSON file, skip collect phase
   --publish                Post to GitLab/GitHub (auto-detected from tokens)
-  --no-review              Skip AI review (collect only)
   -o, --output-file PATH   Write to file instead of stdout
   -v, --verbose            Enable debug logging
   --config [FILE]          Generate .env template (no arg) or load config file
@@ -108,6 +125,7 @@ CLI flags take priority over env vars. Env vars take priority over `.env`.
 | `PROMPTS` | `security,logic,design` | Comma-separated prompt names |
 | `SOURCE` | `auto` | `auto`, `staged`, `commit`, `branch` |
 | `MAX_CONCURRENT_AGENTS` | `3` | Limit parallel sub-agents (rate limit protection) |
+| `MAX_TOKENS_PER_AGENT` | `0` | Response token limit per sub-agent, pydantic backend only (0 = no limit) |
 | `PUBLISH_OUTPUT` | — | Write review to file instead of stdout |
 
 Exit codes: 0=success, 1=blocking issues found, 2=config error, 3=runtime error.
