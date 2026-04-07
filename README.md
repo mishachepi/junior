@@ -82,7 +82,7 @@ code-review:
 ## CLI
 
 ```
-junior [options]
+junior [PROJECT_DIR] [options]
 
   --backend BACKEND        Agent backend: pydantic, claudecode, codex, deepagents
   --provider PROVIDER      Model provider: openai, anthropic (auto-detected from key)
@@ -125,7 +125,7 @@ CLI flags take priority over env vars. Env vars take priority over `.env`.
 | `PROMPTS` | `security,logic,design` | Comma-separated prompt names |
 | `SOURCE` | `auto` | `auto`, `staged`, `commit`, `branch` |
 | `MAX_CONCURRENT_AGENTS` | `3` | Limit parallel sub-agents (rate limit protection) |
-| `MAX_TOKENS_PER_AGENT` | `0` | Response token limit per sub-agent (0 = no limit) |
+| `MAX_TOKENS_PER_AGENT` | `0` | Response token limit per sub-agent, pydantic backend only (0 = no limit) |
 | `PUBLISH_OUTPUT` | — | Write review to file instead of stdout |
 
 Exit codes: 0=success, 1=blocking issues found, 2=config error, 3=runtime error.
