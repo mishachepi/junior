@@ -1,3 +1,5 @@
-"""Junior — AI code review agent for GitLab CI."""
+"""Junior — AI code review agent for GitLab and GitHub CI."""
 
-__version__ = "0.1.0"
+from importlib.metadata import version
+
+__version__ = version("junior")
