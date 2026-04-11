@@ -89,8 +89,8 @@ class CollectorBackend(str, Enum):
 
 class AgentBackend(str, Enum):
     PYDANTIC   = "junior.agent.pydantic"
-    CLAUDECODE = "junior.agent.claudecode"
     CODEX      = "junior.agent.codex"
+    CLAUDECODE = "junior.agent.claudecode"
     DEEPAGENTS = "junior.agent.deepagents"
 
 class PublishBackend(str, Enum):

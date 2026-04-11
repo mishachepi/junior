@@ -112,7 +112,6 @@ jobs:
 | `--collect` | — | Collect only, save context as JSON (use with `-o`) |
 | `--review FILE` | — | Load context from JSON, skip collect phase |
 | `--publish` | false | Post review to GitLab/GitHub |
-| `--no-review` | false | Skip AI review (collect only) |
 | `-o FILE` | stdout | Write review to file |
 | `-v, --verbose` | — | Enable debug logging |
 | `--config [FILE]` | `.env` | Generate .env template (no arg) or load config file |

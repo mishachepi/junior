@@ -16,7 +16,7 @@ review()
     │
     ▼
 create_deep_agent()
-    │  model = "openai:gpt-5.4"
+    │  model = settings.model_string  (from env / CLI)
     │  system_prompt = _build_orchestrator_prompt() (dynamic)
     │  tools = [submit_review]
     │  subagents = [{name, description, system_prompt}]
