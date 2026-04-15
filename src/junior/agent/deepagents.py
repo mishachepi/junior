@@ -17,7 +17,7 @@ from junior.models import (
     CollectedContext,
     ReviewResult,
 )
-from junior.agent.core import build_user_message, read_project_instructions
+from junior.agent.core import BASE_RULES, build_user_message, read_project_instructions
 from junior.prompt_loader import Prompt
 
 
@@ -159,12 +159,7 @@ Valid enum values (use EXACTLY as shown, lowercase):
 - `comments[].severity`: `"low"` | `"medium"` | `"high"` | `"critical"`
 - `comments[].category`: `"logic"` | `"security"` | `"critical_bug"` | `"naming"` | `"optimization"` | `"dry_violation"` | `"kiss_violation"`
 
-## Rules
-- Focus on CHANGED code (the diff), not pre-existing issues
-- Do NOT repeat issues already caught by linters (if provided in context)
-- Be constructive and actionable
-- Use "request_changes" only for critical or multiple high-severity issues
-- Use "approve" when code is good or has only minor suggestions
+{BASE_RULES}
 """
 
     project_instructions = read_project_instructions(settings.ci_project_dir)

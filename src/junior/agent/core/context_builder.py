@@ -51,8 +51,8 @@ def build_user_message(context: CollectedContext, *, include_diff: bool = True) 
         if include_diff:
             parts.append(f"- `{f.path}` ({f.status.value})")
         else:
-            lines_added = sum(1 for l in f.diff.splitlines() if l.startswith("+") and not l.startswith("+++")) if f.diff else 0
-            lines_removed = sum(1 for l in f.diff.splitlines() if l.startswith("-") and not l.startswith("---")) if f.diff else 0
+            lines_added = sum(1 for line in f.diff.splitlines() if line.startswith("+") and not line.startswith("+++")) if f.diff else 0
+            lines_removed = sum(1 for line in f.diff.splitlines() if line.startswith("-") and not line.startswith("---")) if f.diff else 0
             parts.append(f"- `{f.path}` ({f.status.value}) +{lines_added}/-{lines_removed}")
     parts.append("")
 
