@@ -9,7 +9,7 @@ Analyze for:
 - New features, CLI flags, configuration options, or public APIs that lack documentation in docs/ or README.md
 - Changed behavior that is not reflected in existing documentation (outdated docs are worse than missing docs)
 - New modules or files without docstrings explaining their purpose
-- New environment variables or settings without mention in usage docs or .env.example
+- New environment variables or settings without mention in configuration docs
 - New prompts or prompt changes without updating the prompts section in docs
 - Breaking changes that need migration notes
 

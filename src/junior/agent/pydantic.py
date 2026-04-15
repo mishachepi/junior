@@ -21,7 +21,7 @@ from junior.models import (
     ReviewResult,
     determine_recommendation,
 )
-from junior.agent.core import build_user_message, read_project_instructions
+from junior.agent.core import build_review_prompt, build_user_message
 from junior.prompt_loader import Prompt
 
 logger = structlog.get_logger()
@@ -152,7 +152,6 @@ async def _review_async(
     model_str = settings.model_string
     deps = ReviewDeps(project_dir=settings.ci_project_dir, max_file_size=settings.max_file_size)
     user_msg = build_user_message(context)
-    project_instructions = read_project_instructions(settings.ci_project_dir)
     usage_limits = (
         UsageLimits(response_tokens_limit=settings.max_tokens_per_agent)
         if settings.max_tokens_per_agent
@@ -164,22 +163,16 @@ async def _review_async(
         model=model_str,
         prompts=[p.name for p in prompts],
         changed_files=len(context.changed_files),
-        has_project_instructions=project_instructions is not None,
     )
 
-    # Build system prompt: prompt body + project instructions (if any)
-    def _build_system_prompt(prompt_body: str) -> str:
-        if project_instructions:
-            return f"{prompt_body}\n\n## Project-Specific Instructions\n{project_instructions}"
-        return prompt_body
-
     # Create one agent per prompt, run in parallel
+    # build_review_prompt adds BASE_RULES + project instructions (AGENT.md/CLAUDE.md)
     agents = [
         Agent(
             model_str,
             output_type=SubAgentFindings,
             deps_type=ReviewDeps,
-            system_prompt=_build_system_prompt(p.body),
+            system_prompt=build_review_prompt([p], settings.ci_project_dir),
             tools=_TOOLS,
         )
         for p in prompts

@@ -214,3 +214,4 @@ temp/
 tmp/
 
 /.claude/settings.local.json
+site/

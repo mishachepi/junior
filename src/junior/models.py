@@ -101,6 +101,7 @@ class ReviewResult(BaseModel):
     comments: list[ReviewComment] = Field(default_factory=list)
     tokens_used: int = 0  # total tokens across all API calls
     review_errors: list[str] = Field(default_factory=list)
+    pre_formatted: str | None = None  # pre-formatted markdown, bypasses format_summary
 
     @property
     def critical_count(self) -> int:

@@ -1,0 +1,65 @@
+site_name: Junior — AI Code Review Agent
+site_description: AI-powered code review for GitLab MRs and GitHub PRs
+site_url: https://mishachepi.github.io/junior/
+
+repo_url: https://github.com/mishachepi/junior
+repo_name: mishachepi/junior
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - About: index.md
+  - CLI Reference: cli.md
+  - Configuration: configuration.md
+  - Prompts: prompts.md
+  - CI Setup: ci.md
+  - Architecture: architecture.md
+  - Agent backends:
+    - Overview: agent_backends.md
+    - Pydantic AI: agent_backends/pydantic.md
+    - Claude Code: agent_backends/claudecode.md
+    - Codex: agent_backends/codex.md
+    - DeepAgents: agent_backends/deepagents.md
+  - Adding backends: adding_backends.md
+  - Security: prompt_injection.md
+  - FAQ: faq.md
+  - Pipeline example: pipeline_example/README.md
+
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true

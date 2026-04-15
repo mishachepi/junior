@@ -20,6 +20,9 @@ SEVERITY_EMOJI = {
 
 def format_summary(result: ReviewResult, settings: Settings | None = None) -> str:
     """Format the full review as markdown."""
+    if result.pre_formatted:
+        return result.pre_formatted
+
     parts = ["## Junior Code Review\n"]
     parts.append(result.summary)
     parts.append("")
@@ -76,7 +79,7 @@ def format_summary(result: ReviewResult, settings: Settings | None = None) -> st
 
     # Footer
     parts.append("---")
-    meta = ["Junior AI"]
+    meta = ["[Junior AI](https://github.com/mishachepi/junior/)"]
     if settings:
         meta.append(settings.agent_backend.name.lower())
     if result.tokens_used:

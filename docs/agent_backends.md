@@ -1,37 +1,37 @@
 # Agent Backends
 
-Configured via `AGENT_BACKEND` env var. Default: `pydantic`.
+Configured via `--backend` flag or `AGENT_BACKEND` env var. Default: `claudecode`.
 
-| Backend | Architecture | Tokens (hello world MR) |
-|---------|--------------|--------------------------|
-| `pydantic` | Parallel agents via asyncio.gather | ~5K |
-| `claudecode` | Single subprocess to `claude` CLI | ~120-240K |
-| `codex` | Single subprocess with JSON schema | ~22K |
-| `deepagents` | LLM orchestrator + subagents | ~88K |
+| Backend | Architecture | Auth | Status |
+|---------|-------------|------|--------|
+| `claudecode` | Single `claude -p` subprocess | Subscription or API key | stable |
+| `pydantic` | Parallel sub-agents via pydantic-ai + summary agent | API key required | stable |
+| `codex` | Single `codex exec` in sandbox | OAuth or API key | stable |
+| `deepagents` | LLM orchestrator + subagents via langchain | API key required | **unstable** |
 
-Detailed docs:
-- [pydantic.md](agent_backends/pydantic.md)
-- [claudecode.md](agent_backends/claudecode.md)
-- [codex.md](agent_backends/codex.md)
-- [deepagents.md](agent_backends/deepagents.md)
+## How each backend works
 
-## Comparison (hello world MR, 2 files, 461 chars diff)
-
-| Backend | Model | Prompts | Findings | Tokens | Recommendation |
-|---------|-------|---------|----------|--------|----------------|
-| pydantic | gpt-5.4 | sec+logic+design (3) | 0 | **5,297** | approve |
-| pydantic | gpt-4o-mini | sec+logic+design (3) | 9 | 13,938 | comment |
-| codex | gpt-5.3-codex | common (1) | 0 | 22,476 | approve |
-| deepagents | gpt-5.4 | sec+logic+design (3) | 0–1 | 88,528 | approve/comment |
+| | pydantic | claudecode | codex | deepagents |
+|--|----------|-----------|-------|------------|
+| **Prompts** | 1 agent per prompt, parallel | All concatenated into system prompt | All concatenated into system prompt | 1 subagent per prompt, orchestrator coordinates |
+| **Diff in user message** | Yes | No — reads files via tools | No — reads files via sandbox | Yes |
+| **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git...)` (built-in) | Sandbox filesystem access | `read_file`, `ls`, `grep`, `glob` (via deepagents) |
+| **Summary** | Separate summary agent call | Single response | Single response | Orchestrator synthesizes |
+| **Output** | `SubAgentFindings` → merged → `determine_recommendation()` | `ReviewResult` via `--json-schema` | `ReviewResult` via `--output-schema` | `submit_review` tool captures `ReviewResult` |
 
 ## When to use which
 
-| Scenario | Backend | Prompts | Why |
-|----------|---------|---------|-----|
-| CI pipeline (fast, cheap) | pydantic | common | parallel, low tokens |
-| CI pipeline (deeper) | pydantic | security,logic,design | parallel, cheap |
-| Claude Code (thorough) | claudecode | security,logic | file tools + git, structured output |
-| Large MR (50+ files) | deepagents | security,logic,design | explores repo |
-| Codex sandbox | codex | common | 1 subprocess call |
+| Scenario | Backend | Why |
+|----------|---------|-----|
+| Local review (default) | `claudecode` | Git tools (log, blame, show), explores beyond diff, no API key needed |
+| CI pipeline | `pydantic` | Parallel, structured, predictable cost |
+| OpenAI sandbox | `codex` | Isolated exec, file tools |
+| Experimental | `deepagents` | Orchestrator pattern — **unstable**, may skip `submit_review` |
 
-Adding a new agent backend: see [adding_backends.md](adding_backends.md).
+Detailed docs:
+- [Pydantic AI](agent_backends/pydantic.md)
+- [Claude Code](agent_backends/claudecode.md)
+- [Codex](agent_backends/codex.md)
+- [DeepAgents](agent_backends/deepagents.md)
+
+Adding a new backend: see [Adding backends](adding_backends.md).

@@ -1,9 +1,12 @@
 """CLI entry point for Junior code review."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import structlog
 from pydantic import ValidationError
@@ -12,6 +15,9 @@ from junior import __version__
 from junior.config import Settings
 from junior.models import CollectedContext
 from junior.prompt_loader import discover_prompts
+
+if TYPE_CHECKING:
+    from junior.models import ReviewResult
 
 
 def _available_prompt_names() -> list[str]:
@@ -35,7 +41,7 @@ def _parse_kv_args(raw: list[str], flag_name: str) -> dict[str, str]:
 
 
 def _print_example_config() -> None:
-    """Generate example .env config from Settings model."""
+    """Generate example config from Settings model."""
     from junior.config import AgentBackend
 
     print("# Junior — Environment Configuration")
@@ -93,6 +99,7 @@ def _parse_args() -> argparse.Namespace:
             "  junior --dry-run                                 # show what would be reviewed\n"
             "  junior --collect -o context.json                 # collect only\n"
             "  junior --review context.json --prompts security  # review from file\n"
+            "  junior -o review.md && junior --publish review.md  # review then publish\n"
             "\n"
             "Source modes (--source):\n"
             "  auto    smart detection: CI base, branch diff, or uncommitted (default)\n"
@@ -100,7 +107,7 @@ def _parse_args() -> argparse.Namespace:
             "  commit  last commit (git diff HEAD~1)\n"
             "  branch  current branch vs target branch\n"
             "\n"
-            "Config: env vars > .env > --config file. Run --config to generate."
+            "Config: env vars > JSON config files. Run --config to generate example."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -164,12 +171,15 @@ def _parse_args() -> argparse.Namespace:
         const="__show__",
         default=None,
         metavar="FILE",
-        help="Path to .env config file. Without argument: print example config and exit.",
+        help="Path to JSON config file. Without argument: print example config and exit.",
     )
     parser.add_argument(
         "--publish",
-        action="store_true",
-        help="Also post review to GitLab/GitHub (auto-detect from tokens)",
+        nargs="?",
+        const="__auto__",
+        default=None,
+        metavar="REVIEW_FILE",
+        help="Post review to GitLab/GitHub. Optionally pass a pre-generated review .md file.",
     )
     parser.add_argument(
         "--dry-run",
@@ -197,6 +207,11 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable debug logging",
     )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="Interactive setup — choose backend and save to ~/.config/junior/config.json",
+    )
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(0)
@@ -214,13 +229,31 @@ def main() -> None:
         _print_example_config()
         return
 
+    if args.init:
+        from junior.init_config import interactive_setup
+
+        interactive_setup()
+        return
+
     if args.collect and args.review:
         print("error: --collect and --review are mutually exclusive", file=sys.stderr)
         sys.exit(2)
 
+    publish_file = None
+    if args.publish and args.publish != "__auto__":
+        publish_file = args.publish
+
+    # Load JSON config files: --config FILE → .junior.json → ~/.config/junior/config.json
+    from junior.config import load_json_configs
+
+    config_file = args.config if args.config else None
+    try:
+        json_config = load_json_configs(config_file)
+    except ValueError as e:
+        print(f"config error: {e}", file=sys.stderr)
+        sys.exit(2)
+
     cli_kwargs: dict = {}
-    if args.config:
-        cli_kwargs["_env_file"] = args.config
     if args.backend:
         cli_kwargs["agent_backend"] = args.backend
     if args.provider:
@@ -240,8 +273,11 @@ def main() -> None:
     if args.context_file:
         cli_kwargs["context_files"] = _parse_kv_args(args.context_file, "--context-file")
 
+    # Priority: cli_kwargs > env vars (handled by pydantic-settings) > json_config
+    merged_kwargs = {**json_config, **cli_kwargs}
+
     try:
-        settings = Settings(**cli_kwargs)
+        settings = Settings(**merged_kwargs)
     except ValidationError as e:
         for err in e.errors():
             print(f"config error: {err['msg']}", file=sys.stderr)
@@ -253,7 +289,7 @@ def main() -> None:
 
     # Load prompts (only when review phase will run)
     prompts = []
-    needs_review = not args.collect and not args.dry_run
+    needs_review = not args.collect and not args.dry_run and not publish_file
     if needs_review:
         prompt_names = args.prompts or settings.prompts
         try:
@@ -268,11 +304,12 @@ def main() -> None:
 
     config_errors = settings.preflight(
         review=needs_review,
-        publish=args.publish,
+        publish=bool(args.publish),
     )
     if config_errors:
         for err in config_errors:
             logger.error("config error", error=err)
+        print("\nHint: run 'junior --init' for interactive setup.", file=sys.stderr)
         sys.exit(2)
 
     logger.info(
@@ -287,6 +324,21 @@ def main() -> None:
         context_keys=list(settings.context.keys()) or None,
         context_file_keys=list(settings.context_files.keys()) or None,
     )
+
+    # --- Publish pre-generated review file ---
+    if publish_file:
+        from junior.models import ReviewResult
+
+        try:
+            markdown = Path(publish_file).read_text(encoding="utf-8")
+        except FileNotFoundError:
+            logger.error("review file not found", path=publish_file)
+            sys.exit(2)
+
+        result = ReviewResult(summary="pre-generated", pre_formatted=markdown)
+        logger.info("publishing pre-generated review", path=publish_file)
+        _publish_to_platform(settings, result, logger)
+        return
 
     # --- Phase 1: Collect ---
     if args.review:
@@ -377,16 +429,7 @@ def main() -> None:
     local_publish(settings, result)
 
     if args.publish:
-        from junior.publish import publish
-
-        platform = settings.resolved_publisher.name.lower()
-        logger.info("publishing to platform", platform=platform)
-        try:
-            publish(settings, result)
-            logger.info("published successfully", platform=platform)
-        except Exception as e:
-            logger.error("publish failed", platform=platform, error=str(e))
-            sys.exit(3)
+        _publish_to_platform(settings, result, logger)
 
     if result.has_blocking_issues:
         logger.warning(
@@ -395,6 +438,20 @@ def main() -> None:
             recommendation=result.recommendation.value,
         )
         sys.exit(1)
+
+
+def _publish_to_platform(settings: Settings, result: ReviewResult, logger: structlog.BoundLogger) -> None:
+    """Publish review result to GitLab/GitHub. Exits on failure."""
+    from junior.publish import publish
+
+    platform = settings.resolved_publisher.name.lower()
+    logger.info("publishing to platform", platform=platform)
+    try:
+        publish(settings, result)
+        logger.info("published successfully", platform=platform)
+    except Exception as e:
+        logger.error("publish failed", platform=platform, error=str(e))
+        sys.exit(3)
 
 
 def _setup_logging(log_level: str = "INFO") -> None:

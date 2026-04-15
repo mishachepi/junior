@@ -1,13 +1,9 @@
----
-status: in_development
----
-
 # Backend: Codex CLI
 
 **File:** `src/junior/agent/codex.py`
 **Env var:** `AGENT_BACKEND=codex`
 **Dependencies:** `codex` CLI (`npm install -g @openai/codex`)
-**Auth:** `OPENAI_API_KEY`
+**Auth:** `codex login` OAuth or `OPENAI_API_KEY` as fallback
 
 ## Architecture
 
@@ -15,14 +11,15 @@ status: in_development
 review()
     │
     ▼
+_ensure_codex_auth()
+    │  1. Check `codex login status`
+    │  2. If not logged in → `codex login --with-api-key` via OPENAI_API_KEY
+    │
+    ▼
 _build_prompt()
-    │  concatenates all prompts into one text:
-    │  ## Analysis: security
-    │  {security prompt body}
-    │  ## Analysis: logic
-    │  {logic prompt body}
+    │  build_review_prompt():  all prompts + BASE_RULES + project instructions
     │  ---
-    │  ## MR context + diff
+    │  build_user_message(include_diff=False):  MR metadata + file list (no diff)
     │
     ▼
 subprocess: codex exec
@@ -34,7 +31,6 @@ subprocess: codex exec
     │
     │  ┌─────────────────────────────┐
     │  │      codex sandbox          │
-    │  │  (read-only by default)     │
     │  │                             │
     │  │  - reads project files      │
     │  │  - runs commands            │
@@ -54,47 +50,23 @@ ReviewResult(tokens_used=N)
 
 ## Prompt Handling
 
-All selected prompts are concatenated into **one text**. Codex receives a single prompt and decides how to process it. No parallelism — single API call.
+All selected prompts are concatenated into **one text** via `build_review_prompt()` (shared with claudecode). Codex receives a single prompt and decides how to process it. No parallelism — single subprocess call.
 
-```
-## Analysis: security
-You are a security expert...
-
-## Analysis: logic
-You are a logic analysis expert...
-
-## Rules
-- Only report issues you are confident about
-...
----
-## Merge Request: feat: add farewell
-**Branches:** feature/add-farewell → main
-### Diff
-...
-```
+Diff is **not** included in the prompt (`include_diff=False`) — codex reads files via its sandbox instead. The user message contains MR metadata and a list of changed files with line counts.
 
 ## Output Format
 
-`--output-schema` passes JSON Schema to codex. Codex guarantees the response matches the schema:
+`--output-schema` passes JSON Schema to codex via a temp file. Codex returns structured output matching the schema:
 
 ```json
 {
-  "type": "object",
-  "required": ["summary", "recommendation", "comments"],
-  "additionalProperties": false,
-  "properties": {
-    "summary": { "type": "string" },
-    "recommendation": { "enum": ["approve", "request_changes", "comment"] },
-    "comments": { "type": "array", "items": { ... } }
-  }
+  "summary": "...",
+  "recommendation": "approve",
+  "comments": [...]
 }
 ```
 
-**Important:** OpenAI structured output requires `additionalProperties: false` on every object.
-
-## File Access
-
-Codex manages its own file access via sandbox. It reads project files, runs commands, and explores the codebase autonomously. No explicit tools needed — codex has built-in file operations.
+Response parsing handles markdown fences and extracts JSON between first `{` and last `}`.
 
 ## Token Tracking
 
@@ -111,25 +83,10 @@ Parsed via regex: `r"(\d[\d,]+)\s*$"` from the last line of stderr.
 
 | Situation | Behavior |
 |-----------|----------|
-| codex CLI not found | `RuntimeError: codex CLI not found` |
-| Timeout (>5 min) | `RuntimeError: codex CLI timed out` |
+| codex CLI not found | `RuntimeError` with install instructions |
+| Not authenticated + no API key | `RuntimeError` with auth instructions |
+| Timeout (>10 min) | `RuntimeError` |
 | Exit code != 0 | `RuntimeError` with stderr |
-| Empty output | `RuntimeError: codex returned empty output` |
-| Invalid JSON | `RuntimeError: Failed to parse` |
-| Schema mismatch | `RuntimeError: validation failed` |
-
-## Pros and Cons
-
-| Pros | Cons |
-|------|------|
-| Single subprocess, predictable cost | No prompt parallelism |
-| Codex reads files itself (sandbox) | Requires Node.js in Docker |
-| `--output-schema` guarantees format | Stderr token parsing (fragile) |
-| Uses `OPENAI_API_KEY` directly | Depends on codex CLI version |
-| Works in read-only sandbox | Can't control which files it reads |
-
-## Test Results
-
-| Model | Tokens | Findings | Quality |
-|-------|--------|----------|---------|
-| gpt-5.3-codex | 22,476 | 0 | Clean, approve |
+| Empty output | `RuntimeError` |
+| Invalid JSON | `RuntimeError` |
+| Schema validation failure | `RuntimeError` |

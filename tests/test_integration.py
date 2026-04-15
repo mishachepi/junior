@@ -137,7 +137,7 @@ class TestFullPipeline:
         content = output_file.read_text()
         assert "Junior Code Review" in content
         assert "Consider adding a docstring" in content
-        assert "pydantic" in content
+        assert "claudecode" in content
 
     def test_formatter_produces_valid_output(self, sample_review_result):
         """Format review and check it contains all expected sections."""
