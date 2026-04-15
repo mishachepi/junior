@@ -1,11 +1,23 @@
-"""Configuration from environment variables and .env files."""
+"""Configuration from environment variables and JSON config files.
 
+Config priority (highest wins): CLI flags → env vars → --config FILE → .junior.json → ~/.config/junior/config.json
+"""
+
+import json
+import os
 from enum import Enum
 from pathlib import Path
 from typing import Self
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+# --- Config file paths ---
+
+GLOBAL_CONFIG_DIR = Path.home() / ".config" / "junior"
+GLOBAL_CONFIG_PATH = GLOBAL_CONFIG_DIR / "config.json"
+LOCAL_CONFIG_NAME = ".junior.json"
 
 
 class _ModulePathEnum(str, Enum):
@@ -54,8 +66,6 @@ _DEFAULT_MODELS: dict[str, str] = {
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=False,
-        env_file=".env",
-        env_file_encoding="utf-8",
         extra="ignore",
         frozen=True,
     )
@@ -85,7 +95,7 @@ class Settings(BaseSettings):
     github_event_number: int | None = None  # PR number
 
     # Backend selection
-    agent_backend: AgentBackend = AgentBackend.PYDANTIC
+    agent_backend: AgentBackend = AgentBackend.CLAUDECODE
 
     # Review tuning
     model_name: str = ""
@@ -204,7 +214,7 @@ class Settings(BaseSettings):
 
     def _validate_review(self) -> list[str]:
         if self.agent_backend in (AgentBackend.CODEX, AgentBackend.CLAUDECODE):
-            return []  # these backends manage their own auth
+            return []
 
         errors = []
         provider = self.resolved_provider
@@ -213,7 +223,7 @@ class Settings(BaseSettings):
         if not provider:
             errors.append(
                 "MODEL_PROVIDER is required. Set MODEL_PROVIDER=openai or MODEL_PROVIDER=anthropic "
-                "(env var, .env, or --config file). Or set OPENAI_API_KEY / ANTHROPIC_API_KEY for auto-detection."
+                "(env var, config file, or CLI flag). Or set OPENAI_API_KEY / ANTHROPIC_API_KEY for auto-detection."
             )
         if provider and not model:
             errors.append(
@@ -239,3 +249,61 @@ class Settings(BaseSettings):
             if not self.github_event_number:
                 errors.append("GITHUB_EVENT_NUMBER (PR number) is required")
         return errors
+
+
+# --- JSON config loading ---
+
+
+def load_json_configs(override_path: str | None = None) -> dict:
+    """Load configuration from JSON files.
+
+    Priority (highest first): override_path → .junior.json → ~/.config/junior/config.json
+    Only returns keys not already set as environment variables.
+    """
+    merged: dict = {}
+
+    import structlog
+    logger = structlog.get_logger()
+
+    # Global config (lowest priority)
+    if GLOBAL_CONFIG_PATH.is_file():
+        try:
+            merged.update(json.loads(GLOBAL_CONFIG_PATH.read_text(encoding="utf-8")))
+        except json.JSONDecodeError as e:
+            logger.warning("failed to parse config", path=str(GLOBAL_CONFIG_PATH), error=str(e))
+        except OSError:
+            pass
+
+    # Local project config
+    local = Path(LOCAL_CONFIG_NAME)
+    if local.is_file():
+        try:
+            merged.update(json.loads(local.read_text(encoding="utf-8")))
+        except json.JSONDecodeError as e:
+            logger.warning("failed to parse config", path=str(local), error=str(e))
+        except OSError:
+            pass
+
+    # Explicit --config FILE (highest of config files)
+    if override_path:
+        path = Path(override_path)
+        if not path.is_file():
+            raise ValueError(f"Config file not found: {override_path}")
+        try:
+            merged.update(json.loads(path.read_text(encoding="utf-8")))
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in {override_path}: {e}")
+
+    # Don't override env vars — they have higher priority
+    return {k: v for k, v in merged.items() if k.upper() not in os.environ}
+
+
+def save_global_config(config: dict) -> Path:
+    """Save config to ~/.config/junior/config.json."""
+    GLOBAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    GLOBAL_CONFIG_PATH.write_text(
+        json.dumps(config, indent=2) + "\n", encoding="utf-8"
+    )
+    return GLOBAL_CONFIG_PATH
+
+

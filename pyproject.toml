@@ -1,6 +1,6 @@
 [project]
 name = "junior"
-version = "0.1.0"
+version = "0.1.1"
 description = "AI code review agent for GitLab and GitHub CI"
 license = "MIT"
 requires-python = ">=3.12"
@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-ai-slim[anthropic,openai]>=1.70",
     "httpx>=0.28",
     "structlog>=25.0",
+    "questionary>=2.1",
 ]
 
 [project.optional-dependencies]
