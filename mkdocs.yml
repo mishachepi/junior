@@ -1,6 +1,6 @@
 site_name: Junior — AI Code Review Agent
 site_description: AI-powered code review for GitLab MRs and GitHub PRs
-site_url: https://mishachepi.github.io/junior/
+site_url: https://junior.mchep.dev/
 
 repo_url: https://github.com/mishachepi/junior
 repo_name: mishachepi/junior
