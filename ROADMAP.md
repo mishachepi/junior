@@ -37,6 +37,10 @@
 - Add `Protocol` for backend contracts (collect, review, post_review) — catch signature mismatches at type-check time instead of runtime
 - Move `pydantic-ai-slim` from core dependencies to optional extra — claudecode users shouldn't need anthropic/openai SDKs
 
+### Output
+- `-f json` output format — save ReviewResult as JSON to preserve inline comments for later `--publish`
+- `--publish` with JSON file — parse ReviewResult and post inline comments to GitLab/GitHub
+
 ### Other
 - Post-processing deduplication of duplicate findings across parallel agents
 - DeepAgents: diff chunking for large diffs, fix single-subagent orchestrator, retry logic
