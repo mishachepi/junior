@@ -9,6 +9,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Self
 
+import structlog
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -262,7 +263,6 @@ def load_json_configs(override_path: str | None = None) -> dict:
     """
     merged: dict = {}
 
-    import structlog
     logger = structlog.get_logger()
 
     # Global config (lowest priority)

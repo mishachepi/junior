@@ -43,7 +43,7 @@ new file mode 100644
 
 | Section | Content |
 |---------|---------|
-| Header | MR title, description, branches, project type, labels |
+| Header | MR title, description, branches, labels |
 | Additional Context | `--context` and `--context-file` entries (empty here) |
 | Commits | List of commit messages |
 | Changed Files | File paths with status |

@@ -51,7 +51,7 @@ logger = structlog.get_logger()
 
 def collect(settings: Settings) -> CollectedContext:
     """Collect context with Stash PR metadata enrichment."""
-    context = collect_base(settings)  # shared pipeline: git diff + lint + project detection
+    context = collect_base(settings)  # shared pipeline: git diff + changed files + commits + extra context
     description, labels = _fetch_stash_metadata(settings)
     return enrich_with_metadata(context, description, labels)
 
@@ -68,7 +68,7 @@ def _fetch_stash_metadata(settings: Settings) -> tuple[str, list[str]]:
 ```
 
 Key points:
-- Call `collect_base(settings)` for the shared pipeline (diff, lint, project detection)
+- Call `collect_base(settings)` for the shared pipeline (diff, changed files, commits, extra context)
 - Call `enrich_with_metadata(context, description, labels)` to merge API data
 - Handle API errors gracefully — return `("", [])` on failure
 
@@ -146,7 +146,7 @@ def review(
     project_instructions = read_project_instructions(settings.ci_project_dir)
 
     # Your AI logic here:
-    # - Use settings.model_string for the model (e.g. "openai:gpt-4o")
+    # - Use settings.model_string for the model (e.g. "openai:gpt-5.4-mini")
     # - Use prompts[*].body for system prompts
     # - Use project_instructions for repo-specific context
     # - Return ReviewResult with comments, summary, recommendation
@@ -161,7 +161,7 @@ def review(
 ```
 
 Key points:
-- Use `build_user_message(context)` for the formatted user message (diff, metadata, lint)
+- Use `build_user_message(context)` for the formatted user message (MR metadata, changed files, diff)
 - Use `read_project_instructions(settings.ci_project_dir)` for AGENT.md content
 - Use `settings.model_string` for the provider:model string
 - Use `determine_recommendation(comments)` or let the LLM decide
@@ -174,6 +174,7 @@ Key points:
 class AgentBackend(_ModulePathEnum):
     PYDANTIC = "junior.agent.pydantic"
     CODEX = "junior.agent.codex"
+    CLAUDECODE = "junior.agent.claudecode"
     DEEPAGENTS = "junior.agent.deepagents"
     MY_AGENT = "junior.agent.my_agent"  # <-- add
 ```
@@ -279,8 +280,8 @@ Each backend type has a `core/` directory with shared code:
 
 | Directory | Shared utilities |
 |-----------|-----------------|
-| `collect/core/` | `collect_base()`, `enrich_with_metadata()`, `get_diff()` |
-| `agent/core/` | `build_user_message()`, `read_project_instructions()` |
+| `collect/core/` | `collect_base()`, `enrich_with_metadata()` |
+| `agent/core/` | `build_user_message()`, `build_review_prompt()`, `read_project_instructions()`, `BASE_RULES` |
 | `publish/core/` | `format_summary()`, `format_inline_comment()`, `MAX_INLINE_COMMENTS` |
 
 Use these instead of reimplementing common logic in your backend.

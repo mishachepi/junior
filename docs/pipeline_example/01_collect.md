@@ -2,7 +2,7 @@
 
 **Module**: `junior.collect.local` -> `junior.collect.core.collect.collect_base()`
 
-Pipeline: `git diff` -> parse files -> detect project -> commit messages -> extra context.
+Pipeline: `git diff` -> parse changed files -> commit messages -> extra context.
 
 ## Input
 

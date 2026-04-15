@@ -1,7 +1,3 @@
----
-status: unstable,bugs
----
-
 # Backend: DeepAgents
 
 **File:** `src/junior/agent/deepagents.py`
@@ -16,7 +12,7 @@ review()
     │
     ▼
 create_deep_agent()
-    │  model = "openai:gpt-5.4"
+    │  model = settings.model_string  (from env / CLI)
     │  system_prompt = _build_orchestrator_prompt() (dynamic)
     │  tools = [submit_review]
     │  subagents = [{name, description, system_prompt}]
@@ -89,7 +85,7 @@ def submit_review(**kwargs) -> str:
 
 - LLM sees schema with enum constraints (severity, category, recommendation)
 - `handle_validation_error=True` — validation errors returned as ToolMessage, LLM retries
-- Fallback if `submit_review` not called: `ReviewResult(summary="submit_review was not called")`
+- If `submit_review` not called: `RuntimeError` — review fails
 
 ## File Access
 
@@ -134,7 +130,7 @@ Total                                  ~88K
 
 | Situation | Behavior |
 |-----------|----------|
-| submit_review not called | Fallback: `ReviewResult(summary="submit_review was not called")` |
+| submit_review not called | `RuntimeError` — no review produced (tokens wasted) |
 | Multiple submit_review calls | Uses first result, logs warning |
 | LLM API error | Exception propagates to cli.py |
 | Infinite tool loop | No built-in limit (risk, TODO: add max_iterations) |
@@ -150,11 +146,5 @@ Total                                  ~88K
 | Can adapt review strategy per MR | Unpredictable execution time |
 | submit_review with validation retry | Subagents return JSON (fragile) |
 
-## Test Results
-
-| Model | Tokens | Findings | Quality |
-|-------|--------|----------|---------|
-| gpt-5.4 (run 1) | 88,528 | 1 (medium) | Accurate: pytest in main deps |
-| gpt-5.4 (run 2) | 88,528 | 0 | Clean, approve |
-
-Instability: same model and prompt give different results. Normal for LLM-orchestrated workflows.
+!!! warning
+    DeepAgents is the least reliable backend. The orchestrator sometimes skips `submit_review`, especially with single prompts or large diffs. Use `pydantic` for production.

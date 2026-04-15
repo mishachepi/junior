@@ -1,11 +1,7 @@
----
-status: in_development
----
-
 # Backend: Pydantic AI
 
 **File:** `src/junior/agent/pydantic.py`
-**Env var:** `AGENT_BACKEND=pydantic` (default)
+**Env var:** `AGENT_BACKEND=pydantic`
 **Dependencies:** `pydantic-ai-slim[anthropic,openai]`
 **Auth:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 
@@ -16,14 +12,15 @@ review() → asyncio.run(_review_async())
     │
     ▼
 _review_async()
-    │  1. Create Agent per prompt
-    │  2. asyncio.gather — all in parallel
-    │  3. Merge findings
-    │  4. Summary agent
-    │  5. Programmatic recommendation
+    │  1. Build system prompt: prompt body + project instructions (AGENT.md/CLAUDE.md)
+    │  2. Create Agent per prompt with file tools
+    │  3. asyncio.gather with Semaphore(MAX_CONCURRENT_AGENTS)
+    │  4. Merge findings, collect errors from failed agents
+    │  5. Summary agent (separate LLM call)
+    │  6. determine_recommendation() — programmatic, no LLM
     │
     ▼
-          asyncio.gather (parallel)
+          asyncio.gather (parallel, limited by semaphore)
          ┌─────────────┼─────────────┐
          ▼             ▼             ▼
    ┌──────────┐  ┌──────────┐  ┌──────────┐
@@ -50,7 +47,7 @@ _review_async()
               │  output: str     │
               └────────┬─────────┘
                        ▼
-        _determine_recommendation()  ← programmatic, no LLM
+        determine_recommendation()  ← programmatic, no LLM
                        │
                        ▼
               ReviewResult(tokens_used=total)
@@ -58,29 +55,38 @@ _review_async()
 
 ## Prompt Handling
 
-Each prompt from `--prompts` becomes a **separate Agent** running in parallel:
+Each prompt from `--prompts` becomes a **separate Agent** running in parallel, limited by `MAX_CONCURRENT_AGENTS` (default: 3):
 
 ```python
 agents = [
-    Agent(model_str, output_type=SubAgentFindings, system_prompt=p.body, tools=_TOOLS)
+    Agent(
+        model_str,
+        output_type=SubAgentFindings,
+        deps_type=ReviewDeps,
+        system_prompt=_build_system_prompt(p.body),  # prompt + project instructions
+        tools=_TOOLS,
+    )
     for p in prompts
 ]
-results = await asyncio.gather(*(agent.run(user_msg, deps=deps) for agent in agents))
+
+semaphore = asyncio.Semaphore(settings.max_concurrent_agents)
+results = await asyncio.gather(*(_run_with_limit(agent) for agent in agents), return_exceptions=True)
 ```
 
-- 3 prompts → 3 agents → 3 parallel API calls
-- 1 prompt → 1 agent → 1 call (like codex, but with structured output)
+- 3 prompts → 3 agents → up to 3 parallel API calls
+- 1 prompt → 1 agent → 1 call
+- `MAX_TOKENS_PER_AGENT` limits response tokens per agent via `UsageLimits`
 
 ## Output Format
 
-Pydantic AI uses `output_type=SubAgentFindings` — the model returns data directly as a Pydantic model. No JSON parsing needed:
+Sub-agents return `SubAgentFindings` — pydantic-ai handles structured output natively:
 
 ```python
 class SubAgentFindings(BaseModel):
     comments: list[ReviewComment] = []
 ```
 
-Recommendation is determined programmatically (no LLM):
+Recommendation is determined programmatically after merging all findings:
 
 ```python
 if any critical OR high_count >= 3:  → REQUEST_CHANGES
@@ -88,21 +94,21 @@ if no comments:                      → APPROVE
 else:                                → COMMENT
 ```
 
-## File Access
+## File Tools
 
-Three tools, restricted to `project_dir`:
+Three tools registered on every sub-agent, all restricted to `ci_project_dir`:
 
 | Tool | Limit | Description |
 |------|-------|-------------|
-| `_read_file(path)` | 100KB max | Read file content |
+| `_read_file(path)` | `MAX_FILE_SIZE` (default 100KB) | Read file content |
 | `_list_dir(path)` | — | List directory entries |
-| `_grep(pattern, path)` | 50 results max | Regex search in source files |
+| `_grep(pattern, path)` | 50 results max | Regex search in files |
 
-Code extensions only: `.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.go`, `.rs`, `.java`, `.rb`, `.php`.
+All tools skip directories: `.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `.tox`, `dist`, `build`. Path traversal outside project root is blocked.
 
 ## Token Tracking
 
-pydantic-ai returns exact usage via `result.usage()`:
+pydantic-ai returns exact usage via `result.usage()`. Total includes all sub-agents + summary agent:
 
 ```python
 for r in results:
@@ -114,24 +120,9 @@ total_tokens += summary_result.usage().total_tokens or 0
 
 | Situation | Behavior |
 |-----------|----------|
-| API call fails | pydantic-ai raises exception, caught in cli.py |
+| Sub-agent API call fails | Exception caught via `return_exceptions=True`, added to `review_errors` |
+| All sub-agents fail | `RuntimeError` raised |
+| Some sub-agents fail | Partial results returned with errors listed in `review_errors` |
 | Validation error | pydantic-ai retries automatically |
-| No findings | Returns empty comments, recommendation=APPROVE |
-| Tool error (file not found) | Returns error string to agent, agent continues |
-
-## Pros and Cons
-
-| Pros | Cons |
-|------|------|
-| Parallel agents (asyncio.gather) | Requires async (asyncio.run) |
-| Cheapest: ~5K tokens (gpt-5.4) | Sub-agents don't see each other |
-| Structured output, no JSON parsing | No LLM orchestrator (less flexible) |
-| Accurate token tracking via usage() | Programmatic recommendation |
-| Works with Anthropic and OpenAI | Depends on pydantic-ai |
-
-## Test Results
-
-| Model | Tokens | Findings | Quality |
-|-------|--------|----------|---------|
-| gpt-4o-mini | 13,938 | 9 | Noisy, questionable findings |
-| gpt-5.4 | **5,297** | 0 | Clean, precise, concise |
+| No findings | Empty comments, summary agent says "code looks good", recommendation=APPROVE |
+| Tool error (file not found) | Error string returned to agent, agent continues review |

@@ -6,7 +6,8 @@ Threat model: attacker is the author of a malicious MR targeting a repo with Jun
 
 ```
 GIT REPO ──────> collect
-  AGENT.md         → system prompt         [prompt poisoning]
+  AGENT.md / AGENTS.md / CLAUDE.md
+                   → system prompt         [prompt poisoning]
 
 Platform API ──> collect
   MR title         → user message          [prompt injection]
@@ -26,17 +27,17 @@ AI Agent ──────> publish
 | **Severity** | Critical |
 | **Status** | Open |
 
-`AGENT.md` / `CLAUDE.md` from the **reviewed repo's working tree** is injected into the
+`AGENT.md` / `AGENTS.md` / `CLAUDE.md` from the **reviewed repo's working tree** is injected into the
 **system prompt**. System prompt has highest authority for the LLM.
 
-A malicious MR that adds or modifies `AGENT.md` with override instructions achieves full
+A malicious MR that adds or modifies any of these files with override instructions achieves full
 agent takeover — the AI will approve any code.
 
-The file is read from HEAD (includes MR changes), not from the target branch.
+The files are read from HEAD (includes MR changes), not from the target branch.
 
 **Fix options:**
 
-1. Read `AGENT.md` from the **target branch** via `git show main:AGENT.md`
+1. Read instruction files from the **target branch** via `git show main:AGENT.md`
 2. Demote to user-level content (not system prompt) with a warning prefix
 3. If `AGENT.md` is changed in the MR diff, flag it and exclude from system prompt
 

@@ -25,5 +25,6 @@ User Message ------>+---> [logic agent]    --+--> merge results --> ReviewResult
 ```
 
 Each agent receives:
-- **System message**: the prompt body + output schema instructions
+- **System message**: the prompt body + BASE_RULES + project instructions (AGENT.md/CLAUDE.md if present)
 - **User message**: the context from Step 2
+- **Output type**: `SubAgentFindings` (structured output via pydantic-ai)

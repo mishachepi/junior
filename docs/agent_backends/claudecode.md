@@ -1,9 +1,9 @@
 # Backend: Claude Code CLI
 
 **File:** `src/junior/agent/claudecode.py`
-**Env var:** `AGENT_BACKEND=claudecode`
+**Env var:** `AGENT_BACKEND=claudecode` (default)
 **Dependencies:** `claude` CLI (`npm install -g @anthropic-ai/claude-code`)
-**Auth:** Claude Code login (`claude /login`) or `ANTHROPIC_API_KEY` in CI
+**Auth:** Claude Code subscription or `ANTHROPIC_API_KEY` (enables `--bare` API mode)
 
 ## Architecture
 
@@ -60,7 +60,7 @@ ReviewResult
 | `include_diff=False` | Claude reads files itself via sandbox tools — avoids sending full diff in prompt |
 | `stdin` for prompt | Avoids OS argument length limits on large MR metadata |
 | `bypassPermissions` | Required for non-interactive subprocess (no TTY) |
-| `--bare` only in CI | Skips keychain reads; locally uses OAuth from `claude /login` |
+| `--bare` when API key set | `ANTHROPIC_API_KEY` present → API mode; otherwise uses subscription auth |
 | Read-only Bash | `Bash(git log:*,git show:*,git diff:*,git blame:*)` — no write operations |
 | `MODEL_NAME` optional | Claude CLI defaults to its own model; override with `MODEL_NAME=claude-sonnet-4-6` etc. |
 

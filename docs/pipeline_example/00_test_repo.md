@@ -24,9 +24,11 @@ ef9098a feat: add authentication and database layer
 ## CLI Command
 
 ```bash
-source .venv/bin/activate
-OPENAI_API_KEY=sk-... python -m junior \
-  --project-dir ../junior-test-repo \
+OPENAI_API_KEY=sk-... junior \
+  --backend pydantic \
+  --prompts security,logic,design \
+  --source branch \
   --target-branch main \
-  -o /tmp/junior_review_output.md
+  -o /tmp/junior_review_output.md \
+  ../junior-test-repo
 ```

@@ -3,9 +3,7 @@
 ## Known Issues
 
 ### Documentation
-- `junior --publish` without credentials fails with no clear error
-- `--config` replaces `.env`, doesn't merge
-- `docs/usage.md` out of sync with README (`--prompt-file`, `PROMPTS_DIR`, `PUBLISH_OUTPUT`)
+- ~~`--config` replaces `.env`~~ ✅ done (JSON config hierarchy)
 - CI auto-detected variables undocumented for manual setup
 
 ### Config generation (`--config`)
@@ -35,7 +33,12 @@
 - Prompt validation: warn on missing frontmatter, empty body, excessive size
 - Prompt composition: `extends: security` to inherit built-ins
 
+### Architecture
+- Add `Protocol` for backend contracts (collect, review, post_review) — catch signature mismatches at type-check time instead of runtime
+- Move `pydantic-ai-slim` from core dependencies to optional extra — claudecode users shouldn't need anthropic/openai SDKs
+
 ### Other
 - Post-processing deduplication of duplicate findings across parallel agents
 - DeepAgents: diff chunking for large diffs, fix single-subagent orchestrator, retry logic
-- Pydantic: token budget management per agent
+- Add silent mode
+- Make PROJECT_DIR required
