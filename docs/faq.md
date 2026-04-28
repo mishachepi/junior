@@ -60,3 +60,68 @@ See [Prompts](prompts.md) for format details.
 junior --source branch -o review.md    # generate locally, inspect
 junior --publish review.md             # publish when ready
 ```
+
+## How do I review a remote MR locally?
+
+You can review (and publish to) any GitLab MR or GitHub PR from your laptop — including self-hosted GitLab. In CI most of these variables are set automatically; locally you set them yourself.
+
+### GitLab (gitlab.com or self-hosted)
+
+**1. Clone the repo and check out the MR's source branch**
+
+```bash
+git clone <repo-url> && cd <repo>
+git fetch origin "merge-requests/<IID>/head:mr-<IID>"
+git checkout mr-<IID>
+```
+
+`<IID>` is the MR number (`/-/merge_requests/<IID>` in the MR URL). The fetch above works without knowing the source branch name.
+
+**2. Find the project ID**
+
+Either via the UI: open the project page → ID is shown under the project name (also under Settings → General → "Project ID").
+
+Or via the API:
+
+```bash
+curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+  "https://gitlab.example.com/api/v4/projects/<owner>%2F<repo>" | jq '.id'
+```
+
+**3. Set the env vars**
+
+```bash
+export GITLAB_TOKEN=glpat-...                          # api scope (read+write for --publish)
+export CI_SERVER_URL=https://gitlab.example.com        # only needed for self-hosted; default is gitlab.com
+export CI_PROJECT_ID=<numeric id from step 2>
+export CI_MERGE_REQUEST_IID=<MR number>
+export CI_MERGE_REQUEST_TARGET_BRANCH_NAME=master      # default is "main"
+```
+
+The token must be issued **on the same instance** you're targeting. A `gitlab.com` token won't work against a self-hosted instance and vice versa.
+
+**4. Run**
+
+```bash
+junior --source branch -o review.md   # generate locally, inspect first
+junior --publish review.md            # post the summary as an MR note
+```
+
+### GitHub (github.com)
+
+```bash
+gh pr checkout <PR-number>           # or: git fetch + checkout manually
+export GITHUB_TOKEN=ghp_...
+export GITHUB_REPOSITORY=owner/repo
+export GITHUB_EVENT_NUMBER=<PR number>
+junior --source branch --publish
+```
+
+### Notes
+
+- **Inline (per-line) comments are skipped locally.** GitLab needs `CI_MERGE_REQUEST_DIFF_BASE_SHA` and `CI_COMMIT_SHA` to anchor each finding to the diff. CI sets them; locally they're empty, so Junior posts a single summary note instead. Set both manually if you want inline comments:
+  ```bash
+  export CI_COMMIT_SHA=$(git rev-parse HEAD)
+  export CI_MERGE_REQUEST_DIFF_BASE_SHA=$(git merge-base origin/master HEAD)
+  ```
+- For repeated runs, put the env vars into `.junior.json` (project-local) or `~/.config/junior/config.json` (global). Same keys work — `gitlab_token`, `ci_server_url`, etc.

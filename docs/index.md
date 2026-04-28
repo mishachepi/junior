@@ -1,6 +1,6 @@
 # Junior — AI Code Review Agent
 
-AI-powered code review for GitLab MRs and GitHub PRs. Runs as CLI or in CI.
+AI-powered code review for GitLab MRs and GitHub PRs. Run locally as a CLI, or wire it into CI.
 
 ## How it works
 
@@ -13,27 +13,28 @@ commit messages             pydantic (SDK)     GitLab MR notes
 platform API metadata       deepagents (LLM)
 ```
 
-Junior  
-1. collects code context (diffs, files, commits, metadata)
+Junior
+
+1. collects code context (diffs, files, commits, MR/PR metadata)
 2. sends it to an AI backend for review
-3. and publishes the results — to stdout, a file, or directly as MR/PR comments
+3. publishes the results — to stdout, a file, or directly as MR/PR comments
 
 ## Install
 
 ```bash
-# From GitHub (core: pydantic-ai + httpx + structlog)
+# Core (pydantic-ai + httpx + structlog)
 uv tool install "junior @ git+https://github.com/mishachepi/junior.git"
 
-# With GitLab support (adds python-gitlab)
+# With GitLab support (recommended if you'll review GitLab MRs)
 uv tool install "junior[gitlab] @ git+https://github.com/mishachepi/junior.git"
 
 # All extras (gitlab + deepagents + langchain)
 uv tool install "junior[all] @ git+https://github.com/mishachepi/junior.git"
 ```
 
-### Prerequisites
+### Prerequisites by backend
 
-The default backend (`claudecode`) requires `claude` CLI:
+The default backend (`claudecode`) requires `claude` CLI installed and authenticated:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
@@ -43,38 +44,76 @@ claude  # authenticate once
 | Backend | Requires |
 |---------|----------|
 | `claudecode` (default) | `claude` CLI installed and authenticated |
-| `pydantic` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` env var |
+| `pydantic` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
 | `codex` | `codex` CLI installed and authenticated |
-| `deepagents` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` env var + `junior[all]` |
+| `deepagents` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` + `junior[all]` |
 
-## Quick start
+## Quick start — local
+
+The fastest path: install, configure once, then run from the branch you want to review.
+
+### 1. Configure (one-time)
 
 ```bash
-# Review current changes (default: claudecode backend)
-junior --prompts security
-
-# Interactive setup — choose backend, save config
 junior --init
-
-# all defaults explicit
-junior --backend claudecode --source auto --target-branch main --prompts security,logic,design .
-
-# Review with pydantic backend
-export OPENAI_API_KEY=sk-...
-junior --backend pydantic --source staged --prompts security,logic,design
-
-# Review last commit, save to file
-junior --source commit -o review.md
-
-# Dry run — see what would be reviewed
-junior --dry-run
 ```
 
-This will:
+Interactive wizard that asks for backend, API key (if needed), and default prompts, then saves them to `~/.config/junior/config.json`. Skip this if you already set things via env vars.
 
-1. **Collect** — auto-detect changes: CI base SHA → branch diff → uncommitted → staged
-2. **Review** — run review via Claude Code CLI (`claude -p`)
-3. **Output** — print formatted review to stdout
+### 2. Check out the branch you want to review
+
+!!! warning "Run Junior from the branch with your changes"
+    By default Junior diffs `<target-branch>...HEAD`. If `HEAD` is on `main`/`master`, the diff is empty and Junior exits with **«no changes found, nothing to review»**.
+
+```bash
+cd /path/to/your/repo
+git checkout my-feature-branch       # the branch with your changes
+```
+
+### 3. Review
+
+```bash
+junior                            # full review with the defaults from --init
+junior --prompts security         # focus on a single area
+junior --dry-run                  # preview what would be reviewed (no AI call)
+junior -o review.md               # save the review to a markdown file
+```
+
+Output goes to stdout by default. Use `-o FILE` to save it.
+
+### 4. Publish (optional)
+
+If your branch has an open MR/PR and you want Junior to post the review there:
+
+```bash
+junior --publish                                # full pipeline + post comments
+junior -o review.md && junior --publish review.md   # two-step: review first, post later
+```
+
+For local publishing you need a platform token (`GITLAB_TOKEN` with `api` scope, or `GITHUB_TOKEN`) and a couple of platform variables. The full walkthrough — including self-hosted GitLab — is in the [FAQ: review a remote MR locally](faq.md#how-do-i-review-a-remote-mr-locally).
+
+## What `--source` does
+
+`--source` picks **which changes** Junior reviews. Default is `auto` and covers most cases.
+
+| Mode | What it diffs | When to use |
+|------|---------------|-------------|
+| `auto` (default) | First non-empty: CI base → branch vs target → uncommitted → staged | Most cases, including CI |
+| `branch` | `<target-branch>...HEAD` | All branch changes vs `main`/`master` |
+| `commit` | `HEAD~1...HEAD` | Last commit only |
+| `staged` | `git diff --cached` | What's about to be committed |
+
+Pair with `--target-branch` to change what `branch`/`auto` diff against (default: `main`).
+
+```bash
+junior --source branch --target-branch develop
+```
+
+See [CLI reference](cli.md) for every flag.
+
+## CI
+
+Junior runs unchanged in GitLab CI and GitHub Actions — most variables are auto-populated. Ready-to-paste pipeline configs are in [CI Setup](ci.md).
 
 ## Exit codes
 
