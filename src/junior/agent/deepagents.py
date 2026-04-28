@@ -157,7 +157,7 @@ After all subagents complete, call the `submit_review` tool EXACTLY ONCE with th
 Valid enum values (use EXACTLY as shown, lowercase):
 - `recommendation`: `"approve"` | `"request_changes"` | `"comment"`
 - `comments[].severity`: `"low"` | `"medium"` | `"high"` | `"critical"`
-- `comments[].category`: `"logic"` | `"security"` | `"critical_bug"` | `"naming"` | `"optimization"` | `"dry_violation"` | `"kiss_violation"`
+- `comments[].category`: `"logic"` | `"security"` | `"bug"` | `"naming"` | `"optimization"` | `"dry_violation"` | `"kiss_violation"`
 
 {BASE_RULES}
 """

@@ -24,6 +24,13 @@ BASE_RULES = """
 - Use "request_changes" only for critical or multiple high-severity issues
 - Use "approve" when the code is good or has only minor suggestions
 
+## Severity Levels
+Severity reflects user/system impact, not the issue category. A "bug" can be any severity.
+- **critical** — data loss, security breach, crashes in production, silent data corruption, auth bypass
+- **high** — incorrect behavior affecting users, resource leaks under normal usage, broken error handling that hides failures, accumulating memory leaks
+- **medium** — edge case bugs, performance issues under realistic load, misleading API contracts, recoverable failures with poor UX
+- **low** — code clarity, minor DRY violations, naming inconsistencies, theoretical issues unlikely to trigger
+
 You can explore the repository files for additional context if needed.
 """
 

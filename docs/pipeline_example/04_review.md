@@ -36,7 +36,7 @@
 |------|------|----------|-------|
 | `api.py` | 93 | security | `eval(payload)` on untrusted input — arbitrary code execution |
 | `api.py` | 59 | security | `subprocess.run(..., shell=True)` with user input — command injection |
-| `api.py` | 88 | critical_bug | `eval(payload)` in webhook handler |
+| `api.py` | 88 | bug | `eval(payload)` in webhook handler |
 | `api.py` | 73 | security | `eval(payload)` — duplicate finding from different agent |
 | `api.py` | 50 | security | `shell=True` with user-controlled command |
 
@@ -49,10 +49,10 @@
 | `auth.py` | 8 | security | Hardcoded `SECRET_KEY` in source |
 | `auth.py` | 11 | security | MD5 for password hashing |
 | `database.py` | 33 | security | SQL injection via f-string in `find_user()` |
-| `database.py` | 61 | critical_bug | SQL injection in `delete_user()` |
-| `database.py` | 70 | critical_bug | SQL injection in `update_user_role()` |
-| `database.py` | 80 | critical_bug | SQL injection in `list_users()` |
-| `database.py` | 94 | critical_bug | SQL injection in `search_users()` |
+| `database.py` | 61 | bug | SQL injection in `delete_user()` |
+| `database.py` | 70 | bug | SQL injection in `update_user_role()` |
+| `database.py` | 80 | bug | SQL injection in `list_users()` |
+| `database.py` | 94 | bug | SQL injection in `search_users()` |
 | `auth.py` | 27 | logic | Token validation broken — regenerates with current timestamp |
 
 ## Notes

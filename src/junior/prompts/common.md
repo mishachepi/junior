@@ -13,7 +13,7 @@ Linter results are provided separately — do NOT repeat linting issues.
 
 1. **Logic** — incorrect conditionals, missing edge cases, unreachable code, wrong business logic
 2. **Security** — auth bypass, privilege escalation, race conditions, path traversal, data exposure
-3. **Critical Bugs** — null dereferences, resource leaks, data corruption, deadlocks, off-by-one
+3. **Bugs** — null dereferences, resource leaks, data corruption, deadlocks, off-by-one
 4. **Naming** — misleading names, names that don't match behavior (NOT style like camelCase vs snake_case)
 5. **Optimization** — O(n^2) when O(n log n) exists, N+1 queries, redundant computation
 6. **Design Principles** — DRY violations, KISS violations, SRP violations
@@ -27,5 +27,12 @@ Linter results are provided separately — do NOT repeat linting issues.
 - If the code looks good, say so — don't invent issues
 - Use "request_changes" only for critical or multiple high-severity issues
 - Use "approve" when the code is good or has only minor suggestions
+
+## Severity Levels
+Severity reflects user/system impact, not the issue category. A "bug" can be any severity.
+- **critical** — data loss, security breach, crashes in production, silent data corruption, auth bypass
+- **high** — incorrect behavior affecting users, resource leaks under normal usage, broken error handling that hides failures, accumulating memory leaks
+- **medium** — edge case bugs, performance issues under realistic load, misleading API contracts, recoverable failures with poor UX
+- **low** — code clarity, minor DRY violations, naming inconsistencies, theoretical issues unlikely to trigger
 
 Use the file tools to explore related files for context — config files often expose constraints that the implementation must satisfy.

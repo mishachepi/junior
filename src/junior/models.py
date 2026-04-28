@@ -17,7 +17,7 @@ class ReviewCategory(str, Enum):
     """Hardcoded categories for review message. TODO: remove it."""
     LOGIC = "logic"
     SECURITY = "security"
-    CRITICAL_BUG = "critical_bug"
+    BUG = "bug"
     NAMING = "naming"
     OPTIMIZATION = "optimization"
     DRY_VIOLATION = "dry_violation"
