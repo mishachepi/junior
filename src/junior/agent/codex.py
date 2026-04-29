@@ -11,10 +11,12 @@ import subprocess
 import tempfile
 
 import structlog
+from openai.lib._pydantic import to_strict_json_schema
 
 from junior.config import Settings
 from junior.models import (
     CollectedContext,
+    LLMReviewOutput,
     ReviewResult,
 )
 from junior.agent.core import build_review_prompt, build_user_message
@@ -22,7 +24,10 @@ from junior.prompt_loader import Prompt
 
 logger = structlog.get_logger()
 
-_OUTPUT_SCHEMA = ReviewResult.model_json_schema()
+# codex CLI passes this schema to OpenAI Responses API in strict mode,
+# which requires additionalProperties=false and all fields in required.
+# Token counts are measured from stderr, not asked from the LLM.
+_OUTPUT_SCHEMA = to_strict_json_schema(LLMReviewOutput)
 
 
 def _ensure_codex_auth(settings: Settings) -> None:
@@ -132,16 +137,20 @@ def review(context: CollectedContext, settings: Settings, prompts: list[Prompt])
         if not raw_output:
             raise RuntimeError("codex returned empty output")
 
-        review_result = _parse_response(raw_output)
-        review_result.tokens_used = _parse_token_usage(result.stderr)
-        return review_result
+        llm = _parse_response(raw_output)
+        return ReviewResult(
+            summary=llm.summary,
+            recommendation=llm.recommendation,
+            comments=llm.comments,
+            tokens_used=_parse_token_usage(result.stderr),
+        )
     finally:
         os.unlink(schema_path)
         os.unlink(output_path)
 
 
-def _parse_response(output: str) -> ReviewResult:
-    """Parse codex CLI output into ReviewResult with validation."""
+def _parse_response(output: str) -> LLMReviewOutput:
+    """Parse codex CLI output into LLMReviewOutput."""
     text = output.strip()
 
     # Strip markdown code fences if present
@@ -167,10 +176,10 @@ def _parse_response(output: str) -> ReviewResult:
         raise RuntimeError(f"Failed to parse codex output as JSON: {e}")
 
     try:
-        return ReviewResult.model_validate(data)
+        return LLMReviewOutput.model_validate(data)
     except Exception as e:
         logger.error("codex output failed validation", data=data, error=str(e))
-        raise RuntimeError(f"Codex output failed ReviewResult validation: {e}")
+        raise RuntimeError(f"Codex output failed LLMReviewOutput validation: {e}")
 
 
 def _parse_token_usage(stderr: str) -> int:

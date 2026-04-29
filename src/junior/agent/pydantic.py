@@ -192,7 +192,7 @@ async def _review_async(
 
     all_comments: list[ReviewComment] = []
     review_errors: list[str] = []
-    total_tokens = 0
+    input_tokens = output_tokens = 0
     for i, r in enumerate(raw_results):
         if isinstance(r, Exception):
             error_msg = f"Agent '{prompts[i].name}' failed: {r}"
@@ -200,7 +200,9 @@ async def _review_async(
             review_errors.append(error_msg)
             continue
         all_comments.extend(r.output.comments)
-        total_tokens += r.usage().total_tokens or 0
+        u = r.usage()
+        input_tokens += u.input_tokens or 0
+        output_tokens += u.output_tokens or 0
 
     if len(review_errors) == len(prompts):
         raise RuntimeError(f"All {len(prompts)} sub-agents failed")
@@ -216,12 +218,16 @@ async def _review_async(
         or "No issues found."
     )
     summary_result = await summary_agent.run(f"Findings:\n{findings_text}")
-    total_tokens += summary_result.usage().total_tokens or 0
+    su = summary_result.usage()
+    input_tokens += su.input_tokens or 0
+    output_tokens += su.output_tokens or 0
 
     return ReviewResult(
         summary=summary_result.output,
         recommendation=determine_recommendation(all_comments),
         comments=all_comments,
-        tokens_used=total_tokens,
+        tokens_used=input_tokens + output_tokens,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
         review_errors=review_errors,
     )

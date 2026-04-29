@@ -15,6 +15,7 @@ from langchain_core.tools import StructuredTool
 from junior.config import Settings
 from junior.models import (
     CollectedContext,
+    LLMReviewOutput,
     ReviewResult,
 )
 from junior.agent.core import BASE_RULES, build_user_message, read_project_instructions
@@ -25,26 +26,30 @@ logger = structlog.get_logger()
 
 
 class _TokenCounter(BaseCallbackHandler):
-    """Counts total tokens across all LLM calls."""
+    """Counts input/output tokens across all LLM calls."""
 
-    total_tokens: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+    @property
+    def total_tokens(self) -> int:
+        return self.input_tokens + self.output_tokens
 
     def on_llm_end(self, response: LLMResult, **kwargs) -> None:
         for generations in response.generations:
             for gen in generations:
-                tokens = 0
-                # Try generation_info first (older langchain)
-                usage = getattr(gen, "generation_info", {}) or {}
-                token_usage = usage.get("token_usage") or usage.get("usage") or {}
-                tokens = token_usage.get("total_tokens", 0)
-                # Fallback to message usage_metadata (newer langchain)
-                if not tokens:
-                    msg = getattr(gen, "message", None)
-                    if msg and hasattr(msg, "usage_metadata") and msg.usage_metadata:
-                        meta = msg.usage_metadata
-                        tokens = meta.get("total_tokens", 0)
-                if tokens:
-                    self.total_tokens += tokens
+                # newer langchain: message.usage_metadata = {input_tokens, output_tokens, total_tokens}
+                msg = getattr(gen, "message", None)
+                meta = getattr(msg, "usage_metadata", None) if msg else None
+                if meta:
+                    self.input_tokens += meta.get("input_tokens", 0)
+                    self.output_tokens += meta.get("output_tokens", 0)
+                    continue
+                # older langchain: generation_info.token_usage = {prompt_tokens, completion_tokens, total_tokens}
+                usage = (getattr(gen, "generation_info", {}) or {}).get("token_usage") or {}
+                if usage:
+                    self.input_tokens += usage.get("prompt_tokens", 0)
+                    self.output_tokens += usage.get("completion_tokens", 0)
                 else:
                     logger.debug("could not extract token count from LLM response")
 
@@ -59,20 +64,23 @@ If no issues found, return an empty array: []
 """
 
 
-def _make_submit_review_tool() -> tuple[StructuredTool, list[ReviewResult]]:
-    """Create a submit_review tool and a capture container."""
-    captured: list[ReviewResult] = []
+def _make_submit_review_tool() -> tuple[StructuredTool, list[LLMReviewOutput]]:
+    """Create a submit_review tool and a capture container.
+
+    The tool's args_schema is LLMReviewOutput so the LLM is not asked for token counts.
+    """
+    captured: list[LLMReviewOutput] = []
 
     def submit_review(**kwargs) -> str:
         """Submit the final synthesized code review. Call exactly once after all subagents complete."""
-        result = ReviewResult(**kwargs)
-        captured.append(result)
-        return f"Review submitted: {result.recommendation.value}, {len(result.comments)} comments."
+        review = LLMReviewOutput(**kwargs)
+        captured.append(review)
+        return f"Review submitted: {review.recommendation.value}, {len(review.comments)} comments."
 
     tool = StructuredTool.from_function(
         func=submit_review,
         name="submit_review",
-        args_schema=ReviewResult,
+        args_schema=LLMReviewOutput,
         handle_validation_error=True,
     )
     return tool, captured
@@ -121,8 +129,15 @@ def review(context: CollectedContext, settings: Settings, prompts: list[Prompt])
         logger.warning("agent called submit_review multiple times, using first result")
 
     if captured:
-        result = captured[0]
-        result.tokens_used = token_counter.total_tokens
+        llm = captured[0]
+        result = ReviewResult(
+            summary=llm.summary,
+            recommendation=llm.recommendation,
+            comments=llm.comments,
+            input_tokens=token_counter.input_tokens,
+            output_tokens=token_counter.output_tokens,
+            tokens_used=token_counter.total_tokens,
+        )
         logger.info(
             "review captured via submit_review tool",
             comments=len(result.comments),

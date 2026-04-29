@@ -93,13 +93,23 @@ class ReviewComment(BaseModel):
         return self
 
 
-class ReviewResult(BaseModel):
-    """Complete output from the AI agent."""
+class LLMReviewOutput(BaseModel):
+    """The shape an LLM is asked to produce. No process metadata — those are measured by us."""
 
     summary: str
     recommendation: Recommendation = Recommendation.COMMENT
     comments: list[ReviewComment] = Field(default_factory=list)
-    tokens_used: int = 0  # total tokens across all API calls
+
+
+class ReviewResult(BaseModel):
+    """Assembled review — LLM output (summary/recommendation/comments) plus runtime metadata we measure."""
+
+    summary: str
+    recommendation: Recommendation = Recommendation.COMMENT
+    comments: list[ReviewComment] = Field(default_factory=list)
+    tokens_used: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
     review_errors: list[str] = Field(default_factory=list)
     pre_formatted: str | None = None  # pre-formatted markdown, bypasses format_summary
 
