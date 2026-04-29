@@ -10,6 +10,11 @@ if TYPE_CHECKING:
     from junior.config import Settings
 
 
+# Backends where settings.resolved_model is the model actually used by the LLM.
+# codex CLI selects its model internally and ignores ours, so don't claim it.
+_BACKENDS_USING_MODEL = {"pydantic", "claudecode", "deepagents"}
+
+
 SEVERITY_EMOJI = {
     Severity.CRITICAL: "🔴",
     Severity.HIGH: "🟠",
@@ -81,8 +86,13 @@ def format_summary(result: ReviewResult, settings: Settings | None = None) -> st
     parts.append("---")
     meta = ["[Junior AI](https://github.com/mishachepi/junior/)"]
     if settings:
-        meta.append(settings.agent_backend.name.lower())
-    if result.tokens_used:
+        backend_name = settings.agent_backend.name.lower()
+        meta.append(backend_name)
+        if settings.resolved_model and backend_name in _BACKENDS_USING_MODEL:
+            meta.append(settings.resolved_model)
+    if result.input_tokens or result.output_tokens:
+        meta.append(f"{result.input_tokens:,} in / {result.output_tokens:,} out tokens")
+    elif result.tokens_used:
         meta.append(f"{result.tokens_used:,} tokens")
     parts.append(f"*Reviewed by {' | '.join(meta)}*")
 
