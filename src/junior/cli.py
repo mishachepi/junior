@@ -25,6 +25,34 @@ def _available_prompt_names() -> list[str]:
     return sorted(discover_prompts().keys())
 
 
+def _used_config_files(override_path: str | None) -> list[Path]:
+    """Existing config files in load order — global, local, --config FILE."""
+    from junior.config import GLOBAL_CONFIG_PATH, LOCAL_CONFIG_NAME
+
+    paths = [GLOBAL_CONFIG_PATH, Path(LOCAL_CONFIG_NAME)]
+    if override_path:
+        paths.append(Path(override_path))
+    return [p for p in paths if p.is_file()]
+
+
+def _startup_warnings(settings: Settings, args: argparse.Namespace, config_files: list[Path]):
+    """Yield soft warnings to surface at startup. Hard errors go through preflight()."""
+    from junior.config import PublishBackend
+
+    has_auth = any(
+        [settings.openai_api_key, settings.anthropic_api_key,
+         settings.gitlab_token, settings.github_token]
+    )
+    if not config_files and not has_auth:
+        yield "No config file or API keys/tokens detected — run 'junior --init' for setup."
+
+    if (args.publish
+            and settings.resolved_publisher == PublishBackend.GITLAB
+            and not (settings.ci_merge_request_diff_base_sha and settings.ci_commit_sha)):
+        yield ("Inline comments will be skipped — CI_MERGE_REQUEST_DIFF_BASE_SHA / "
+               "CI_COMMIT_SHA not set. Only the summary note will be posted.")
+
+
 def _parse_kv_args(raw: list[str], flag_name: str) -> dict[str, str]:
     """Parse a list of KEY=VALUE strings into a dict. Exits on bad format."""
     result = {}
@@ -302,6 +330,23 @@ def main() -> None:
             logger.error("invalid prompts", error=str(e))
             sys.exit(2)
 
+    config_files = _used_config_files(config_file)
+
+    logger.info(
+        "starting",
+        backend=settings.agent_backend.name.lower(),
+        model=f"{settings.resolved_provider or '?'}/{settings.resolved_model or '?'}",
+        project_dir=settings.ci_project_dir,
+        source=f"{settings.source} vs {settings.ci_merge_request_target_branch_name}",
+        mode=settings.resolved_publisher.name.lower() if args.publish else "local",
+        prompts=[p.name for p in prompts] if prompts else "(no-review)",
+        config_files=[str(p) for p in config_files] or "(none)",
+        context_keys=list(settings.context.keys()) or None,
+        context_file_keys=list(settings.context_files.keys()) or None,
+    )
+    for w in _startup_warnings(settings, args, config_files):
+        logger.warning(w)
+
     config_errors = settings.preflight(
         review=needs_review,
         publish=bool(args.publish),
@@ -311,19 +356,6 @@ def main() -> None:
             logger.error("config error", error=err)
         print("\nHint: run 'junior --init' for interactive setup.", file=sys.stderr)
         sys.exit(2)
-
-    logger.info(
-        "pipeline starting",
-        prompts=[p.name for p in prompts] if prompts else "(no-review)",
-        agent_backend=settings.agent_backend.name.lower(),
-        provider=settings.resolved_provider or "n/a",
-        model=settings.resolved_model or "n/a",
-        collector=settings.resolved_collector.name.lower(),
-        publisher=settings.resolved_publisher.name.lower() if args.publish else "local",
-        project_dir=settings.ci_project_dir,
-        context_keys=list(settings.context.keys()) or None,
-        context_file_keys=list(settings.context_files.keys()) or None,
-    )
 
     # --- Publish pre-generated review file ---
     if publish_file:
