@@ -1,7 +1,5 @@
 """Integration tests: full pipeline collect → review → publish with mocked AI."""
 
-from unittest.mock import patch
-
 import pytest
 
 from junior.config import AgentBackend, CollectorBackend, PublishBackend, Settings
