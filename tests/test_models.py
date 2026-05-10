@@ -1,11 +1,13 @@
 """Tests for data models."""
 
 from junior.models import (
+    LLMReviewOutput,
     Recommendation,
     ReviewComment,
     ReviewCategory,
     ReviewResult,
     Severity,
+    assemble_review_result,
 )
 
 
@@ -60,3 +62,27 @@ def test_review_result_empty():
     assert result.critical_count == 0
     assert result.high_count == 0
     assert result.has_blocking_issues is False
+
+
+def test_assemble_review_result_copies_llm_fields_and_runtime_metadata():
+    review = LLMReviewOutput(
+        summary="Needs changes",
+        recommendation=Recommendation.REQUEST_CHANGES,
+        comments=[ReviewComment(category=ReviewCategory.BUG, severity=Severity.HIGH, message="Bug")],
+    )
+
+    result = assemble_review_result(
+        review,
+        tokens_used=42,
+        input_tokens=30,
+        output_tokens=12,
+        review_errors=["partial failure"],
+    )
+
+    assert result.summary == "Needs changes"
+    assert result.recommendation == Recommendation.REQUEST_CHANGES
+    assert result.comments == review.comments
+    assert result.tokens_used == 42
+    assert result.input_tokens == 30
+    assert result.output_tokens == 12
+    assert result.review_errors == ["partial failure"]

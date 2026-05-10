@@ -19,6 +19,8 @@ from junior.models import (
     CollectedContext,
     ReviewComment,
     ReviewResult,
+    LLMReviewOutput,
+    assemble_review_result,
     determine_recommendation,
 )
 from junior.agent.core import build_review_prompt, build_user_message
@@ -222,10 +224,12 @@ async def _review_async(
     input_tokens += su.input_tokens or 0
     output_tokens += su.output_tokens or 0
 
-    return ReviewResult(
-        summary=summary_result.output,
-        recommendation=determine_recommendation(all_comments),
-        comments=all_comments,
+    return assemble_review_result(
+        LLMReviewOutput(
+            summary=summary_result.output,
+            recommendation=determine_recommendation(all_comments),
+            comments=all_comments,
+        ),
         tokens_used=input_tokens + output_tokens,
         input_tokens=input_tokens,
         output_tokens=output_tokens,

@@ -23,7 +23,7 @@ _build_prompt()
     │
     ▼
 subprocess: codex exec
-    │  --output-schema schema.json    ← JSON Schema for ReviewResult
+    │  --output-schema schema.json    ← strict JSON Schema for LLMReviewOutput
     │  --ephemeral                     ← no session persistence
     │  --skip-git-repo-check          ← for Docker/CI
     │  -o output.txt                   ← response to file
@@ -42,7 +42,11 @@ subprocess: codex exec
 _parse_response()
     │  1. Strip markdown fences
     │  2. Extract JSON { ... }
-    │  3. ReviewResult.model_validate()
+    │  3. LLMReviewOutput.model_validate()
+    │
+    ▼
+assemble_review_result()
+    │  tokens_used parsed from stderr
     │
     ▼
 ReviewResult(tokens_used=N)
@@ -56,7 +60,7 @@ Diff is **not** included in the prompt (`include_diff=False`) — codex reads fi
 
 ## Output Format
 
-`--output-schema` passes JSON Schema to codex via a temp file. Codex returns structured output matching the schema:
+`--output-schema` passes a strict JSON Schema to codex via a temp file. Codex returns structured output matching the schema:
 
 ```json
 {

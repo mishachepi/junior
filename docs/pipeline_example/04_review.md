@@ -12,11 +12,15 @@
 
 ## Output: `ReviewResult`
 
+The pydantic backend does not ask the LLM for process metadata. It merges specialist findings, generates the summary, computes the recommendation programmatically, then attaches measured token usage.
+
 ```json
 {
   "summary": "The code quality is poor overall, with multiple critical security flaws...",
   "recommendation": "request_changes",
   "comments": [/* 38 findings */],
+  "input_tokens": 28174,
+  "output_tokens": 7224,
   "tokens_used": 35398
 }
 ```
@@ -59,4 +63,4 @@
 
 - Some findings are duplicated across agents (e.g. `eval` found by both security and logic agents)
 - The `recommendation` is `request_changes` due to critical findings count
-- 35,398 tokens used across 3 parallel agent calls
+- 35,398 tokens used across 3 parallel agent calls plus the summary agent

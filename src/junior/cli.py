@@ -12,7 +12,7 @@ import structlog
 from pydantic import ValidationError
 
 from junior import __version__
-from junior.config import Settings
+from junior.config import AgentBackend, Settings
 from junior.models import CollectedContext
 from junior.prompt_loader import discover_prompts
 
@@ -43,7 +43,8 @@ def _startup_warnings(settings: Settings, args: argparse.Namespace, config_files
         [settings.openai_api_key, settings.anthropic_api_key,
          settings.gitlab_token, settings.github_token]
     )
-    if not config_files and not has_auth:
+    needs_setup = settings.agent_backend in (AgentBackend.PYDANTIC, AgentBackend.DEEPAGENTS)
+    if not config_files and not has_auth and needs_setup:
         yield "No config file or API keys/tokens detected — run 'junior --init' for setup."
 
     if (args.publish
@@ -335,7 +336,7 @@ def main() -> None:
     logger.info(
         "starting",
         backend=settings.agent_backend.name.lower(),
-        model=f"{settings.resolved_provider or '?'}/{settings.resolved_model or '?'}",
+        model=settings.display_model or None,
         project_dir=settings.ci_project_dir,
         source=f"{settings.source} vs {settings.ci_merge_request_target_branch_name}",
         mode=settings.resolved_publisher.name.lower() if args.publish else "local",

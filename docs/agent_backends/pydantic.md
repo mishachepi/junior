@@ -50,7 +50,7 @@ _review_async()
         determine_recommendation()  ← programmatic, no LLM
                        │
                        ▼
-              ReviewResult(tokens_used=total)
+              ReviewResult(input_tokens=..., output_tokens=..., tokens_used=total)
 ```
 
 ## Prompt Handling
@@ -108,12 +108,14 @@ All tools skip directories: `.git`, `node_modules`, `.venv`, `venv`, `__pycache_
 
 ## Token Tracking
 
-pydantic-ai returns exact usage via `result.usage()`. Total includes all sub-agents + summary agent:
+pydantic-ai returns exact usage via `result.usage()`. Junior stores split input/output counts and also keeps `tokens_used = input + output`. Totals include all sub-agents + the summary agent:
 
 ```python
 for r in results:
-    total_tokens += r.usage().total_tokens or 0
-total_tokens += summary_result.usage().total_tokens or 0
+    input_tokens += r.usage().input_tokens or 0
+    output_tokens += r.usage().output_tokens or 0
+input_tokens += summary_result.usage().input_tokens or 0
+output_tokens += summary_result.usage().output_tokens or 0
 ```
 
 ## Error Handling

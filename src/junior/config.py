@@ -177,6 +177,21 @@ class Settings(BaseSettings):
         return f"{self.resolved_provider}:{self.resolved_model}"
 
     @property
+    def display_model(self) -> str:
+        """Model name safe to show in logs/UI for the selected backend.
+
+        Only return a model when Junior actually chooses it:
+        - pydantic/deepagents: resolved_model is passed to the SDK
+        - claudecode: only explicit model_name is passed through to the CLI
+        - codex: CLI chooses its own model, so don't claim one
+        """
+        if self.agent_backend in (AgentBackend.PYDANTIC, AgentBackend.DEEPAGENTS):
+            return self.resolved_model
+        if self.agent_backend == AgentBackend.CLAUDECODE:
+            return self.model_name
+        return ""
+
+    @property
     def resolved_collector(self) -> CollectorBackend:
         """Auto-detect collector from token presence."""
         if self.gitlab_token:
@@ -305,5 +320,4 @@ def save_global_config(config: dict) -> Path:
         json.dumps(config, indent=2) + "\n", encoding="utf-8"
     )
     return GLOBAL_CONFIG_PATH
-
 

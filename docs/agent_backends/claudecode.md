@@ -25,7 +25,7 @@ build_user_message(include_diff=False)   ← shared (core/context_builder.py)
     ▼
 subprocess: claude -p
     │  --output-format json
-    │  --json-schema <ReviewResult schema>
+    │  --json-schema <LLMReviewOutput schema>
     │  --append-system-prompt <system prompt>
     │  --tools "Read,Bash(git log/show/diff/blame),Grep,Glob"
     │  --permission-mode bypassPermissions
@@ -46,7 +46,11 @@ subprocess: claude -p
     ▼
 _extract_review()
     │  finds StructuredOutput tool_use in assistant messages
-    │  validates via ReviewResult.model_validate()
+    │  validates via LLMReviewOutput.model_validate()
+    │
+    ▼
+assemble_review_result()
+    │  adds measured input/output/cache token usage
     │
     ▼
 ReviewResult

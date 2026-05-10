@@ -14,7 +14,7 @@ class Severity(str, Enum):
 
 
 class ReviewCategory(str, Enum):
-    """Hardcoded categories for review message. TODO: remove it."""
+    """Category of a review finding."""
     LOGIC = "logic"
     SECURITY = "security"
     BUG = "bug"
@@ -94,7 +94,7 @@ class ReviewComment(BaseModel):
 
 
 class LLMReviewOutput(BaseModel):
-    """The shape an LLM is asked to produce. No process metadata — those are measured by us."""
+    """Schema for a code review submitted by an AI agent."""
 
     summary: str
     recommendation: Recommendation = Recommendation.COMMENT
@@ -124,6 +124,26 @@ class ReviewResult(BaseModel):
     @property
     def has_blocking_issues(self) -> bool:
         return self.critical_count > 0 or self.recommendation == Recommendation.REQUEST_CHANGES
+
+
+def assemble_review_result(
+    review: LLMReviewOutput,
+    *,
+    tokens_used: int = 0,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    review_errors: list[str] | None = None,
+) -> ReviewResult:
+    """Build the pipeline result from LLM output plus runtime metadata measured by us."""
+    return ReviewResult(
+        summary=review.summary,
+        recommendation=review.recommendation,
+        comments=review.comments,
+        tokens_used=tokens_used,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        review_errors=review_errors or [],
+    )
 
 
 def determine_recommendation(comments: list[ReviewComment]) -> Recommendation:

@@ -20,7 +20,7 @@ The pydantic backend runs 3 parallel AI agents, one per prompt:
 
 ```
                     +---> [security agent] --+
-User Message ------>+---> [logic agent]    --+--> merge results --> ReviewResult
+User Message ------>+---> [logic agent]    --+--> merge results --> summary + recommendation --> ReviewResult
                     +---> [design agent]   --+
 ```
 

@@ -149,7 +149,7 @@ def review(
     # - Use settings.model_string for the model (e.g. "openai:gpt-5.4-mini")
     # - Use prompts[*].body for system prompts
     # - Use project_instructions for repo-specific context
-    # - Return ReviewResult with comments, summary, recommendation
+    # - Return ReviewResult, or validate an internal LLMReviewOutput first and assemble ReviewResult
 
     comments = []  # list[ReviewComment]
     return ReviewResult(
@@ -157,6 +157,8 @@ def review(
         recommendation=determine_recommendation(comments),
         comments=comments,
         tokens_used=0,
+        input_tokens=0,
+        output_tokens=0,
     )
 ```
 
@@ -165,7 +167,7 @@ Key points:
 - Use `read_project_instructions(settings.ci_project_dir)` for AGENT.md content
 - Use `settings.model_string` for the provider:model string
 - Use `determine_recommendation(comments)` or let the LLM decide
-- Set `tokens_used` for cost tracking in logs
+- Set `tokens_used` for cost tracking in logs; populate `input_tokens` / `output_tokens` too when the backend exposes them
 
 ### Step 2: Add enum member
 

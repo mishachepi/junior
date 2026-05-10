@@ -17,7 +17,8 @@ Configured via `--backend` flag or `AGENT_BACKEND` env var. Default: `claudecode
 | **Diff in user message** | Yes | No — reads files via tools | No — reads files via sandbox | Yes |
 | **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git...)` (built-in) | Sandbox filesystem access | `read_file`, `ls`, `grep`, `glob` (via deepagents) |
 | **Summary** | Separate summary agent call | Single response | Single response | Orchestrator synthesizes |
-| **Output** | `SubAgentFindings` → merged → `determine_recommendation()` | `ReviewResult` via `--json-schema` | `ReviewResult` via `--output-schema` | `submit_review` tool captures `ReviewResult` |
+| **LLM output contract** | `SubAgentFindings` per specialist + summary string | `LLMReviewOutput` via `--json-schema` | `LLMReviewOutput` via `--output-schema` | `submit_review` tool captures `LLMReviewOutput` |
+| **Pipeline result** | `ReviewResult` assembled by Junior | `ReviewResult` assembled from CLI output + token usage | `ReviewResult` assembled from CLI output + stderr token usage | `ReviewResult` assembled from tool output + callback token usage |
 
 ## When to use which
 

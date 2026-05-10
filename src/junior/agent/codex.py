@@ -11,23 +11,30 @@ import subprocess
 import tempfile
 
 import structlog
-from openai.lib._pydantic import to_strict_json_schema
 
 from junior.config import Settings
 from junior.models import (
     CollectedContext,
     LLMReviewOutput,
     ReviewResult,
+    assemble_review_result,
 )
 from junior.agent.core import build_review_prompt, build_user_message
 from junior.prompt_loader import Prompt
 
 logger = structlog.get_logger()
 
-# codex CLI passes this schema to OpenAI Responses API in strict mode,
-# which requires additionalProperties=false and all fields in required.
+
+def _build_output_schema() -> dict:
+    """Build a strict JSON schema suitable for codex CLI structured output."""
+    from openai.lib._pydantic import to_strict_json_schema
+
+    return to_strict_json_schema(LLMReviewOutput)
+
+
+# codex CLI passes this schema to OpenAI Responses API in strict mode.
 # Token counts are measured from stderr, not asked from the LLM.
-_OUTPUT_SCHEMA = to_strict_json_schema(LLMReviewOutput)
+_OUTPUT_SCHEMA = _build_output_schema()
 
 
 def _ensure_codex_auth(settings: Settings) -> None:
@@ -138,10 +145,8 @@ def review(context: CollectedContext, settings: Settings, prompts: list[Prompt])
             raise RuntimeError("codex returned empty output")
 
         llm = _parse_response(raw_output)
-        return ReviewResult(
-            summary=llm.summary,
-            recommendation=llm.recommendation,
-            comments=llm.comments,
+        return assemble_review_result(
+            llm,
             tokens_used=_parse_token_usage(result.stderr),
         )
     finally:
@@ -183,11 +188,18 @@ def _parse_response(output: str) -> LLMReviewOutput:
 
 
 def _parse_token_usage(stderr: str) -> int:
-    """Extract token count from codex stderr (last line: 'N,NNN')."""
-    # codex prints "tokens used\nN,NNN" at the end of stderr
-    match = re.search(r"(\d[\d,]+)\s*$", stderr.strip())
-    if match:
-        return int(match.group(1).replace(",", ""))
+    """Extract token count from codex stderr."""
+    lines = [line.strip() for line in stderr.splitlines()]
+    for index in range(len(lines) - 2, -1, -1):
+        if lines[index].lower() != "tokens used":
+            continue
+        token_line = lines[index + 1]
+        if re.fullmatch(r"\d[\d,]*", token_line):
+            return int(token_line.replace(",", ""))
+        logger.warning("codex token usage marker found without a valid count", value=token_line)
+        return 0
+
+    logger.debug("codex token usage marker not found")
     return 0
 
 

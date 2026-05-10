@@ -150,7 +150,9 @@ junior --config project.json       # use custom config file
 
 ### `--init`
 
-Interactive setup wizard. Prompts for backend, provider, API key, and prompts. Saves to `~/.config/junior/config.json`.
+Interactive setup wizard. Prompts for backend, provider (for API-driven backends), and prompts. Saves defaults to `~/.config/junior/config.json`.
+
+API keys are not stored in the config file. For `pydantic`, the wizard reminds you which env var to export (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) and prints a short summary plus next steps.
 
 ```bash
 junior --init

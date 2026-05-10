@@ -17,6 +17,7 @@ from junior.models import (
     CollectedContext,
     LLMReviewOutput,
     ReviewResult,
+    assemble_review_result,
 )
 from junior.agent.core import BASE_RULES, build_user_message, read_project_instructions
 from junior.prompt_loader import Prompt
@@ -130,10 +131,8 @@ def review(context: CollectedContext, settings: Settings, prompts: list[Prompt])
 
     if captured:
         llm = captured[0]
-        result = ReviewResult(
-            summary=llm.summary,
-            recommendation=llm.recommendation,
-            comments=llm.comments,
+        result = assemble_review_result(
+            llm,
             input_tokens=token_counter.input_tokens,
             output_tokens=token_counter.output_tokens,
             tokens_used=token_counter.total_tokens,

@@ -11,7 +11,7 @@ import subprocess
 import structlog
 
 from junior.config import Settings
-from junior.models import CollectedContext, LLMReviewOutput, ReviewResult
+from junior.models import CollectedContext, LLMReviewOutput, ReviewResult, assemble_review_result
 from junior.agent.core import build_review_prompt, build_user_message
 from junior.prompt_loader import Prompt
 
@@ -76,10 +76,8 @@ def review(context: CollectedContext, settings: Settings, prompts: list[Prompt])
 
     llm = _extract_review(messages)
     input_t, output_t = _extract_token_usage(result_msg)
-    return ReviewResult(
-        summary=llm.summary,
-        recommendation=llm.recommendation,
-        comments=llm.comments,
+    return assemble_review_result(
+        llm,
         input_tokens=input_t,
         output_tokens=output_t,
         tokens_used=input_t + output_t,

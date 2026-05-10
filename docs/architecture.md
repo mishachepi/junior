@@ -85,6 +85,7 @@ Each backend module must export one function with a fixed signature:
 | Publisher | `post_review()` | `(settings: Settings, result: ReviewResult) -> None` |
 
 Implementations vary widely — subprocess calls (`claudecode`, `codex`), async SDK (`pydantic`), LLM orchestrator (`deepagents`) — but all conform to the same interface.
+Some backends first validate a narrower LLM-facing contract (`LLMReviewOutput`) and then Junior assembles the final `ReviewResult` by attaching measured runtime metadata such as token usage.
 
 ### Dispatch
 
@@ -115,4 +116,3 @@ GITHUB_TOKEN set  → github collector + github publisher
 no token          → local collector  + local publisher
 both tokens       → error (validation rejects at startup)
 ```
-

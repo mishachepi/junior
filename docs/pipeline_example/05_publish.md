@@ -53,7 +53,7 @@ hardcoded secrets, and MD5 password hashing...
 
 ```markdown
 ---
-*Reviewed by [Junior AI](https://github.com/mishachepi/junior/) | pydantic | 35,398 tokens*
+*Reviewed by [Junior AI](https://github.com/mishachepi/junior/) | pydantic | gpt-5.4-mini | 28,174 in / 7,224 out tokens*
 ```
 
 ## Data Flow Summary

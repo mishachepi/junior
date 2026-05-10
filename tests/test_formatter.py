@@ -1,5 +1,6 @@
 """Tests for formatter: summary and inline comment formatting."""
 
+from junior.config import AgentBackend, Settings
 from junior.publish.core import format_inline_comment, format_summary
 from junior.models import (
     ReviewCategory,
@@ -64,3 +65,29 @@ def test_format_inline_comment_no_suggestion():
     comment = _make_comment(suggestion=None)
     output = format_inline_comment(comment)
     assert "Suggestion" not in output
+
+
+def test_format_summary_footer_shows_split_tokens_and_explicit_claude_model():
+    result = ReviewResult(summary="All good.", input_tokens=1200, output_tokens=300, tokens_used=1500)
+    settings = Settings(
+        agent_backend=AgentBackend.CLAUDECODE,
+        model_name="claude-sonnet-4-6",
+    )
+
+    output = format_summary(result, settings)
+
+    assert "claudecode" in output
+    assert "claude-sonnet-4-6" in output
+    assert "1,200 in / 300 out tokens" in output
+    assert "1,500 tokens" not in output
+
+
+def test_format_summary_footer_hides_model_for_codex():
+    result = ReviewResult(summary="All good.", tokens_used=1500)
+    settings = Settings(agent_backend=AgentBackend.CODEX, model_name="gpt-5.4")
+
+    output = format_summary(result, settings)
+
+    assert "codex" in output
+    assert "gpt-5.4" not in output
+    assert "1,500 tokens" in output

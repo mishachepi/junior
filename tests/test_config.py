@@ -115,6 +115,21 @@ class TestResolvedProvider:
         s = Settings()
         assert s.model_string == ":"
 
+    def test_display_model_for_pydantic_uses_resolved_model(self):
+        s = Settings(agent_backend=AgentBackend.PYDANTIC, model_provider="openai")
+        assert s.display_model == "gpt-5.4-mini"
+
+    def test_display_model_for_claudecode_requires_explicit_model(self):
+        assert Settings(agent_backend=AgentBackend.CLAUDECODE).display_model == ""
+        assert Settings(
+            agent_backend=AgentBackend.CLAUDECODE,
+            model_name="claude-sonnet-4-6",
+        ).display_model == "claude-sonnet-4-6"
+
+    def test_display_model_for_codex_is_hidden(self):
+        s = Settings(agent_backend=AgentBackend.CODEX, model_name="gpt-5.4")
+        assert s.display_model == ""
+
 
 # ---------------------------------------------------------------------------
 # Runtime validation via settings.preflight()

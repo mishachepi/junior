@@ -58,7 +58,8 @@ The fastest path: install, configure once, then run from the branch you want to 
 junior --init
 ```
 
-Interactive wizard that asks for backend, API key (if needed), and default prompts, then saves them to `~/.config/junior/config.json`. Skip this if you already set things via env vars.
+Interactive wizard that asks for backend, provider (if needed), and default prompts, then saves them to `~/.config/junior/config.json`.
+API keys are not saved there; keep them in env vars. The wizard prints a short summary and next steps after saving.
 
 ### 2. Check out the branch you want to review
 
@@ -90,7 +91,7 @@ junior --publish                                # full pipeline + post comments
 junior -o review.md && junior --publish review.md   # two-step: review first, post later
 ```
 
-For local publishing you need a platform token (`GITLAB_TOKEN` with `api` scope, or `GITHUB_TOKEN`) and a couple of platform variables. The full walkthrough — including self-hosted GitLab — is in the [FAQ: review a remote MR locally](faq.md#how-do-i-review-a-remote-mr-locally).
+For local publishing you need a platform token (`GITLAB_TOKEN` with `api` scope, or `GITHUB_TOKEN`) and a couple of platform variables. On GitLab, missing `CI_MERGE_REQUEST_DIFF_BASE_SHA` / `CI_COMMIT_SHA` means Junior still posts the summary note but skips inline comments. The full walkthrough — including self-hosted GitLab — is in the [FAQ: review a remote MR locally](faq.md#how-do-i-review-a-remote-mr-locally).
 
 ## What `--source` does
 

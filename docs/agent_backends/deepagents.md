@@ -47,11 +47,11 @@ agent.invoke() with TokenCounter callback
 │  Step 4: submit_review(summary=..., comments=[...])  │
 │                       │                              │
 │                       ▼                              │
-│            captured[0] → ReviewResult                 │
+│        captured[0] → LLMReviewOutput                 │
 └──────────────────────────────────────────────────────┘
     │
     ▼
-TokenCounter.total_tokens → result.tokens_used
+assemble_review_result() + TokenCounter → ReviewResult
 ```
 
 ## Prompt Handling
@@ -74,13 +74,13 @@ Subagents return JSON arrays (not structured output). The orchestrator synthesiz
 
 ## Output Format
 
-LangChain `StructuredTool` with `args_schema=ReviewResult`:
+LangChain `StructuredTool` with `args_schema=LLMReviewOutput`:
 
 ```python
 def submit_review(**kwargs) -> str:
-    result = ReviewResult(**kwargs)
-    captured.append(result)
-    return f"Review submitted: {result.recommendation.value}, {len(result.comments)} comments."
+    review = LLMReviewOutput(**kwargs)
+    captured.append(review)
+    return f"Review submitted: {review.recommendation.value}, {len(review.comments)} comments."
 ```
 
 - LLM sees schema with enum constraints (severity, category, recommendation)
@@ -107,11 +107,12 @@ Via LangChain `BaseCallbackHandler`:
 
 ```python
 class _TokenCounter(BaseCallbackHandler):
-    total_tokens: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
 
     def on_llm_end(self, response: LLMResult, **kwargs):
-        # Extract from generation_info.token_usage (older langchain)
-        # Fallback to message.usage_metadata (newer langchain)
+        # Prefer message.usage_metadata (newer langchain)
+        # Fallback to generation_info.token_usage (older langchain)
 ```
 
 ### Why ~88K Tokens

@@ -19,7 +19,7 @@ OPENAI_API_KEY=sk-... junior --backend pydantic --prompts security,logic,design 
 | 1 | [01_collect.md](01_collect.md) | Phase 1: Collect — git diff, changed files, metadata |
 | 2 | [02_context_build.md](02_context_build.md) | Context builder: the user message sent to AI |
 | 3 | [03_prompts.md](03_prompts.md) | System prompts: what each agent receives as instructions |
-| 4 | [04_review.md](04_review.md) | Phase 2: AI review — raw ReviewResult JSON |
+| 4 | [04_review.md](04_review.md) | Phase 2: AI review — final ReviewResult assembled from LLM output |
 | 5 | [05_publish.md](05_publish.md) | Phase 3: Formatted markdown output |
 
 ## Configuration Used
