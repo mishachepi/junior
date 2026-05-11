@@ -152,11 +152,26 @@ junior --config project.json       # use custom config file
 
 Interactive setup wizard. Prompts for backend, provider (for API-driven backends), and prompts. Saves defaults to `~/.config/junior/config.json`.
 
-API keys are not stored in the config file. For `pydantic`, the wizard reminds you which env var to export (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) and prints a short summary plus next steps.
+API keys are not stored in the config file. For `pydantic` / `deepagents`, the wizard reminds you which env var to export (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) and prints a short summary plus next steps.
+
+Re-running `--init` **merges** the new answers into the existing file: any keys you added by hand (e.g. `prompts_dir`, `max_concurrent_agents`, custom CI variables) are preserved. The wizard only touches the keys it asks about (`agent_backend`, `model_provider`, `prompts`).
 
 ```bash
 junior --init
 ```
+
+For a one-shot interactive run without saving anything, use [`-i / --interactive`](#i---interactive) instead.
+
+### `-i`, `--interactive`
+
+Interactive **run** mode. Walks through every relevant flag (backend, provider, model, source, target branch, prompts, output target) with the current config values pre-filled as defaults — press Enter to accept, type to override. The pipeline runs in the same process after a final confirmation. Choices are not saved anywhere; use `--init` if you want to persist them.
+
+```bash
+junior -i                          # confirm/override everything before running
+junior -i --source staged          # same, with source pre-selected
+```
+
+Combines with other flags: anything passed on the command line becomes the default shown in the wizard.
 
 ### `--dry-run`
 

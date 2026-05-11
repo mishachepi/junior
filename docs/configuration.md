@@ -19,6 +19,8 @@ junior --init                    # interactive setup → global config
 junior --config project.json     # override with specific file
 ```
 
+Re-running `--init` merges new answers into the existing global config — keys you added by hand (`prompts_dir`, `max_concurrent_agents`, …) are kept.
+
 ### Examples
 
 All keys work in JSON and as environment variables.

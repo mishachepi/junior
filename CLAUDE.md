@@ -7,7 +7,8 @@ AI code review agent for GitLab MRs and GitHub PRs.
 - **Entry point**: `src/junior/cli.py:main()`
 - **Config**: `src/junior/config.py` — `Settings` (pydantic-settings, frozen), JSON config loading
 - **Setup**: `src/junior/init_config.py` — interactive `--init` wizard (questionary)
-- **Models**: `src/junior/models.py` — `CollectedContext`, `ReviewResult`, `ReviewComment`
+- **Run wizard**: `src/junior/interactive.py` — shared `ask_*` prompts, plus `interactive_run()` for `-i`
+- **Models**: `src/junior/models.py` — `CollectedContext`, `ReviewResult`, `ReviewComment`, `LLMReviewOutput`
 - **Pipeline**: collect (`collect/`) → review (`agent/`) → publish (`publish/`)
 - **Dispatch**: enum value = module path, `importlib.import_module(backend.value)`
 - **Tests**: `uv run pytest tests/ -v`
@@ -30,6 +31,8 @@ src/junior/
   __main__.py            ← python -m junior entry point
   cli.py                 ← CLI: parse args → collect → review → publish
   config.py              ← Settings (frozen), backend enums, auto-detection
+  init_config.py         ← --init wizard: backend/provider/prompts → global config
+  interactive.py         ← shared ask_* prompts + interactive_run() for -i flag
   models.py              ← Pydantic data models (frozen)
   prompt_loader.py       ← load prompts/*.md with frontmatter
 

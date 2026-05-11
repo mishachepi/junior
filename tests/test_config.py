@@ -1,8 +1,11 @@
 """Tests for Settings validation — pydantic validators and runtime checks."""
 
+import json
+
 import pytest
 from pydantic import ValidationError
 
+from junior import config as config_module
 from junior.config import AgentBackend, CollectorBackend, PublishBackend, Settings
 
 
@@ -236,3 +239,45 @@ class TestValidateCombined:
         )
         errors = s.preflight(review=True, publish=True)
         assert len(errors) >= 2
+
+
+class TestSaveGlobalConfig:
+    """save_global_config merges into existing file, not overwrites."""
+
+    def _redirect_global_config(self, tmp_path, monkeypatch):
+        path = tmp_path / "config.json"
+        monkeypatch.setattr(config_module, "GLOBAL_CONFIG_DIR", tmp_path)
+        monkeypatch.setattr(config_module, "GLOBAL_CONFIG_PATH", path)
+        return path
+
+    def test_writes_fresh_file(self, tmp_path, monkeypatch):
+        path = self._redirect_global_config(tmp_path, monkeypatch)
+
+        config_module.save_global_config({"agent_backend": "pydantic"})
+
+        assert json.loads(path.read_text()) == {"agent_backend": "pydantic"}
+
+    def test_preserves_unrelated_existing_keys(self, tmp_path, monkeypatch):
+        path = self._redirect_global_config(tmp_path, monkeypatch)
+        path.write_text(json.dumps({
+            "agent_backend": "claudecode",
+            "prompts_dir": "/custom/prompts",
+            "max_concurrent_agents": 7,
+        }))
+
+        config_module.save_global_config({"agent_backend": "pydantic", "model_provider": "openai"})
+
+        assert json.loads(path.read_text()) == {
+            "agent_backend": "pydantic",          # updated
+            "model_provider": "openai",           # added
+            "prompts_dir": "/custom/prompts",     # kept
+            "max_concurrent_agents": 7,           # kept
+        }
+
+    def test_recovers_from_corrupt_existing_file(self, tmp_path, monkeypatch):
+        path = self._redirect_global_config(tmp_path, monkeypatch)
+        path.write_text("{ not valid json")
+
+        config_module.save_global_config({"agent_backend": "codex"})
+
+        assert json.loads(path.read_text()) == {"agent_backend": "codex"}

@@ -241,6 +241,12 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Interactive setup — choose backend and save to ~/.config/junior/config.json",
     )
+    parser.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="Interactive run — confirm/override every flag before launching the pipeline",
+    )
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(0)
@@ -267,10 +273,6 @@ def main() -> None:
     if args.collect and args.review:
         print("error: --collect and --review are mutually exclusive", file=sys.stderr)
         sys.exit(2)
-
-    publish_file = None
-    if args.publish and args.publish != "__auto__":
-        publish_file = args.publish
 
     # Load JSON config files: --config FILE → .junior.json → ~/.config/junior/config.json
     from junior.config import load_json_configs
@@ -316,6 +318,18 @@ def main() -> None:
     _setup_logging(log_level)
     logger = structlog.get_logger()
 
+    if args.interactive:
+        from junior.interactive import interactive_run
+
+        result = interactive_run(settings, args, _available_prompt_names())
+        if result is None:
+            return
+        settings, args = result
+
+    publish_file = None
+    if args.publish and args.publish != "__auto__":
+        publish_file = args.publish
+
     # Load prompts (only when review phase will run)
     prompts = []
     needs_review = not args.collect and not args.dry_run and not publish_file
@@ -346,7 +360,7 @@ def main() -> None:
         context_file_keys=list(settings.context_files.keys()) or None,
     )
     for w in _startup_warnings(settings, args, config_files):
-        logger.warning(w)
+        logger.warning("startup_hint", message=w)
 
     config_errors = settings.preflight(
         review=needs_review,

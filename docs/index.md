@@ -78,9 +78,10 @@ junior                            # full review with the defaults from --init
 junior --prompts security         # focus on a single area
 junior --dry-run                  # preview what would be reviewed (no AI call)
 junior -o review.md               # save the review to a markdown file
+junior -i                         # interactive run — pick options each time
 ```
 
-Output goes to stdout by default. Use `-o FILE` to save it.
+Output goes to stdout by default. Use `-o FILE` to save it. `-i` opens a wizard with your current config as defaults — handy when you want to try a different backend or prompt set without editing the config.
 
 ### 4. Publish (optional)
 

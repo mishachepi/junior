@@ -5,6 +5,7 @@ import os
 import questionary
 
 from junior.config import GLOBAL_CONFIG_PATH, save_global_config
+from junior.interactive import ask_backend, ask_provider, ask_prompts_text
 
 
 def interactive_setup() -> None:
@@ -15,43 +16,26 @@ def interactive_setup() -> None:
 
     if GLOBAL_CONFIG_PATH.is_file():
         if not questionary.confirm(
-            "Config already exists. Overwrite?",
+            "Config already exists. Update it? (other keys you added will be kept)",
             default=False,
         ).ask():
             print("Cancelled. Existing config kept.")
             return
 
-    backend = questionary.select(
-        "Backend (which AI runs the review):",
-        choices=[
-            questionary.Choice("claudecode — uses local Claude CLI (no API key needed)", value="claudecode"),
-            questionary.Choice("pydantic — parallel agents via OpenAI/Anthropic API", value="pydantic"),
-            questionary.Choice("codex — uses local Codex CLI", value="codex"),
-        ],
-    ).ask()
+    backend = ask_backend()
     if backend is None:
         return
 
     config: dict = {"agent_backend": backend}
     provider = None
 
-    if backend == "pydantic":
-        provider = questionary.select(
-            "Provider:",
-            choices=[
-                questionary.Choice("openai — uses OPENAI_API_KEY", value="openai"),
-                questionary.Choice("anthropic — uses ANTHROPIC_API_KEY", value="anthropic"),
-            ],
-        ).ask()
+    if backend in ("pydantic", "deepagents"):
+        provider = ask_provider()
         if provider is None:
             return
-
         config["model_provider"] = provider
 
-    prompts = questionary.text(
-        "Prompts to run (comma-separated):",
-        default="security,logic,design",
-    ).ask()
+    prompts = ask_prompts_text()
     if prompts is None:
         return
     if prompts != "security,logic,design":
@@ -59,7 +43,6 @@ def interactive_setup() -> None:
 
     path = save_global_config(config)
 
-    # Summary + next steps
     print("\nConfiguration saved.")
     print(f"  Backend  : {backend}")
     if provider:
@@ -67,7 +50,7 @@ def interactive_setup() -> None:
     print(f"  Prompts  : {prompts}")
     print(f"  File     : {path}")
 
-    if backend == "pydantic":
+    if backend in ("pydantic", "deepagents"):
         env_var = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
         if not os.environ.get(env_var):
             print(f"\nReminder: set {env_var} in your shell before running Junior:")

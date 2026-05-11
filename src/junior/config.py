@@ -314,10 +314,26 @@ def load_json_configs(override_path: str | None = None) -> dict:
 
 
 def save_global_config(config: dict) -> Path:
-    """Save config to ~/.config/junior/config.json."""
+    """Save config to ~/.config/junior/config.json, merging into existing keys.
+
+    Any keys the user previously hand-added stay; only the keys passed in
+    `config` are overwritten. This prevents the --init wizard from silently
+    dropping settings it doesn't know about (prompts_dir, max_concurrent_agents, etc.).
+    """
     GLOBAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+    existing: dict = {}
+    if GLOBAL_CONFIG_PATH.is_file():
+        try:
+            existing = json.loads(GLOBAL_CONFIG_PATH.read_text(encoding="utf-8"))
+            if not isinstance(existing, dict):
+                existing = {}
+        except (json.JSONDecodeError, OSError):
+            existing = {}
+
+    merged = {**existing, **config}
     GLOBAL_CONFIG_PATH.write_text(
-        json.dumps(config, indent=2) + "\n", encoding="utf-8"
+        json.dumps(merged, indent=2) + "\n", encoding="utf-8"
     )
     return GLOBAL_CONFIG_PATH
 

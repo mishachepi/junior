@@ -81,7 +81,7 @@ tokens used
 22,476
 ```
 
-Parsed via regex: `r"(\d[\d,]+)\s*$"` from the last line of stderr.
+`_parse_token_usage` scans stderr lines for the literal `tokens used` marker, then validates the next line as a digit/comma sequence (`re.fullmatch(r"\d[\d,]*")`). Without the marker — or if the value line is malformed — we report `0` and log a debug/warning, instead of grabbing stray digits from elsewhere in stderr.
 
 ## Error Handling
 
