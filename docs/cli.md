@@ -16,7 +16,8 @@
 | `--context KEY="text"` | — | Extra instructions for AI. Repeatable |
 | `--context-file KEY=path` | — | Data files for context. Repeatable |
 | `--config [FILE]` | — | Print config template or load JSON config file |
-| `--init` | — | Interactive setup wizard |
+| `--init` | — | Interactive setup wizard (saves to `~/.config/junior/config.json`) |
+| `-i, --interactive` | — | Interactive run wizard: confirm/override every flag before launching |
 | `--dry-run` | — | Show what would be reviewed, no AI |
 | `--collect` | — | Collect only, save context as JSON |
 | `--review FILE` | — | Load context from JSON, skip collect |

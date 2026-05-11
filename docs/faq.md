@@ -61,6 +61,10 @@ junior --source branch -o review.md    # generate locally, inspect
 junior --publish review.md             # publish when ready
 ```
 
+## How do I tweak settings for a single run without editing config?
+
+Use `junior -i` (or `--interactive`). It walks you through every flag (backend, provider, model, source, target branch, prompts, output target) with your current config as the default — press Enter to keep, type to override. Nothing is written to disk; the choices apply only to this run. Use `--init` instead if you want to persist them.
+
 ## How do I review a remote MR locally?
 
 You can review (and publish to) any GitLab MR or GitHub PR from your laptop — including self-hosted GitLab. In CI most of these variables are set automatically; locally you set them yourself.
