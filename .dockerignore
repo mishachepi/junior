@@ -9,6 +9,10 @@ tests
 docs
 examples
 *.md
+# Built-in review prompts live under src/junior/prompts/*.md — keep them.
 !src/**/*.md
 Dockerfile
 .dockerignore
+# Personal helper scripts not meant to ship in the image.
+review-*.sh
+
