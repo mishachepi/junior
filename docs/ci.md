@@ -6,9 +6,6 @@
 code-review:
   stage: review
   image: registry.gitlab.com/mishachepi/junior-test-review/junior:pydantic
-  variables:
-    OPENAI_API_KEY: $OPENAI_API_KEY
-    GITLAB_TOKEN: $GITLAB_BOT_TOKEN
   script:
     - junior --publish
   rules:
@@ -16,14 +13,36 @@ code-review:
   allow_failure: true
 ```
 
+CI variables defined in Settings > CI/CD > Variables are automatically available to all jobs — no need to redeclare them in a `variables` block.
+
 Settings > CI/CD > Variables (uncheck **Protected** for feature branches):
 
 | Variable | Value |
 |----------|-------|
 | `OPENAI_API_KEY` | `sk-...` (masked) |
-| `GITLAB_BOT_TOKEN` | `glpat-...` with `api` scope (masked) |
+| `GITLAB_TOKEN` | `glpat-...` with `api` scope (masked) |
 
 GitLab CI auto-provides the rest: `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA`, `CI_PROJECT_DIR`, etc. No manual setup needed.
+
+### Restrict to a specific target branch
+
+```yaml
+  rules:
+    - if: '$CI_MERGE_REQUEST_IID && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+```
+
+### Pass extra context and set model
+
+Use `--context-file` to inject additional files into the review prompt, and `--model` to pin a specific model:
+
+```yaml
+  script:
+    - |
+      junior \
+        --publish \
+        --context-file key=path/to/file.md \
+        --model <model-name>
+```
 
 ## GitHub Actions
 
