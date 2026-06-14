@@ -1,13 +1,42 @@
-"""Git diff operations: get diff, parse into files, commit messages."""
+"""Git diff operations: resolve base SHA, get diff, parse into files, commit messages."""
 
 import subprocess
 from pathlib import Path
 
 import structlog
 
-from junior.models import ChangedFile, FileStatus
+from junior.config import Settings
+from junior.runbooks.code_review.models import ChangedFile, FileStatus
 
 logger = structlog.get_logger()
+
+# GitLab/GitHub emit 40 zeros for CI_COMMIT_BEFORE_SHA / event.before on the
+# first push to a branch and in non-push runbooks. Treat as absent.
+_ZERO_SHA = "0" * 40
+
+
+def resolve_base_sha(settings: Settings) -> tuple[str | None, str]:
+    """Pick the base commit to diff against, with provenance for logging.
+
+    Priority:
+      1. --base-sha / BASE_SHA               (explicit override)
+      2. CI_MERGE_REQUEST_DIFF_BASE_SHA      (GitLab MR runbooks)
+      3. CI_COMMIT_BEFORE_SHA                (GitLab push events)
+      4. GITHUB_EVENT_BEFORE                 (GitHub Actions push events)
+
+    Returns (sha, source_label). source_label is "none" when no usable base
+    was found — caller falls back to branch/local strategies.
+    """
+    candidates = (
+        ("cli", settings.context.base_sha),
+        ("mr_diff_base", settings.output.ci_merge_request_diff_base_sha),
+        ("ci_commit_before", settings.output.ci_commit_before_sha),
+        ("github_event_before", settings.output.github_event_before),
+    )
+    for source, value in candidates:
+        if value and value != _ZERO_SHA:
+            return value, source
+    return None, "none"
 
 
 def get_diff(
@@ -16,17 +45,22 @@ def get_diff(
     base_sha: str | None,
     *,
     source: str = "auto",
+    base_source: str = "none",
 ) -> tuple[str, str]:
     """Get unified diff and a human-readable description of what is being reviewed.
 
     Returns (diff_text, description) where description is e.g.
     "staged changes" or "branch feat/x vs main".
 
+    `base_source` is a provenance label from `resolve_base_sha` used only to
+    make the description informative in auto mode (which CI variable picked
+    the base, or "cli" for an explicit --base-sha).
+
     Source modes:
     - "staged"  — git diff --cached
     - "commit"  — git diff HEAD~1
     - "branch"  — target_branch...HEAD
-    - "auto"    — smart detection (default): CI base_sha, branch, uncommitted
+    - "auto"    — smart detection (default): base_sha, branch, uncommitted
     """
     if source == "staged":
         diff = _run_git(project_dir, ["diff", "--cached"]) or ""
@@ -48,11 +82,11 @@ def get_diff(
     current_branch = (_run_git(project_dir, ["rev-parse", "--abbrev-ref", "HEAD"]) or "").strip()
     on_target = current_branch == target_branch
 
-    # base_sha from CI is always authoritative
+    # Explicit base SHA (CLI override or CI variable) is always authoritative.
     if base_sha:
         diff = _run_git(project_dir, ["diff", f"{base_sha}...HEAD"])
         if diff is not None:
-            return diff, f"branch {current_branch} vs {target_branch} (CI base)"
+            return diff, f"new commits since {base_sha[:8]} ({base_source})"
 
     # Branch-based strategies (skip if on target branch)
     if not on_target:
@@ -83,7 +117,7 @@ def get_diff(
     if diff is not None and diff.strip():
         return diff, "staged changes"
 
-    logger.warning("no diff found with any strategy")
+    logger.debug("no diff found with any strategy")
     return "", "no changes"
 
 
@@ -124,7 +158,7 @@ def get_commit_messages(project_dir: Path, target_branch: str, base_sha: str | N
     # Parse subject + body blocks separated by ---END---
     raw_commits = output.strip().split("---END---")
     messages = [c.strip() for c in raw_commits if c.strip()]
-    logger.info("collected commit messages", count=len(messages))
+    logger.debug("collected commit messages", count=len(messages))
     return messages
 
 

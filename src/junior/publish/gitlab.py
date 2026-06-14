@@ -3,7 +3,7 @@
 import structlog
 
 from junior.config import Settings
-from junior.models import ReviewComment, ReviewResult
+from junior.runbooks.code_review.models import ReviewComment, ReviewResult
 from junior.publish.core import MAX_INLINE_COMMENTS, format_inline_comment, format_summary
 
 logger = structlog.get_logger()
@@ -13,22 +13,24 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
     """Post review results to GitLab MR."""
     import gitlab
 
-    gl = gitlab.Gitlab(settings.ci_server_url, private_token=settings.gitlab_token)
-    project = gl.projects.get(settings.ci_project_id)
-    mr = project.mergerequests.get(settings.ci_merge_request_iid)
+    gl = gitlab.Gitlab(
+        settings.output.ci_server_url, private_token=settings.output.gitlab_token
+    )
+    project = gl.projects.get(settings.output.ci_project_id)
+    mr = project.mergerequests.get(settings.output.ci_merge_request_iid)
 
     # Post summary note
     summary = format_summary(result, settings=settings)
     mr.notes.create({"body": summary})
     logger.info(
         "posted summary note",
-        project_id=settings.ci_project_id,
-        mr_iid=settings.ci_merge_request_iid,
+        project_id=settings.output.ci_project_id,
+        mr_iid=settings.output.ci_merge_request_iid,
     )
 
     # Post inline comments as discussion threads
-    base_sha = settings.ci_merge_request_diff_base_sha
-    head_sha = settings.ci_commit_sha
+    base_sha = settings.output.ci_merge_request_diff_base_sha
+    head_sha = settings.output.ci_commit_sha
     if not base_sha or not head_sha:
         logger.info(
             "no SHAs available, skipping inline comments",

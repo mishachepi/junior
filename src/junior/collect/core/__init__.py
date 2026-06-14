@@ -1,6 +1,6 @@
-"""Core collection pipeline and shared libraries.
+"""Core collection runbook and shared libraries.
 
-Exports the main pipeline (collect_base, enrich_with_metadata)
+Exports the main runbook (collect_base, enrich_with_metadata)
 used by all collector backends.
 """
 

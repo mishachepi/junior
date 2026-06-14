@@ -1,29 +1,41 @@
 [project]
 name = "junior"
-version = "0.1.2"
-description = "AI code review agent for GitLab and GitHub CI"
+version = "0.2.0"
+description = "Deterministic LLM runbook framework — built-in AI code review for GitLab MRs, GitHub PRs, and Bitbucket DC PRs"
 license = "MIT"
 requires-python = ">=3.12"
+# Core: the CLI, config, models, and the default `claudecode` backend.
+# No LLM SDKs here — `claudecode` drives the `claude` CLI, so a bare install
+# already runs a full review (local collect → claudecode → stdout/file).
 dependencies = [
     "pydantic>=2.12",
     "pydantic-settings>=2.13",
-    "pydantic-ai-slim[anthropic,openai]>=1.70",
-    "httpx>=0.28",
     "structlog>=25.0",
     "questionary>=2.1",
+    "typer>=0.15",
+    "rich>=13.0",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
-gitlab = ["python-gitlab>=8.0"]
-github = []  # uses httpx (core) + gh CLI
-codex = []   # uses codex CLI (Node.js)
+# --- Agent backends: install the one you'll run ---
+claudecode = []  # default — drives the `claude` CLI (Node.js), no Python deps
+codex = ["openai>=1.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
+pydantic = ["pydantic-ai-slim[anthropic,openai]>=1.70"]  # single structured call via API key
 deepagents = [
     "deepagents>=0.4.0",
     "langchain>=0.3.0",
     "langchain-anthropic>=0.3.0",
     "langchain-openai>=0.3.0",
 ]
-all = ["junior[gitlab,deepagents]"]
+
+# --- Platforms: collect MR/PR metadata + publish comments ---
+gitlab = ["python-gitlab>=8.0"]
+github = ["httpx>=0.28"]  # + `gh` CLI authenticated
+bitbucket = ["httpx>=0.28"]  # Bitbucket Data Center (self-hosted)
+
+# --- Convenience ---
+all = ["junior[gitlab,github,bitbucket,codex,pydantic,deepagents]"]
 dev = [
     "pytest>=9.0",
     "pytest-mock>=3.15",

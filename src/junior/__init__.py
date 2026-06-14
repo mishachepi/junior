@@ -1,4 +1,4 @@
-"""Junior — AI code review agent for GitLab and GitHub CI."""
+"""Junior — deterministic LLM runbook framework with built-in code review."""
 
 from importlib.metadata import version
 

@@ -2,6 +2,7 @@
 __pycache__/
 *.py[codz]
 *$py.class
+pi
 
 # C extensions
 *.so
@@ -215,3 +216,10 @@ tmp/
 
 /.claude/settings.local.json
 site/
+
+# Local Junior run artifacts
+/.junior.yaml
+/.junior.yml
+/ctx.json
+/context.json
+.junior/

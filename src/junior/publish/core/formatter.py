@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from junior.models import ReviewComment, ReviewResult, Severity
+from junior.runbooks.code_review.models import ReviewComment, ReviewResult, Severity
 
 if TYPE_CHECKING:
     from junior.config import Settings
@@ -81,9 +81,9 @@ def format_summary(result: ReviewResult, settings: Settings | None = None) -> st
     parts.append("---")
     meta = ["[Junior AI](https://github.com/mishachepi/junior/)"]
     if settings:
-        meta.append(settings.agent_backend.name.lower())
-        if settings.display_model:
-            meta.append(settings.display_model)
+        meta.append(settings.llm.harness_name)
+        if settings.llm.display_model:
+            meta.append(settings.llm.display_model)
     if result.input_tokens or result.output_tokens:
         meta.append(f"{result.input_tokens:,} in / {result.output_tokens:,} out tokens")
     elif result.tokens_used:

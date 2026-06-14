@@ -14,6 +14,12 @@ logger = structlog.get_logger()
 
 _INSTRUCTION_FILES = ["AGENT.md", "AGENTS.md", "CLAUDE.md"]
 
+# Project instructions are inlined into every review's system prompt. A huge
+# AGENT.md/CLAUDE.md would crowd out the diff and inflate every call, so it is
+# truncated beyond this size (with a warning — trim the file or use --prompt-file
+# for a curated review prompt instead).
+MAX_INSTRUCTIONS_CHARS = 30_000
+
 BASE_RULES = """
 ## Rules
 - Only report issues you are confident about
@@ -67,9 +73,20 @@ def read_project_instructions(project_dir: str) -> str | None:
         if path.is_file():
             try:
                 content = path.read_text(encoding="utf-8", errors="ignore")
-                logger.info("loaded project instructions", file=filename, length=len(content))
-                return content
             except OSError as e:
                 logger.warning("failed to read project instructions", file=filename, error=str(e))
                 continue
+            if len(content) > MAX_INSTRUCTIONS_CHARS:
+                logger.warning(
+                    "project instructions truncated",
+                    file=filename,
+                    length=len(content),
+                    max_chars=MAX_INSTRUCTIONS_CHARS,
+                )
+                content = (
+                    content[:MAX_INSTRUCTIONS_CHARS]
+                    + "\n\n[...truncated by junior — file exceeds the prompt budget]"
+                )
+            logger.debug("loaded project instructions", file=filename, length=len(content))
+            return content
     return None
