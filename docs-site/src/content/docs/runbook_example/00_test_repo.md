@@ -29,6 +29,7 @@ ef9098a feat: add authentication and database layer
 
 ```bash
 OPENAI_API_KEY=sk-... junior run \
+  --runbook local_review \
   --harness pydantic \
   --prompt-file ./prompts/security.md \
   --prompt-file ./prompts/logic.md \
@@ -36,5 +37,5 @@ OPENAI_API_KEY=sk-... junior run \
   --source branch \
   --target-branch main \
   -o /tmp/junior_review_output.md \
-  ../junior-test-repo
+  --project-dir ../junior-test-repo
 ```

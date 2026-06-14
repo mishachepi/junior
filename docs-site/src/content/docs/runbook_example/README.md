@@ -16,7 +16,7 @@ You can reproduce this by running:
 
 ```bash
 cd /path/to/test-repo
-OPENAI_API_KEY=sk-... junior run --harness pydantic \
+OPENAI_API_KEY=sk-... junior run --runbook local_review --harness pydantic \
   --prompt-file ./prompts/security.md \
   --prompt-file ./prompts/logic.md \
   --prompt-file ./prompts/design.md \

@@ -72,7 +72,7 @@ my-repo/
 ### YAML shape
 
 ```yaml
-runbook: local_review                          # required: local_review, github_pr_review, gitlab_pr_review, bitbucket_pr_review
+runbook: local_review                          # required: local_review, github_pr_review, gitlab_pr_review, bitbucket_pr_review, weather_advice
 context:
   prompts:
     - file://./.junior/prompts/security.md      # path is relative to THIS config file
@@ -185,7 +185,7 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 
 | Variable | CLI flag | Default | Description |
 |----------|----------|---------|-------------|
-| `RUNBOOK` | `--runbook` | — (required) | Which runbook to run: `local_review`, `github_pr_review`, `gitlab_pr_review`, `bitbucket_pr_review`, or `pkg.module:ClassName`. Selected explicitly — no auto-detection, no implicit default |
+| `RUNBOOK` | `--runbook` | — (required) | Which runbook to run: `local_review`, `github_pr_review`, `gitlab_pr_review`, `bitbucket_pr_review`, `weather_advice`, or `pkg.module:ClassName`. Selected explicitly — no auto-detection, no implicit default |
 | `LOG_LEVEL` | `-v` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`. `-v` sets `DEBUG` |
 
 > [!NOTE]
@@ -272,21 +272,9 @@ junior run --base-sha v1.2.0                 # everything since the v1.2.0 tag
 junior run --base-sha $CI_COMMIT_BEFORE_SHA  # new commits in this push
 ```
 
-### `PROMPTS` — where do prompts come from?
+### `PROMPTS` — task instructions
 
-Junior ships no built-in prompts. You supply them three ways and they stack:
-
-| Source | Shape | When |
-|--------|-------|------|
-| `--prompt TEXT` | Repeatable CLI flag | Ad-hoc tweaks for a single run |
-| `--prompt-file FILE` | Repeatable CLI flag, `.md` files | Reusable instructions checked into the repo |
-| Config | `context.prompts: list[str]` — each entry is inline text or a `file://...` URI | Stable baseline per project or globally |
-
-CLI values **append** to config values — config holds the baseline, CLI adds extras on top. `--prompt-file FILE` is just a shortcut: it's converted to `file://<abs>` and merged into the same list.
-
-`file://` URIs inside a config file are resolved against the config file's directory; URIs from `--prompt` / `--prompt-file` are resolved against the current working directory.
-
-Example reference prompts live in [`examples/prompts/`](examples/prompts/) — copy them into your repo and reference the local copies.
+`context.prompts` is one list; CLI `--prompt` / `--prompt-file` append to it. The full guide (sources, `file://` resolution, examples) is in [Prompts](prompts.md) — here's just the config shape:
 
 ```yaml
 context:
@@ -295,18 +283,7 @@ context:
     - "Find any new TODO comments"      # inline
 ```
 
-```bash
-junior run \
-  --prompt "Quick smoke review for PR #123" \
-  --prompt-file ./prompts/security.md
-```
-
-```bash
-# Env-var form — JSON-encoded list
-PROMPTS='["file:///abs/security.md","Quick smoke review"]' junior run
-```
-
-If no prompts come from any source, the LLM still gets the diff, MR metadata, prior discussion, project instructions from `AGENT.md` / `CLAUDE.md`, and code_review's built-in base rules (severity scale, focus on changed code).
+As an env var it's a JSON-encoded list: `PROMPTS='["file:///abs/security.md","Quick review"]'`.
 
 ### Tuning knobs (rarely changed)
 
