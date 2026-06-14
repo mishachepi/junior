@@ -2,47 +2,68 @@
 
 ## Known Issues
 
-### Documentation
-- ~~`--config` replaces `.env`~~ ✅ done (JSON config hierarchy)
-- CI auto-detected variables undocumented for manual setup
+### DeepAgents harness (experimental)
 
-### Config generation (`--config`)
-- Not all fields have meaningful defaults
-- `key.upper()` may not match actual pydantic-settings aliases
-- CI-only variables shown in template without explanation
+`deepagents` is the least reliable harness — treat it as experimental:
+
+- Fails on large diffs (>30KB) — timeout or the orchestrator skips `submit_review`.
+- With a single prompt (the common case) the orchestrator can get lost and never
+  call `submit_review`.
+- No retry logic for provider rate limits.
+
+Prefer `claudecode` (default), `codex`, or `pydantic` for production use.
 
 ### CLI
-- `_parse_kv_args` strips spaces in file paths; duplicate keys silently overwritten
-- `--config` dual behavior (generate vs load) may confuse users
 
-### DeepAgents
-- Fails on large diffs (>30KB) — timeout or orchestrator skips `submit_review`
-- With 1 prompt (common), orchestrator gets lost and doesn't call `submit_review`
-- No retry logic for rate limits
+- `parse_kv` (`--context` / `--context-file`) strips surrounding whitespace from
+  keys and values, and a duplicate `KEY=` silently overwrites the earlier one.
 
 ## Planned
 
-### Security (Prompt Injection)
-- Prompt allowlist per repo (`.junior/allowed_prompts.txt`)
-- Prompt signature verification for CI
-- Sandboxed prompt mode: external prompts can only add criteria, not override built-ins
-- Audit log for prompts used per review
-- Path restrictions for `--config` and `--prompt-file` in CI mode
+### Security (prompt injection)
 
-### External Prompts (`--prompt-file`)
-- Prompt validation: warn on missing frontmatter, empty body, excessive size
-- Prompt composition: `extends: security` to inherit built-ins
+- Prompt allowlist per repo (`.junior/allowed_prompts.txt`).
+- Prompt signature verification for CI.
+- Sandboxed prompt mode: external prompts can only add criteria, not override
+  base rules.
+- Audit log for prompts used per review.
+- Path restrictions for `--config` and `--prompt-file` in CI mode.
 
-### Architecture
-- Add `Protocol` for backend contracts (collect, review, post_review) — catch signature mismatches at type-check time instead of runtime
-- Move `pydantic-ai-slim` from core dependencies to optional extra — claudecode users shouldn't need anthropic/openai SDKs
+See [prompt injection](docs-site/src/content/docs/prompt_injection.md) for the
+current mitigations.
+
+### Prompts (`--prompt-file`)
+
+- Prompt validation: warn on missing frontmatter, empty body, excessive size.
+- Prompt composition: `extends:` to inherit a base prompt.
+
+### Parallel prompt fan-out
+
+Today multiple `--prompt` entries are concatenated into one system prompt and the
+harness runs **once**. Planned: each prompt becomes its own independent harness
+run (`--prompt "security audit" --prompt "logic review"` → two parallel calls,
+each unaware of the other), with the runner doing the fan-out. Open design
+questions before this lands:
+
+- **Publish semantics** — N runs produce N outputs; the runbook decides what
+  publishing means: merge the outputs into one publish, or publish each
+  separately.
+- Exit code, usage accounting, and the run record across N results.
 
 ### Output
-- `-f json` output format — save ReviewResult as JSON to preserve inline comments for later `--publish`
-- `--publish` with JSON file — parse ReviewResult and post inline comments to GitLab/GitHub
+
+- Round-trip the structured result: save a runbook's JSON output and later
+  `--publish` it (parse the saved `LLMReviewOutput` and post inline comments to
+  GitLab/GitHub), so collect/review/publish can run on different machines without
+  re-rendering. Today `--publish-file` posts a pre-rendered `.md` only.
+
+### DeepAgents
+
+- Diff chunking for large diffs.
+- Fix the single-prompt orchestrator so it reliably calls `submit_review`.
+- Retry logic for rate limits.
 
 ### Other
-- Post-processing deduplication of duplicate findings across parallel agents
-- DeepAgents: diff chunking for large diffs, fix single-subagent orchestrator, retry logic
-- Add silent mode
-- Make PROJECT_DIR required
+
+- Silent mode (suppress non-essential stderr).
+- Make `PROJECT_DIR` explicit/required for git runbooks.

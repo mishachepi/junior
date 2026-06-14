@@ -1,0 +1,28 @@
+/* Indigo accent — matches the previous MkDocs Material theme. */
+:root {
+  --sl-color-accent-low: #1e1b4b;
+  --sl-color-accent: #4f46e5;
+  --sl-color-accent-high: #c7d2fe;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #e0e7ff;
+  --sl-color-accent: #4f46e5;
+  --sl-color-accent-high: #312e81;
+}
+
+/* Landing page (template: splash) — Starlight's default hero padding grows to
+   10rem on tall viewports, leaving a dead band before the content. Tighten it
+   and let the lead paragraph read as part of the hero. */
+[data-has-hero] .hero {
+  padding-block: clamp(1.5rem, 5vmin, 3.5rem);
+}
+
+[data-has-hero] .sl-markdown-content > p:first-child {
+  font-size: var(--sl-text-lg);
+  max-width: 66ch;
+}
+
+[data-has-hero] .card {
+  border-radius: 0.75rem;
+}

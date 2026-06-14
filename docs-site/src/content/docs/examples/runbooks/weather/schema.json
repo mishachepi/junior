@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "required": ["summary", "outfit"],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "One-line overview of the weather window and the plan."
+    },
+    "outfit": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Concrete items to wear, each with a brief reason."
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Things to watch for (rain, UV, wind, cold snap). May be empty."
+    },
+    "tips": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional extras (umbrella, sunscreen, swap shoes later)."
+    }
+  }
+}

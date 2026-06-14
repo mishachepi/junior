@@ -1,0 +1,31 @@
+# Example manifest runbook — defined entirely by scripts, no Python class.
+#
+# Copy this folder to your repo as  .junior/runbooks/weather/  then enable
+# repo-local runbooks (it executes the scripts below, so it's opt-in):
+#
+#   # .junior.yaml
+#   local_runbooks: true
+#
+#   junior run --runbook weather-advice                     # your IP's weather
+#   junior run --runbook weather-advice --context location="Tokyo"
+#   junior dry-run --runbook weather-advice                 # preview, no AI call
+#
+name: weather-advice
+description: fetch local weather → advise what to wear (manifest + scripts)
+
+# JSON-Schema for the AI's structured result (path relative to this manifest,
+# or an inline mapping). Junior turns it into the harness's output schema.
+schema: schema.json
+
+# The task instructions (path to a file, or inline text).
+system_prompt: prompt.md
+
+# collect: its STDOUT becomes the user message the AI sees.
+# publish: runs ONLY with --publish; receives the AI's validated JSON on STDIN.
+#          Without --publish you get that JSON on stdout/-o instead.
+# Both run with cwd = this folder and get JUNIOR_PROJECT_DIR + JUNIOR_CONTEXT_<KEY>.
+collect: python3 ./collect.py
+publish: python3 ./publish.py
+
+# This runbook doesn't touch git, so it runs in any directory.
+needs_git: false

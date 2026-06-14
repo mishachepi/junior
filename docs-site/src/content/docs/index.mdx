@@ -1,0 +1,110 @@
+---
+title: "Junior — hand any task to an AI junior"
+description: A wrapper for your LLM that adapts to you — deterministic runbooks around one schema-validated call. Fewer tokens, full audit trail, security by default.
+template: splash
+hero:
+  tagline: A wrapper for your LLM that adapts to you — deterministic runbooks around one schema-validated call.
+  image:
+    html: <img src="/favicon.svg" alt="Junior" width="120" height="120" />
+  actions:
+    - text: Docs
+      link: /getting_started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/mishachepi/junior
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+Junior wraps the LLM you already use — Claude, Codex, any API or local model — in
+**runbooks**: deterministic code collects exactly the context the task needs, the model
+makes **one schema-validated call**, deterministic code publishes the result.
+
+<CardGrid>
+  <Card title="Deterministic as much as possible" icon="setting">
+    Everything around the single AI step is plain code, and the answer must
+    match the runbook's schema — or the run fails loudly.
+  </Card>
+  <Card title="Fewer tokens" icon="star">
+    If a step can be done deterministically before the model runs, Junior does
+    it deterministically — the model gets one focused message, not an
+    exploration budget.
+  </Card>
+  <Card title="Any runbook × any harness" icon="puzzle">
+    Every runbook runs on every harness — `claudecode`, `codex`, `pydantic`,
+    `deepagents`, `pi` — swap with one flag.
+  </Card>
+  <Card title="Your runbook in 2 lines of YAML" icon="pencil">
+    A prompt + a shell command is a complete runbook: validated JSON out,
+    optional publish script. No Python, no plugin.
+    [Write a runbook →](/script_runbooks/)
+  </Card>
+</CardGrid>
+
+One command:
+
+```bash
+junior run --runbook gitlab_pr_review --harness claudecode --publish
+```
+
+## Use cases
+
+- **Gate your CI on AI review** — one pipeline step posts a structured review
+  to the MR/PR and exits **1** on a critical finding: the review *is* the
+  quality gate. [Run in CI →](/ci/)
+- **Review locally before you push** — `junior run` reviews your branch's diff
+  right in the terminal, so the critical finding surfaces before the MR even
+  exists. [Getting started →](/getting_started/)
+- **Automate the routine** — a standup summary from the git log, triage of a
+  log file, a drafted report: any prompt + shell command becomes a runbook.
+  [Use cases →](/use_cases/)
+- **Pipelines of juniors** — `junior run | junior run`: one junior does the
+  task, the next reviews it and publishes only what passes.
+  [Runbooks in YAML →](/script_runbooks/)
+
+## How it works
+
+Junior runs **runbooks**. A runbook is one task: collect → one LLM call → publish. Code review is the built-in flagship; the framework assumes nothing about code.
+
+```
+Collect (deterministic)      →   Harness (the one AI step)   →   Publish (deterministic)
+-----------------------          -------------------------        -----------------------
+anything code can gather:        one LLM call — the answer        anywhere code can deliver:
+a git diff, an API response,     must match the runbook's         stdout / a file / PR or MR
+a command's stdout, stdin        output schema                    comments / any command
+```
+
+**Runbook and Harness are independent** — any harness serves any runbook, because the output schema is a parameter, not a hard-coded type. The whole story: [Architecture](/architecture/) · [Philosophy](/philosophy/).
+
+## Install
+
+```bash
+uv tool install "junior @ git+https://github.com/mishachepi/junior.git"            # core
+uv tool install "junior[codex,gitlab] @ git+https://github.com/mishachepi/junior.git"  # extras compose
+```
+
+The core is lean — CLI + the default `claudecode` harness, no LLM SDKs. Add an extra per harness/platform you actually use:
+
+| Harness / platform | Install | Also requires |
+|--------------------|---------|---------------|
+| `claudecode` (default) | *(core)* | `claude` CLI installed and authenticated |
+| `codex` | `junior[codex]` | `codex` CLI installed and authenticated |
+| `pydantic` | `junior[pydantic]` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
+| `deepagents` | `junior[deepagents]` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
+| `pi` | *(core)* | `pi` CLI (`npm install -g @mariozechner/pi`); provider key — or none for local models |
+| GitLab | `junior[gitlab]` | `GITLAB_TOKEN` |
+| GitHub | `junior[github]` | `gh` CLI + `GITHUB_TOKEN` |
+| Bitbucket DC | `junior[bitbucket]` | `BITBUCKET_*` env vars |
+
+## Getting started
+
+```bash
+junior init        # one-time setup wizard
+junior dry-run     # free preview: exactly what the AI would get (no AI call)
+junior run         # review your local diff → structured JSON verdict
+junior run --runbook github_pr_review --publish   # review the PR + post comments
+```
+
+The guided five-minute walkthrough is [Getting Started](/getting_started/); every flag is in the [CLI reference](/cli/), CI recipes in [Run in CI](/ci/).
