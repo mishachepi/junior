@@ -1,10 +1,11 @@
 """Tests for codex backend helpers."""
 
-from junior.agent.codex import _build_output_schema, _parse_token_usage
+from junior.harnesses.codex import _build_output_schema, _parse_token_usage
+from junior.models import LLMReviewOutput
 
 
 def test_output_schema_is_strict():
-    schema = _build_output_schema()
+    schema = _build_output_schema(LLMReviewOutput)
 
     assert schema["type"] == "object"
     assert set(schema["required"]) == {"summary", "recommendation", "comments"}

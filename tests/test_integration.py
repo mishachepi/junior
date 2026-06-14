@@ -1,8 +1,14 @@
-"""Integration tests: full pipeline collect → review → publish with mocked AI."""
+"""Integration tests: full runbook collect → review → publish with mocked AI."""
 
 import pytest
 
-from junior.config import AgentBackend, CollectorBackend, PublishBackend, Settings
+from junior.config import (
+    HarnessKind,
+    ContextSettings,
+    OutputSettings,
+    LLMSettings,
+    Settings,
+)
 from junior.models import (
     ChangedFile,
     CollectedContext,
@@ -62,69 +68,57 @@ def sample_review_result():
 # --- Tests ---
 
 
-class TestEnumDispatch:
-    """Test that all enum-based dispatches resolve to importable modules."""
+class TestModuleContracts:
+    """Each platform/engine module exports the function its caller expects."""
 
-    def test_all_collector_backends_importable(self):
+    def test_collectors_export_collect(self):
         import importlib
 
-        for backend in CollectorBackend:
-            module = importlib.import_module(backend.value)
-            assert hasattr(module, "collect"), f"{backend.name} missing collect()"
+        for path in (
+            "junior.collect.local",
+            "junior.collect.gitlab",
+            "junior.collect.github",
+            "junior.collect.bitbucket",
+        ):
+            assert hasattr(importlib.import_module(path), "collect"), f"{path} missing collect()"
 
-    def test_all_agent_backends_importable(self):
-        """Agent backends may have optional deps — test what we can."""
+    def test_publishers_export_post_review(self):
         import importlib
 
-        for backend in AgentBackend:
+        for path in (
+            "junior.publish.local",
+            "junior.publish.gitlab",
+            "junior.publish.github",
+            "junior.publish.bitbucket",
+        ):
+            assert hasattr(importlib.import_module(path), "post_review"), f"{path} missing post_review()"
+
+    def test_engines_export_engine(self):
+        """Engines may have optional deps — test what's installed."""
+        import importlib
+
+        for backend in HarnessKind:
             try:
                 module = importlib.import_module(backend.value)
-                assert hasattr(module, "review"), f"{backend.name} missing review()"
+                assert hasattr(module, "HARNESS"), f"{backend.name} missing HARNESS"
             except ImportError:
                 pytest.skip(f"{backend.name} has uninstalled optional dependencies")
 
-    def test_all_publish_backends_importable(self):
-        import importlib
-
-        for backend in PublishBackend:
-            module = importlib.import_module(backend.value)
-            assert hasattr(module, "post_review"), f"{backend.name} missing post_review()"
-
-    def test_short_name_resolution(self):
-        assert AgentBackend("pydantic") == AgentBackend.PYDANTIC
-        assert CollectorBackend("github") == CollectorBackend.GITHUB
-        assert PublishBackend("local") == PublishBackend.LOCAL
+    def test_agent_short_name_resolution(self):
+        assert HarnessKind("pydantic") == HarnessKind.PYDANTIC
+        assert HarnessKind("codex") == HarnessKind.CODEX
 
 
-class TestAutoDetection:
-    """Test platform auto-detection via tokens."""
-
-    def test_no_tokens_defaults_to_local(self):
-        settings = Settings(gitlab_token="", github_token="")
-        assert settings.resolved_collector == CollectorBackend.LOCAL
-        assert settings.resolved_publisher == PublishBackend.LOCAL
-
-    def test_gitlab_token_auto_detects(self):
-        settings = Settings(gitlab_token="glpat-xxx", github_token="")
-        assert settings.resolved_collector == CollectorBackend.GITLAB
-        assert settings.resolved_publisher == PublishBackend.GITLAB
-
-    def test_github_token_auto_detects(self):
-        settings = Settings(gitlab_token="", github_token="ghp-xxx")
-        assert settings.resolved_collector == CollectorBackend.GITHUB
-        assert settings.resolved_publisher == PublishBackend.GITHUB
-
-
-class TestFullPipeline:
-    """Test the full collect → review → publish pipeline with mocks."""
+class TestFullRunbook:
+    """Test the full collect → review → publish runbook with mocks."""
 
     def test_local_collect_to_local_publish(self, sample_context, sample_review_result, tmp_path):
-        """Full pipeline: local collect → mocked AI → local publish (file)."""
+        """Full runbook: local collect → mocked AI → local publish (file)."""
         output_file = tmp_path / "review.md"
 
         settings = Settings(
-            ci_project_dir=str(tmp_path),
-            publish_output=str(output_file),
+            context=ContextSettings(project_dir=str(tmp_path)),
+            output=OutputSettings(output_file=str(output_file)),
         )
 
         from junior.publish.local import post_review
@@ -141,7 +135,7 @@ class TestFullPipeline:
         """Format review and check it contains all expected sections."""
         from junior.publish.core import format_summary
 
-        settings = Settings(agent_backend=AgentBackend.PYDANTIC)
+        settings = Settings(llm=LLMSettings(harness=HarnessKind.PYDANTIC))
         output = format_summary(sample_review_result, settings=settings)
 
         assert "Junior Code Review" in output
@@ -155,7 +149,7 @@ class TestFullPipeline:
 
     def test_context_builder_includes_all_sections(self, sample_context):
         """Context builder should include all MR data for AI."""
-        from junior.agent.core import build_user_message
+        from junior.runbooks.code_review.render import build_user_message
 
         msg = build_user_message(sample_context)
 
@@ -166,30 +160,42 @@ class TestFullPipeline:
         assert "hello.py" in msg
         assert "def hello(): pass" in msg
 
+    def test_render_inlines_small_diff_even_with_file_access(self, sample_context):
+        """A small diff is the review's primary evidence — file-access engines
+        get it inlined too, so a regression visible only in removed lines
+        isn't misread as pre-existing code."""
+        from junior.runbooks.code_review.local import LocalReview
+
+        msg = LocalReview().render(sample_context, Settings(), file_access=True)
+
+        assert "### Diff" in msg
+        assert sample_context.full_diff in msg
+
+    def test_render_oversized_diff_falls_back_to_file_tools(self, sample_context):
+        from junior.runbooks.code_review.base import INLINE_DIFF_MAX_CHARS
+        from junior.runbooks.code_review.local import LocalReview
+
+        big = sample_context.model_copy(
+            update={"full_diff": "+x\n" * (INLINE_DIFF_MAX_CHARS // 2)}
+        )
+        msg = LocalReview().render(big, Settings(), file_access=True)
+
+        assert "### Diff" not in msg
+        assert "file reading tools" in msg
+        # SDK engines (no file access) still get even a big diff inlined.
+        sdk_msg = LocalReview().render(big, Settings(), file_access=False)
+        assert "### Diff" in sdk_msg
+
 
 class TestPreflight:
-    """Test configuration validation via preflight()."""
+    """Generic (runbook-agnostic) validation. Publish checks live in runbooks."""
 
     def test_no_review_skips_review_validation(self):
         settings = Settings()
-        errors = settings.preflight(review=False, publish=False)
+        errors = settings.preflight(review=False)
         assert errors == []
 
-    def test_publish_without_token_fails(self):
-        settings = Settings(gitlab_token="", github_token="")
-        errors = settings.preflight(review=False, publish=True)
-        assert any("--publish" in e for e in errors)
-
-    def test_gitlab_publish_requires_ids(self):
-        settings = Settings(gitlab_token="glpat-xxx")
-        errors = settings.preflight(review=False, publish=True)
-        assert any("CI_PROJECT_ID" in e for e in errors)
-
-    def test_gitlab_publish_valid(self):
-        settings = Settings(
-            gitlab_token="glpat-xxx",
-            ci_project_id=123,
-            ci_merge_request_iid=45,
-        )
-        errors = settings.preflight(review=False, publish=True)
-        assert errors == []
+    def test_review_without_key_fails(self):
+        settings = Settings(llm=LLMSettings(harness=HarnessKind.PYDANTIC))
+        errors = settings.preflight(review=True)
+        assert any("MODEL provider" in e or "API_KEY" in e for e in errors)

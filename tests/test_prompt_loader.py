@@ -1,45 +1,55 @@
-"""Tests for prompt_loader: discover, load, parse."""
+"""Tests for prompt_loader: inline texts + file:// URI resolution."""
 
 import tempfile
 from pathlib import Path
 
 import pytest
 
-from junior.prompt_loader import Prompt, discover_prompts, load_prompts, parse_prompt_file
+from junior.prompt_loader import Prompt, load_prompts, parse_prompt_file
 
 
-def test_discover_finds_all_builtin_prompts():
-    prompts = discover_prompts()
-    assert "security" in prompts
-    assert "logic" in prompts
-    assert "design" in prompts
-    assert "common" in prompts
-
-
-def test_discover_returns_prompt_objects():
-    prompts = discover_prompts()
-    p = prompts["security"]
-    assert isinstance(p, Prompt)
-    assert p.name == "security"
-    assert len(p.body) > 0
-    assert len(p.description) > 0
-
-
-def test_load_prompts_by_name():
-    prompts = load_prompts(["security", "logic"])
+def test_load_prompts_wraps_inline_texts():
+    prompts = load_prompts(["Check security", "Look at logic"])
     assert len(prompts) == 2
-    assert prompts[0].name == "security"
-    assert prompts[1].name == "logic"
+    assert prompts[0].name == "inline_1"
+    assert prompts[0].body == "Check security"
+    assert prompts[1].name == "inline_2"
+    assert prompts[1].body == "Look at logic"
 
 
-def test_load_prompts_strips_whitespace():
-    prompts = load_prompts([" security ", "logic"])
-    assert prompts[0].name == "security"
+def test_load_prompts_skips_blank_inline():
+    prompts = load_prompts(["", "  ", "real one"])
+    assert len(prompts) == 1
+    assert prompts[0].body == "real one"
 
 
-def test_load_prompts_unknown_raises():
-    with pytest.raises(ValueError, match="Unknown prompt 'nonexistent'"):
-        load_prompts(["nonexistent"])
+def test_load_prompts_reads_file_uri(tmp_path):
+    f = tmp_path / "custom.md"
+    f.write_text("---\nname: custom\ndescription: X\n---\nBody here\n")
+    prompts = load_prompts([f"file://{f}"])
+    assert len(prompts) == 1
+    assert prompts[0].name == "custom"
+    assert prompts[0].body == "Body here"
+
+
+def test_load_prompts_mixed_inline_and_file(tmp_path):
+    f = tmp_path / "sec.md"
+    f.write_text("Security body")
+    prompts = load_prompts(["Inline first", f"file://{f}"])
+    assert [p.name for p in prompts] == ["inline_1", "sec"]
+    assert prompts[1].body == "Security body"
+
+
+def test_load_prompts_rejects_missing_uri():
+    with pytest.raises(ValueError, match="not found"):
+        load_prompts(["file:///nonexistent/path.md"])
+
+
+def test_load_prompts_rejects_non_md(tmp_path):
+    f = tmp_path / "not_markdown.txt"
+    f.write_text("body")
+    with pytest.raises(ValueError, match="must be .md"):
+        load_prompts([f"file://{f}"])
 
 
 def test_parse_prompt_file_with_frontmatter():
@@ -48,6 +58,7 @@ def test_parse_prompt_file_with_frontmatter():
         f.flush()
         prompt = parse_prompt_file(Path(f.name))
 
+    assert isinstance(prompt, Prompt)
     assert prompt.name == "test_prompt"
     assert prompt.description == "A test"
     assert prompt.body == "Hello body"

@@ -1,12 +1,17 @@
 """Tests for collector: diff parsing, file status."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from junior.collect.core.diff import (
     _detect_file_status,
     _parse_diff_header,
     _split_diff_by_file,
+    resolve_base_sha,
 )
+from junior.config import ContextSettings, OutputSettings, Settings
+from junior.collect.github import _parse_github_comments
+from junior.collect.gitlab import _fetch_gitlab_comments
 from junior.models import FileStatus
 
 
@@ -104,3 +109,130 @@ def test_detect_status_modified(tmp_path):
     (tmp_path / "exists.py").write_text("content")
     diff = "--- a/exists.py\n+++ b/exists.py\n"
     assert _detect_file_status(diff, tmp_path / "exists.py") == FileStatus.MODIFIED
+
+
+# --- GitLab comment parsing ---
+
+
+def _gl_discussion(*, resolved=False, notes):
+    return SimpleNamespace(attributes={"resolved": resolved, "notes": notes})
+
+
+def test_gitlab_comments_filters_system_notes_and_empty():
+    mr = SimpleNamespace(
+        discussions=SimpleNamespace(
+            list=lambda get_all: [
+                _gl_discussion(notes=[
+                    {"system": True, "body": "assigned", "author": {"username": "bot"}, "created_at": "2025-01-01"},
+                    {"system": False, "body": "  ", "author": {"username": "alice"}, "created_at": "2025-01-02"},
+                    {"system": False, "body": "real comment", "author": {"username": "alice"}, "created_at": "2025-01-03"},
+                ]),
+            ]
+        )
+    )
+    out = _fetch_gitlab_comments(mr)
+    assert len(out) == 1
+    assert out[0].author == "alice"
+    assert out[0].body == "real comment"
+
+
+def test_gitlab_comments_inline_position():
+    mr = SimpleNamespace(
+        discussions=SimpleNamespace(
+            list=lambda get_all: [
+                _gl_discussion(resolved=True, notes=[
+                    {
+                        "body": "looks off",
+                        "author": {"username": "bob"},
+                        "created_at": "2025-01-04",
+                        "position": {"new_path": "src/foo.py", "new_line": 42},
+                    }
+                ])
+            ]
+        )
+    )
+    out = _fetch_gitlab_comments(mr)
+    assert out[0].file_path == "src/foo.py"
+    assert out[0].line_number == 42
+    assert out[0].resolved is True
+
+
+def test_gitlab_comments_caps_at_max(monkeypatch):
+    from junior.collect import gitlab as gl_mod
+
+    monkeypatch.setattr(gl_mod, "MAX_COMMENTS", 3)
+    notes = [
+        {"body": f"c{i}", "author": {"username": "u"}, "created_at": f"2025-01-{i:02d}"}
+        for i in range(1, 11)
+    ]
+    mr = SimpleNamespace(
+        discussions=SimpleNamespace(list=lambda get_all: [_gl_discussion(notes=notes)])
+    )
+    out = gl_mod._fetch_gitlab_comments(mr)
+    assert len(out) == 3
+    assert [c.body for c in out] == ["c8", "c9", "c10"]
+
+
+# --- GitHub comment parsing ---
+
+
+def test_github_parses_issue_and_inline_comments():
+    issue = [
+        {"body": "general note", "user": {"login": "alice"}, "created_at": "2025-01-02"},
+        {"body": "", "user": {"login": "spam"}, "created_at": "2025-01-03"},
+    ]
+    inline = [
+        {
+            "body": "fix this line",
+            "user": {"login": "bob"},
+            "created_at": "2025-01-01",
+            "path": "src/foo.py",
+            "line": 10,
+        }
+    ]
+    out = _parse_github_comments(issue, inline)
+    assert [c.body for c in out] == ["fix this line", "general note"]
+    assert out[0].file_path == "src/foo.py"
+    assert out[0].line_number == 10
+    assert out[1].file_path is None
+
+
+# --- resolve_base_sha ---
+
+
+def test_resolve_base_sha_cli_wins_over_ci():
+    s = Settings(
+        context=ContextSettings(base_sha="cafebabe"),
+        output=OutputSettings(
+            ci_merge_request_diff_base_sha="deadbeef",
+            ci_commit_before_sha="abc123",
+        ),
+    )
+    assert resolve_base_sha(s) == ("cafebabe", "cli")
+
+
+def test_resolve_base_sha_skips_zero_placeholder():
+    # Zero SHA is what GitLab/GitHub emit on first push to a branch.
+    s = Settings(
+        output=OutputSettings(
+            ci_commit_before_sha="0" * 40,
+            github_event_before="abcdef0",
+        )
+    )
+    assert resolve_base_sha(s) == ("abcdef0", "github_event_before")
+
+
+def test_resolve_base_sha_returns_none_when_all_empty():
+    s = Settings()
+    assert resolve_base_sha(s) == (None, "none")
+
+
+def test_resolve_base_sha_priority_order():
+    # MR base wins over push before-SHA when both present (MR runbook).
+    s = Settings(
+        output=OutputSettings(
+            ci_merge_request_diff_base_sha="mrbase",
+            ci_commit_before_sha="pushbefore",
+        )
+    )
+    assert resolve_base_sha(s) == ("mrbase", "mr_diff_base")
