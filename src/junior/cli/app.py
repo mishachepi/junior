@@ -259,8 +259,9 @@ def run(
         runbook, harness, context_data, settings,
         publish_enabled=publish_enabled, logger=logger,
     )
-    # No --publish → emit the raw output to stdout/-o. With --publish the
-    # runbook already handled output (post/render); the raw stays in the record.
+    # No --publish → emit the raw result to stdout/-o. With --publish the
+    # runbook handles output itself: local_review renders Markdown to stdout
+    # (redirect with `>` to save it), platform runbooks post to the PR/MR.
     if not publish_enabled:
         emit_output(runbook, settings, result.output, logger)
     blocking = runbook.is_blocking(result.output)

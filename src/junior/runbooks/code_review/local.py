@@ -20,12 +20,12 @@ class LocalReview(CodeReviewRunbook):
 
     def _post_to_platform(self, settings: Settings, review: ReviewResult) -> None:
         # No platform — `--publish` means "render the pretty Markdown review"
-        # (to the terminal, or to -o if set). Without --publish you get raw JSON.
+        # to stdout (redirect with `>` to save). Without --publish you get raw JSON.
         from junior.publish.local import post_review
 
         post_review(settings, review)
 
     def output_destination(self, settings: Settings, *, publish_enabled: bool) -> str:
         if publish_enabled:
-            return settings.output.output_file or "terminal"
+            return "stdout"  # rendered Markdown; redirect with `>` for a file
         return settings.output.output_file or "stdout"

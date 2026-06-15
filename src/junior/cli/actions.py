@@ -333,8 +333,11 @@ def ensure_interactive_tty(what: str) -> None:
 
 
 def emit_output(runbook, settings: Settings, result_output, logger) -> None:
-    """Default (no `--publish`) sink: write the runbook's raw `render_output()`
-    to `-o FILE`, or stdout. Pipe-/redirect-safe — never Rich-formatted.
+    """Write the runbook's raw `render_output()` to `-o FILE`, or stdout.
+    Pipe-/redirect-safe — never Rich-formatted.
+
+    The no-`--publish` sink. (With `--publish` the runbook handles its own
+    output, so this is not called.)
 
     The output itself is deterministic (same bytes in a terminal and a pipe);
     only a discoverability hint is added on stderr when a human is watching."""

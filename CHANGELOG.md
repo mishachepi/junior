@@ -2,6 +2,19 @@
 
 ## 0.2.2 — 2026-06-15
 
+- **Breaking: `local_review --publish` now renders to stdout, not to `-o`.** With
+  `--publish` the runbook owns its output channel — `local_review` writes the Markdown
+  review to **stdout** (redirect with `> file` to save it); `-o` / `output_file` is
+  ignored. `-o` stays the sink for the **raw result JSON** on runs *without* `--publish`.
+  Migration: replace `local_review --publish -o review.md` with
+  `local_review --publish > review.md`.
+- **Docs: fixed the "generate locally, then `--publish-file`" recipes.** They fed a `-o`
+  file (raw JSON) into `--publish-file`, which expects a rendered Markdown review; the
+  recipes now use `--publish > review.md`. (`faq.md`, `cli.md`, `README.md`.)
+- **Docs pass.** Consolidated the 7-page runbook-example walkthrough into two pages
+  (*Anatomy of a run* + *Review output in detail*), harmonized the five harness deep-dive
+  pages to one section template, and verified pages against the source (system-prompt
+  merge order, `LLMReviewOutput` vs `ReviewResult`, formatter output, CLI flags).
 - **`llm.timeout` config knob** for the CLI harnesses (`claudecode` / `codex` / `pi`):
   the subprocess timeout (default 600s) is now configurable, so you can fail fast on a
   stuck or runaway agent (e.g. `llm.timeout: 120`). The timeout error now reports the

@@ -1,25 +1,18 @@
-"""Local publisher backend — prints review to stdout or writes to file."""
-
-from pathlib import Path
-
-import structlog
+"""Local publisher backend — renders the review as Markdown to stdout."""
 
 from junior.config import Settings
 from junior.runbooks.code_review.models import ReviewResult
 from junior.publish.core import format_summary
 
-logger = structlog.get_logger()
-
 
 def post_review(settings: Settings, result: ReviewResult) -> None:
-    """Output formatted review to stdout or file."""
-    formatted = format_summary(result, settings=settings)
+    """Render the review as Markdown to stdout.
 
-    if settings.output.output_file:
-        output_path = Path(settings.output.output_file)
-        output_path.write_text(formatted, encoding="utf-8")
-        logger.info("review written to file", path=str(output_path))
-        return
+    `--publish` on `local_review` means "render the review"; it always goes to
+    stdout — redirect with `> file` to save it. (`-o`/`output_file` is the raw
+    JSON sink for runs *without* `--publish`.)
+    """
+    formatted = format_summary(result, settings=settings)
 
     from junior.cli.console import console, err_console, print_content
 

@@ -112,8 +112,12 @@ class TestModuleContracts:
 class TestFullRunbook:
     """Test the full collect → review → publish runbook with mocks."""
 
-    def test_local_collect_to_local_publish(self, sample_context, sample_review_result, tmp_path):
-        """Full runbook: local collect → mocked AI → local publish (file)."""
+    def test_local_collect_to_local_publish(self, sample_context, sample_review_result, tmp_path, capsys):
+        """Full runbook: local collect → mocked AI → local publish.
+
+        `--publish` on local_review renders Markdown to stdout (never to a file —
+        `-o` is ignored here; redirect with `>` to save). See `publish.local`.
+        """
         output_file = tmp_path / "review.md"
 
         settings = Settings(
@@ -125,11 +129,12 @@ class TestFullRunbook:
 
         post_review(settings, sample_review_result)
 
-        assert output_file.exists()
-        content = output_file.read_text()
-        assert "Junior Code Review" in content
-        assert "Consider adding a docstring" in content
-        assert "claudecode" in content
+        # Rendered Markdown goes to stdout, not the -o file.
+        assert not output_file.exists()
+        out = capsys.readouterr().out
+        assert "Junior Code Review" in out
+        assert "Consider adding a docstring" in out
+        assert "claudecode" in out
 
     def test_formatter_produces_valid_output(self, sample_review_result):
         """Format review and check it contains all expected sections."""

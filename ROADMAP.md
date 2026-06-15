@@ -73,11 +73,12 @@ it stays strictly opt-in.
   GitLab/GitHub), so collect/review/publish can run on different machines without
   re-rendering. Today `--publish-file` posts a pre-rendered `.md` only.
 
-### DeepAgents
+### Remove DeepAgents
 
-- Diff chunking for large diffs.
-- Fix the single-prompt orchestrator so it reliably calls `submit_review`.
-- Retry logic for rate limits.
+`deepagents` has been deprecated since 0.2.1 — the least reliable harness, and
+`pydantic` covers the same "API-only, no CLI" use case. Plan: drop it in an
+upcoming minor release (the harness module, the `deepagents` extra, and its docs
+page) rather than fixing the reliability issues under *Known Issues* in place.
 
 ### Other
 
