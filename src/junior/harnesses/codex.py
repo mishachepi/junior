@@ -71,6 +71,7 @@ def _ensure_codex_auth(settings: Settings) -> None:
 class CodexHarness(Harness):
     name = "codex"
     file_access = True  # reads repo files via its own sandbox
+    config_fields = ("model", "timeout")
     setup_note = "Uses the local `codex` CLI — authenticate it once (no env var)."
 
     def is_ready(self) -> str:
@@ -107,11 +108,15 @@ class CodexHarness(Harness):
             ]
 
             try:
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+                result = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=settings.llm.timeout
+                )
             except FileNotFoundError:
                 raise RuntimeError("codex CLI not found — install with: npm install -g @openai/codex")
             except subprocess.TimeoutExpired:
-                raise RuntimeError("codex CLI timed out after 10 minutes")
+                raise RuntimeError(
+                    f"codex CLI timed out after {settings.llm.timeout}s (raise llm.timeout if expected)"
+                )
 
             if result.returncode != 0:
                 logger.error(

@@ -60,6 +60,17 @@ def load_prompts(entries: list[str]) -> list[Prompt]:
     return result
 
 
+def merge_prompts(base: str, entries: list[str]) -> str:
+    """Append prompt-entry bodies onto a base string, blank-line separated.
+
+    The one composition helper for a runbook's system prompt: its `SYSTEM_PROMPT`
+    role plus the user's `context.prompts` (`--prompt` / `--prompt-file`). Each
+    entry is inline text or a `file://...` URI; blank parts are dropped.
+    """
+    bodies = [p.body for p in load_prompts(entries)]
+    return "\n\n".join(s.strip() for s in (base, *bodies) if s.strip())
+
+
 def _load_prompt_uri(uri: str) -> Prompt:
     """Read a `file://...` prompt. The URI must be absolute (resolved upstream)."""
     parsed = urlparse(uri)

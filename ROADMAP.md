@@ -51,6 +51,21 @@ questions before this lands:
   separately.
 - Exit code, usage accounting, and the run record across N results.
 
+### Harness tools / MCP pass-through
+
+Today each agent harness runs in a locked-down deterministic mode with a fixed
+flag set — `claudecode` and `pi` get a restricted read-only tool allowlist, `pi`
+disables extensions/skills/prompt-templates, and no MCP config is passed (only
+`codex` reads its own `~/.codex/config.toml`). Planned: an opt-in escape hatch to
+extend the agentic surface per harness — extra MCP servers, additional tools, and
+harness-specific settings/plugins — configured in `.junior.yaml` (e.g.
+`llm.harness_args` / a per-harness `mcp:` block). This is aimed at the Junior
+**Docker image**, where the harness CLI runs in a controlled environment: the
+image can ship and wire up MCP servers/tools, so a containerized review can reach
+issue trackers, docs, or internal services while the host install stays minimal
+and deterministic by default. Open question: how much this erodes determinism, so
+it stays strictly opt-in.
+
 ### Output
 
 - Round-trip the structured result: save a runbook's JSON output and later

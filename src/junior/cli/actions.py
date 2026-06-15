@@ -121,8 +121,6 @@ def preview_run(runbook, settings: Settings, context, *, publish_enabled: bool) 
     from rich.rule import Rule
     from rich.table import Table
 
-    from junior.runbook.runner import merge_system_prompt
-
     # Resolve the harness for file_access; tolerate it not being installed so a
     # preview still works (file_access only changes whether the diff is inlined).
     harness_name = settings.llm.harness_name
@@ -144,9 +142,7 @@ def preview_run(runbook, settings: Settings, context, *, publish_enabled: bool) 
         )
 
     # --- Exactly what the harness receives ---
-    system_prompt = merge_system_prompt(
-        runbook.system_prompt(settings), list(settings.llm.system_prompt)
-    )
+    system_prompt = runbook.system_prompt(settings)
     user_message = runbook.render(context, settings, file_access=file_access)
     console.print(Rule(f"System prompt — {len(system_prompt)} chars"))
     if system_prompt:

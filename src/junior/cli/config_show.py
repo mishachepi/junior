@@ -18,7 +18,7 @@ from junior.config import (
 # Group fields that apply to every run (shown in detailed mode regardless of choice).
 _UNIVERSAL = {
     "context": ["prompts", "context_files"],
-    "llm": ["system_prompt"],
+    "llm": [],
     "output": ["record"],
 }
 _HINTS = {
@@ -33,8 +33,8 @@ _HINTS = {
     "base_sha": "pin a base commit to diff against",
     "prompts": "task instructions — inline text or file://./path.md",
     "context_files": "extra files for the prompt (key: path)",
-    "system_prompt": "role layer — inline text or file://./path.md",
     "max_tokens_per_agent": "pydantic: cap response tokens (0 = none)",
+    "timeout": "CLI harnesses (claudecode/codex/pi): kill the subprocess after N seconds",
     "max_file_size": "skip files larger than this many bytes",
     "record": "run history / audit trail → .junior/output/{ts}.json (not the result itself)",
     "ci_server_url": "GitLab base URL",

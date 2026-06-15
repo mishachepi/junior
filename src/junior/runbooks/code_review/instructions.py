@@ -3,12 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import structlog
-
-if TYPE_CHECKING:
-    from junior.prompt_loader import Prompt
 
 logger = structlog.get_logger()
 
@@ -41,24 +37,21 @@ You can explore the repository files for additional context if needed.
 """
 
 
-def build_review_prompt(prompts: list[Prompt], project_dir: str) -> str:
-    """Build system/review prompt: prompt bodies + rules + project instructions.
+def build_review_prompt(head: str, project_dir: str) -> str:
+    """Append the shared review rules + project instructions to `head` (the
+    runbook's role plus any user prompts).
 
-    Shared by codex and claudecode backends.
+    Built once per run by `CodeReviewRunbook.system_prompt()` and passed
+    unchanged to whatever harness is selected — every harness gets the same
+    system prompt; only the user message varies by `file_access`.
     """
-    parts: list[str] = []
-    for p in prompts:
-        parts.append(f"## Analysis: {p.name}")
-        parts.append(p.body)
-        parts.append("")
-
-    parts.append(BASE_RULES)
+    parts = [head, BASE_RULES]
 
     project_instructions = read_project_instructions(project_dir)
     if project_instructions:
-        parts.append(f"## Project-Specific Instructions\n{project_instructions}\n")
+        parts.append(f"## Project-Specific Instructions\n{project_instructions}")
 
-    return "\n".join(parts)
+    return "\n\n".join(p.strip() for p in parts if p.strip())
 
 
 def read_project_instructions(project_dir: str) -> str | None:

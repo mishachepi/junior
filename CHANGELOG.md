@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.2 — 2026-06-15
+
+- **`llm.timeout` config knob** for the CLI harnesses (`claudecode` / `codex` / `pi`):
+  the subprocess timeout (default 600s) is now configurable, so you can fail fast on a
+  stuck or runaway agent (e.g. `llm.timeout: 120`). The timeout error now reports the
+  actual value instead of a hard-coded "10 minutes".
+- **System prompt unified to one channel.** Every runbook now declares a single-line
+  `SYSTEM_PROMPT` role; the base `Runbook.system_prompt()` assembles it plus the user's
+  `context.prompts` (`--prompt` / `--prompt-file`) through one shared helper
+  (`prompt_loader.merge_prompts`).
+- **Breaking: removed the `llm.system_prompt` config field** (the separate "role layer"
+  the runner merged on top). It duplicated `context.prompts`; use `--prompt` /
+  `--prompt-file` / `context.prompts` instead. Configs that set `llm.system_prompt`
+  should move those entries to `context.prompts`.
+
 ## 0.2.1 — 2026-06-15
 
 Maintenance release — no breaking changes.

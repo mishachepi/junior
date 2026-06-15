@@ -42,7 +42,7 @@ _OUTPUT_CONTRACT = (
 class PiHarness(Harness):
     name = "pi"
     file_access = True  # reads repo files via its own read/grep/find/ls tools
-    config_fields = ("model",)
+    config_fields = ("model", "timeout")
     env_vars = (
         EnvVar(
             "ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY / …",
@@ -93,7 +93,7 @@ class PiHarness(Harness):
         try:
             proc = subprocess.run(
                 cmd, capture_output=True, text=True,
-                cwd=str(settings.context.project_dir), env=env, timeout=600,
+                cwd=str(settings.context.project_dir), env=env, timeout=settings.llm.timeout,
             )
         except FileNotFoundError:
             raise RuntimeError(
@@ -101,7 +101,9 @@ class PiHarness(Harness):
                 "npm install -g @earendil-works/pi-coding-agent"
             )
         except subprocess.TimeoutExpired:
-            raise RuntimeError("pi CLI timed out after 10 minutes")
+            raise RuntimeError(
+                f"pi CLI timed out after {settings.llm.timeout}s (raise llm.timeout if expected)"
+            )
 
         text, usage = _last_assistant(proc.stdout)
         if proc.returncode != 0 and not text:

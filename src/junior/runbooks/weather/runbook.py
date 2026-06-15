@@ -56,26 +56,17 @@ class OutfitItem(BaseModel):
 
 
 class WeatherAdviceOutput(BaseModel):
-    summary: str
-    outfit: list[OutfitItem] = Field(default_factory=list)
-    risks: list[str] = Field(default_factory=list)
-    tips: list[str] = Field(default_factory=list)
-
-
-_BASE_PROMPT = """You are a concise, practical clothing advisor.
-
-Given a person's location, the local season, the current weather, and the
-hour-by-hour forecast for the next several hours, recommend what to wear so they
-stay comfortable across that whole window — not just right now.
-
-- Account for how conditions change over the window (warming, cooling, rain
-  arriving, wind picking up). Dress for the range, layer when it shifts.
-- `outfit`: concrete items with a one-line reason each (e.g. "light rain jacket
-  — showers expected after 18:00").
-- `risks`: things to watch out for (sudden rain, UV, cold snap, strong wind,
-  ice). Empty if none.
-- `tips`: optional extras (take an umbrella, sunscreen, swap shoes later).
-Be specific and brief. Don't invent conditions not in the data."""
+    summary: str = Field(description="one-line headline of the conditions and the plan")
+    outfit: list[OutfitItem] = Field(
+        default_factory=list, description="concrete items to wear, each with a one-line reason"
+    )
+    risks: list[str] = Field(
+        default_factory=list,
+        description="things to watch for (rain, UV, cold snap, wind, ice); empty if none",
+    )
+    tips: list[str] = Field(
+        default_factory=list, description="optional extras (umbrella, sunscreen, swap shoes later)"
+    )
 
 
 @register_runbook
@@ -84,6 +75,12 @@ class WeatherAdvice(Runbook[WeatherContext, WeatherAdviceOutput]):
     description = "fetch local weather → advise what to wear (terminal only)"
     context_model = WeatherContext
     result_model = WeatherAdviceOutput
+    SYSTEM_PROMPT = (
+        "You are a concise, practical clothing advisor. Given a location, season, and "
+        "hour-by-hour forecast, recommend what to wear to stay comfortable across the whole "
+        "window — dress for the range as conditions shift, and don't invent conditions not "
+        "in the data."
+    )
 
     # --- phase 1: collect (live weather, no git) ---
     def collect(self, settings: Settings) -> WeatherContext:
@@ -100,13 +97,7 @@ class WeatherAdvice(Runbook[WeatherContext, WeatherAdviceOutput]):
         # extra hints, demonstrating that CLI context augments the runbook's own.
         return build_user_message(context, dict(settings.context.context))
 
-    def system_prompt(self, settings: Settings) -> str:
-        from junior.prompt_loader import load_prompts
-
-        # User `--prompt` / `context.prompts` entries are appended to the
-        # runbook's base instructions — additive, exactly like code_review.
-        extra = [p.body for p in load_prompts(list(settings.context.prompts)) if p.body.strip()]
-        return "\n\n".join([_BASE_PROMPT, *extra])
+    # system_prompt: inherited — base assembles SYSTEM_PROMPT + user --prompts.
 
     # --- phase 3: publish (terminal only) ---
     def publish(

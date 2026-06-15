@@ -29,6 +29,28 @@ uv tool install "junior[codex,pydantic,gitlab] @ git+https://github.com/mishache
 
 From a local clone: `git clone … && cd junior && uv tool install ".[codex,gitlab]"`
 
+### Try it from Docker (no install)
+
+The published image (`mihchepi/junior` on Docker Hub — the `full` build, every
+harness included) runs Junior without installing anything:
+
+```bash
+# Smoke check — what's inside the image:
+docker run --rm mihchepi/junior:latest junior --version
+docker run --rm mihchepi/junior:latest junior config list harnesses
+
+# Review your current repo's diff — mount it and pass an API key (export it first):
+docker run --rm \
+  -e ANTHROPIC_API_KEY \
+  -v "$PWD:/repo" -w /repo \
+  mihchepi/junior:latest \
+  junior run --runbook local_review --harness pydantic --publish
+```
+
+`-e ANTHROPIC_API_KEY` forwards the key from your shell (or use `OPENAI_API_KEY`).
+`--publish` renders the review as Markdown to the terminal; drop it for raw JSON.
+Tags: `:latest` and `:0.2.2` (multi-arch — amd64 + arm64).
+
 ### What each extra pulls
 
 | Extra | Python deps it adds | Also needs (not pip) |
@@ -115,7 +137,8 @@ Full docs live at **<https://junior.mchep.dev>** (source: `docs-site/src/content
 | [CI Setup](https://junior.mchep.dev/ci/) | GitLab CI, GitHub Actions, Docker |
 | [Architecture](https://junior.mchep.dev/architecture/) | Runbook × harness, registry, project layout |
 | [Choosing a harness](https://junior.mchep.dev/agent_backends/) | Which LLM driver fits: comparison + recommendations |
-| [Adding Runbooks & Harnesses](https://junior.mchep.dev/adding_backends/) | Add a runbook (4 ways) or a harness |
+| [Adding a Runbook](https://junior.mchep.dev/adding_runbooks/) | Add a runbook (4 ways) + the built-in code-review family |
+| [Adding a Harness](https://junior.mchep.dev/adding_harnesses/) | Add a harness (the 5-step interface) |
 | [FAQ](https://junior.mchep.dev/faq/) | Common questions and troubleshooting |
 | [Runbook Example](https://junior.mchep.dev/runbook_example/readme/) | End-to-end walkthrough with real data |
 | [CHANGELOG](CHANGELOG.md) | Versioned changes and breaking-change migration |

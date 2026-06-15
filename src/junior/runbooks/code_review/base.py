@@ -40,6 +40,11 @@ class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
     needs_git = True  # every code-review variant diffs a local git repo
     # Diff/collection settings every code-review variant honours.
     config_fields = ("source", "base_sha", "target_branch", "max_file_size")
+    SYSTEM_PROMPT = (
+        "You are a senior code reviewer. Review the diff in the context of the "
+        "surrounding codebase and report concise, actionable findings tied to the diff "
+        "— prioritising correctness, security, data-integrity and API-contract regressions."
+    )
 
     # --- shared domain logic (same for every platform) ---
 
@@ -53,11 +58,12 @@ class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
         return build_user_message(context, include_diff=include_diff)
 
     def system_prompt(self, settings: Settings) -> str:
+        from junior.prompt_loader import merge_prompts
         from junior.runbooks.code_review.instructions import build_review_prompt
-        from junior.prompt_loader import load_prompts
 
-        prompts = load_prompts(list(settings.context.prompts))
-        return build_review_prompt(prompts, str(settings.context.project_dir))
+        # role + user prompts, then the review rules + project instructions.
+        head = merge_prompts(self.SYSTEM_PROMPT, list(settings.context.prompts))
+        return build_review_prompt(head, str(settings.context.project_dir))
 
     def is_blocking(self, result: LLMReviewOutput) -> bool:
         critical = any(c.severity == Severity.CRITICAL for c in result.comments)

@@ -183,10 +183,10 @@ class ContextSettings(BaseSettings):
 
 
 class LLMSettings(BaseSettings):
-    """How to call the LLM — harness (driver), model, API keys, prompts, limits.
+    """How to call the LLM — harness (driver), model, API keys, limits.
 
-    Domain-agnostic: shared by every runbook. `system_prompt` is the role layer;
-    the task layer is the runbook's own (e.g. `context.prompts` for code_review).
+    Domain-agnostic: shared by every runbook. The system prompt is the runbook's
+    own (its `SYSTEM_PROMPT` role + the user's `context.prompts`).
     """
 
     model_config = _BASE_CONFIG
@@ -218,14 +218,13 @@ class LLMSettings(BaseSettings):
     model: str = ""
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
-    # Role/identity layer (scion-style), merged on top of the runbook's own
-    # system prompt. Each entry is inline text or a `file://...` URI, like
-    # `context.prompts`. The task/instruction layer lives in `context.prompts`.
-    system_prompt: list[str] = Field(default_factory=list)
     # pydantic harness: cap the response tokens per call (0 = no cap).
     max_tokens_per_agent: int = 0
     # collection + pydantic file tools: skip files larger than this (bytes).
     max_file_size: int = 100_000
+    # CLI harnesses (claudecode/codex/pi): kill the subprocess after this many
+    # seconds. Lower it to fail fast on a stuck/runaway agent.
+    timeout: int = 600
 
     @field_validator("model", mode="before")
     @classmethod
@@ -544,11 +543,6 @@ def _resolve_prompt_uris(cfg: dict, base_dir: Path) -> dict:
     ctx = cfg.get("context")
     if isinstance(ctx, dict) and isinstance(ctx.get("prompts"), list):
         ctx["prompts"] = [_resolve_one_prompt_entry(str(p), base_dir) for p in ctx["prompts"]]
-    llm = cfg.get("llm")
-    if isinstance(llm, dict) and isinstance(llm.get("system_prompt"), list):
-        llm["system_prompt"] = [
-            _resolve_one_prompt_entry(str(p), base_dir) for p in llm["system_prompt"]
-        ]
     return cfg
 
 

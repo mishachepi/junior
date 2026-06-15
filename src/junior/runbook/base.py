@@ -115,6 +115,9 @@ class Runbook(ABC, Generic[C, R]):
     config_fields: ClassVar[tuple[str, ...]] = ()
     #: env vars this runbook needs to publish (for `config env`).
     env_vars: ClassVar[tuple[EnvVar, ...]] = ()
+    #: one-line role for the model — the head of the system prompt. Override per
+    #: runbook; the base assembles `SYSTEM_PROMPT` + any user `--prompt`s.
+    SYSTEM_PROMPT: ClassVar[str] = ""
 
     # --- phase 1: collect ---
     @abstractmethod
@@ -128,8 +131,12 @@ class Runbook(ABC, Generic[C, R]):
         chosen engine reads files itself (so a full diff need not be inlined)."""
 
     def system_prompt(self, settings: "Settings") -> str:
-        """Role + rules. Override per domain; default is empty."""
-        return ""
+        """The model's instructions: this runbook's `SYSTEM_PROMPT` role plus any
+        user `--prompt` / `context.prompts` (additive). Override to append domain
+        rules (see `CodeReviewRunbook`)."""
+        from junior.prompt_loader import merge_prompts
+
+        return merge_prompts(self.SYSTEM_PROMPT, list(settings.context.prompts))
 
     # --- phase 3: publish ---
     @abstractmethod

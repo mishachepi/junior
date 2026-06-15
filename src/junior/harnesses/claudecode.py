@@ -25,6 +25,7 @@ _TOOLS = "Read,Bash(git log:*,git show:*,git diff:*,git blame:*),Grep,Glob"
 class ClaudeCodeHarness(Harness):
     name = "claudecode"
     file_access = True  # reads repo files via its own tools
+    config_fields = ("model", "timeout")
     setup_note = "Uses the local `claude` CLI — run `claude` once to authenticate (no env var)."
 
     def is_ready(self) -> str:
@@ -64,12 +65,14 @@ class ClaudeCodeHarness(Harness):
         try:
             proc = subprocess.run(
                 cmd, input=user_message, capture_output=True, text=True,
-                cwd=project_dir, timeout=600,
+                cwd=project_dir, timeout=settings.llm.timeout,
             )
         except FileNotFoundError:
             raise RuntimeError("claude CLI not found — install with: npm install -g @anthropic-ai/claude-code")
         except subprocess.TimeoutExpired:
-            raise RuntimeError("claude CLI timed out after 10 minutes")
+            raise RuntimeError(
+                f"claude CLI timed out after {settings.llm.timeout}s (raise llm.timeout if expected)"
+            )
 
         if proc.returncode != 0:
             if not proc.stdout.strip():

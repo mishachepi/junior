@@ -10,16 +10,6 @@ from __future__ import annotations
 
 from junior.config import Settings
 from junior.runbook.base import Harness, LLMResult, Runbook
-from junior.prompt_loader import load_prompts
-
-
-def merge_system_prompt(base: str, extra: list[str]) -> str:
-    """Append user-supplied system-prompt layers onto the runbook default.
-
-    `extra` entries are inline text or `file://...` URIs (resolved here)."""
-    bodies = [p.body for p in load_prompts(extra)]
-    parts = [p for p in (base, *bodies) if p and p.strip()]
-    return "\n\n".join(parts)
 
 
 def run_runbook(
@@ -37,10 +27,7 @@ def run_runbook(
     stdout/`-o`. Either way the run record captures the full result.
     """
     result = harness.complete(
-        system_prompt=merge_system_prompt(
-            runbook.system_prompt(settings),
-            list(settings.llm.system_prompt),
-        ),
+        system_prompt=runbook.system_prompt(settings),
         user_message=runbook.render(context, settings, file_access=harness.file_access),
         output_schema=runbook.result_model,
         settings=settings,

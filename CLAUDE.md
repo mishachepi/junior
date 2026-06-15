@@ -41,7 +41,7 @@ docs-site/        ← Astro + Starlight docs site; deployed to GitHub Pages by .
 - **Config is YAML-only.** Priority: CLI flags → env → `--config FILE` → `./.junior.{yaml,yml}` (found walking up to the repo root) → `~/.config/junior/settings.{yaml,yml}`. Shorthands `harness`/`model`/`publish`/`output_file` are accepted at the config root. Reference: [configuration.md](docs-site/src/content/docs/configuration.md).
 - Pydantic models are `frozen=True`; logging is structlog only (never stdlib); Python 3.12+, ruff, line length 100.
 - Exit codes: 0 ok · 1 blocking findings · 2 config error · 3 runtime error.
-- **Adding a harness or runbook:** follow [adding_backends.md](docs-site/src/content/docs/adding_backends.md) — it lists every registration touchpoint (HarnessKind enum, HARNESS_META, validation skip list, extras).
+- **Adding a harness or runbook:** follow [adding_harnesses.md](docs-site/src/content/docs/adding_harnesses.md) / [adding_runbooks.md](docs-site/src/content/docs/adding_runbooks.md) — they list every registration touchpoint (HarnessKind enum, HARNESS_META, validation skip list, extras).
 
 ## Documentation map
 
@@ -61,7 +61,8 @@ All user docs live in `docs-site/src/content/docs/` (single source of truth, pub
 | [architecture.md](docs-site/src/content/docs/architecture.md) | Diagrams, flow, project layout ([architecture/runbooks.md](docs-site/src/content/docs/architecture/runbooks.md) = framework deep dive) |
 | [agent_backends.md](docs-site/src/content/docs/agent_backends.md) | "Choosing a harness": decision table + comparison ([agent_backends/*.md](docs-site/src/content/docs/agent_backends/) = per-harness deep dives, under Architecture in the sidebar) |
 | [script_runbooks.md](docs-site/src/content/docs/script_runbooks.md) | YAML manifest runbooks + `junior run \| junior run` chaining |
-| [adding_backends.md](docs-site/src/content/docs/adding_backends.md) | How to add a harness or runbook |
+| [adding_runbooks.md](docs-site/src/content/docs/adding_runbooks.md) | How to add a runbook (4 ways) + the built-in code-review family |
+| [adding_harnesses.md](docs-site/src/content/docs/adding_harnesses.md) | How to add a harness (the 5-step interface) |
 | [prompt_injection.md](docs-site/src/content/docs/prompt_injection.md) | Security model |
 | [faq.md](docs-site/src/content/docs/faq.md) | Troubleshooting |
 | `CHANGELOG.md` / `ROADMAP.md` | Versioned changes + what's planned |
@@ -72,8 +73,8 @@ All user docs live in `docs-site/src/content/docs/` (single source of truth, pub
 |-------------|--------|
 | CLI flags / subcommands (`src/junior/cli/`) | `cli.md` |
 | Settings fields (`src/junior/config.py`) | `configuration.md` |
-| Harness added/removed/changed | `agent_backends.md` (+ its subpage), `adding_backends.md`, `architecture.md`, `configuration.md` (harness reference), `glossary.md` |
-| Runbook added/removed/changed | `cli.md`, `architecture.md`, `adding_backends.md`, `ci.md` (if platform) |
+| Harness added/removed/changed | `agent_backends.md` (+ its subpage), `adding_harnesses.md`, `architecture.md`, `configuration.md` (harness reference), `glossary.md` |
+| Runbook added/removed/changed | `cli.md`, `architecture.md`, `adding_runbooks.md`, `ci.md` (if platform) |
 | Exit codes | `cli.md`, `getting_started.md` |
 | Install method or deps | `index.md`, `README.md` |
 | Breaking change | `CHANGELOG.md` + every doc showing the old shape |
