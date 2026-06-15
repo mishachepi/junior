@@ -21,23 +21,7 @@ A runbook is selected explicitly (`--runbook NAME`, config `runbook:`, or env
 built-in, a pip-installed plugin, a `module:ClassName` import path, or a
 repo-local file in `.junior/runbooks/` (opt-in — Python or a plain
 [YAML manifest](script_runbooks.md)); see
-[Adding runbooks & harnesses](adding_backends.md).
-
-The contract a runbook implements:
-
-| Method | Role |
-|--------|------|
-| `collect(settings) → Context` | Gather domain context (a git diff, an API call, a shell command) |
-| `render(context, settings, *, file_access) → str` | Build the user message the LLM sees |
-| `system_prompt(settings) → str` | Role + rules layer (default empty) |
-| `publish(settings, result, usage, *, errors)` | Custom publish — runs **only** with `--publish` (post / pretty render / run a script) |
-| `render_output(result) → str` | Default output (no `--publish`): the raw result, unformatted (default JSON) |
-| `validate(settings, *, publish_enabled) → list[str]` | Runbook-specific config checks (e.g. publish needs a token) |
-| `is_blocking(result) → bool` | Whether the result should fail CI (exit 1) |
-| `is_empty(context) → bool` | Whether there's nothing to do (skip the LLM) |
-| `summary(result) → dict` | Key/values for the final `done` log line |
-| `needs_git` (ClassVar) | Whether preflight requires a `.git` repo (default `False`) |
-| `output_destination(settings, *, publish_enabled) → str` | Sink shown in the `done` log |
+[Adding a runbook](adding_runbooks.md).
 
 Output follows one rule for every runbook: **without `--publish`** the framework
 emits `render_output()` — raw result JSON, pipe-safe — to stdout/`-o`; **with
@@ -61,7 +45,7 @@ copy for a non-code-review runbook. Full per-runbook settings + env:
 ## Harness
 
 One **LLM driver** — a single way of calling a model. The name fits: `claudecode`,
-`codex`, and `pi` are agentic CLIs, `pydantic`/`deepagents` are SDK drivers — Junior
+`codex`, and `pi` are agentic CLIs, `pydantic` is an SDK driver — Junior
 *harnesses* them rather than being the inference engine itself. **Schema-agnostic**:
 its one method, `complete(*, system_prompt, user_message, output_schema, settings) →
 LLMResult`, takes the output schema as a *parameter*, so the same harness serves
@@ -89,9 +73,3 @@ sees what's in the message.
 Full settings + env per harness:
 [Configuration → Harness reference](configuration.md#harness-reference); per-harness
 deep dives in [Harnesses](agent_backends.md).
-
-> [!NOTE]
-> **HarnessKind** is the enum of harness names you select (`--harness codex`);
-> the resolved object is a `Harness` instance. The old terms `--backend` / env
-> `BACKEND` / config key `backend` still work as a **deprecated alias** for one
-> version.

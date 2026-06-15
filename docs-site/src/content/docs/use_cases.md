@@ -28,8 +28,8 @@ The `local_review` runbook reviews your **local diff** — no PR, no tokens, no 
 beyond `junior init`:
 
 ```bash
-junior run --source staged --prompt "Quick correctness check"   # what you're about to commit
-junior run                                                      # the whole branch vs main
+junior run --runbook local_review --source staged --prompt "Quick correctness check"  # what you're about to commit
+junior run --runbook local_review                                                      # the whole branch vs main
 ```
 
 Add `--publish` for a pretty Markdown review in the terminal instead of raw JSON.
@@ -54,7 +54,7 @@ The `pi` harness runs reviews on **Ollama / LM Studio / vLLM** — no API key, n
 nothing leaves the laptop. Declare the endpoint once in `~/.pi/agent/models.json`, then:
 
 ```bash
-junior run --harness pi --model ollama/qwen2.5-coder:7b
+junior run --runbook local_review --harness pi --model ollama/qwen2.5-coder:7b
 ```
 
 How it works (and its limits on small models): [Pi harness](agent_backends/pi.md).

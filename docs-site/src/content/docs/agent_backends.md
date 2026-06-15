@@ -40,14 +40,14 @@ can read repository files itself (`file_access` — see [Glossary](glossary.md#h
 
 | | pydantic | claudecode | codex | deepagents | pi |
 |--|----------|-----------|-------|------------|----|
-| **Diff in user message** | Yes | No — reads files via tools | No — reads files via sandbox | Yes | Small diffs yes; tools beyond |
 | **`file_access`** | `False` | `True` | `True` | `False` | `True` |
 | **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git…)` (built-in) | Sandbox filesystem access | `read_file`, `ls`, `grep`, `glob` (via deepagents) | `read`, `grep`, `find`, `ls` (read-only) |
-| **Output contract** | Returns the output schema instance directly | Output schema via `--json-schema` | Output schema via `--output-schema` | `submit_review` tool whose schema is the output model | Schema embedded in system prompt + validated reply |
-| **Token usage** | pydantic-ai usage | CLI JSON output | CLI stderr | langchain callback | JSON event stream (per-turn usage) |
+| **Output contract** | Returns the schema instance directly | via `--json-schema` | via `--output-schema` | `submit_review` tool | Schema in system prompt + validated reply |
 
-Small diffs (≤ 50k chars) are inlined for **every** harness — the diff is the review's
-primary evidence; file tools serve for context beyond it.
+The diff is inlined into the user message for **every** harness while it's small
+(≤ 50k chars) — it's the review's primary evidence. `file_access` harnesses use their
+file tools for context beyond the diff, and for oversized diffs they read the files
+themselves instead.
 
 > [!NOTE]
 > `--harness` / `HARNESS` / config `harness:` is canonical. The old `--backend` /
@@ -59,4 +59,4 @@ Per-harness internals (subprocess flags, event parsing, error handling):
 [Claude Code](agent_backends/claudecode.md) · [Codex](agent_backends/codex.md) ·
 [Pydantic AI](agent_backends/pydantic.md) · [DeepAgents](agent_backends/deepagents.md) ·
 [Pi](agent_backends/pi.md). Writing your own is one file —
-[Adding runbooks & harnesses](adding_backends.md).
+[Adding a harness](adding_harnesses.md).

@@ -53,8 +53,6 @@ junior-review:
       allow_failure: true
     # Any other pipeline (branch push, tag, schedule): don't add the job at all.
     - when: never
-  variables:
-    GIT_DEPTH: 0   # full clone so base-SHA diffing has history (default is shallow 50)
 ```
 
 Set two variables in **Settings → CI/CD → Variables** (masked; uncheck **Protected**
@@ -250,3 +248,20 @@ docker push registry.gitlab.com/<group>/<project>/junior:pydantic
 There's no `claudecode` target — the Claude Code CLI needs interactive auth, so it's
 local-only. `pi` ships in every install but its harness needs the `pi` CLI on `PATH`,
 which only the `full` target installs.
+
+### Publishing a multi-arch image
+
+To serve both Intel and Apple-Silicon runners from one tag, build with `buildx` and
+push amd64 + arm64 in a single command (works for any registry — Docker Hub shown):
+
+```bash
+VERSION=$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)
+docker buildx build --target full --platform linux/amd64,linux/arm64 \
+  --build-arg VERSION=$VERSION \
+  -t mihchepi/junior:$VERSION -t mihchepi/junior:latest --push .
+```
+
+Swap the `-t` prefix for any registry you publish to — e.g.
+`$CI_REGISTRY_IMAGE/junior:$VERSION` (GitLab) or
+`artifactory.example.com/<repo>/junior:$VERSION` — after `docker login` to it. Run
+`docker buildx create --use` once if you have no buildx builder yet.

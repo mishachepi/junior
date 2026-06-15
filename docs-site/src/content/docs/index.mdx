@@ -1,13 +1,13 @@
 ---
 title: "Junior — hand any task to an AI junior"
-description: A wrapper for your LLM that adapts to you — deterministic runbooks around one schema-validated call. Fewer tokens, full audit trail, security by default.
+description: Wrap any LLM in deterministic runbooks — collect context in code, make one schema-validated call, publish in code. Fewer tokens, a JSON record of every run.
 template: splash
 hero:
-  tagline: Use your LLM calls as CLI tool everywhere and deterministic as much as possible | Unstable
+  tagline: Your LLM as a CLI tool — deterministic runbooks around one schema-validated call.
   image:
     html: <img src="/favicon.svg" alt="Junior" width="120" height="120" />
   actions:
-    - text: Docs
+    - text: Get started
       link: /getting_started/
       icon: right-arrow
     - text: View on GitHub
@@ -34,7 +34,7 @@ makes **one schema-validated call**, deterministic code publishes the result.
   </Card>
   <Card title="Any runbook × any harness" icon="puzzle">
     Every runbook runs on every harness — `claudecode`, `codex`, `pydantic`,
-    `deepagents`, `pi` — swap with one flag.
+    `pi` — swap with one flag.
   </Card>
   <Card title="Your runbook in 2 lines of YAML" icon="pencil">
     A prompt + a shell command is a complete runbook: validated JSON out,
@@ -46,7 +46,7 @@ makes **one schema-validated call**, deterministic code publishes the result.
 One command:
 
 ```bash
-junior run --runbook gitlab_pr_review --harness claudecode --publish
+junior run --runbook gitlab_pr_review --harness pydantic --publish
 ```
 
 ## Use cases
@@ -69,7 +69,7 @@ junior run --runbook gitlab_pr_review --harness claudecode --publish
 Junior runs **runbooks**. A runbook is one task: collect → one LLM call → publish. Code review is the built-in flagship; the framework assumes nothing about code.
 
 ```
-Collect (deterministic)      →   Harness (the one AI step)   →   Publish (deterministic)
+Collect (Runbook part)     →   Harness (the one AI step)   →   Publish (Runbook part)
 -----------------------          -------------------------        -----------------------
 anything code can gather:        one LLM call — the answer        anywhere code can deliver:
 a git diff, an API response,     must match the runbook's         stdout / a file / PR or MR
@@ -92,18 +92,18 @@ The core is lean — CLI + the default `claudecode` harness, no LLM SDKs. Add an
 | `claudecode` (default) | *(core)* | `claude` CLI installed and authenticated |
 | `codex` | `junior[codex]` | `codex` CLI installed and authenticated |
 | `pydantic` | `junior[pydantic]` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
-| `deepagents` | `junior[deepagents]` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
+| `deepagents` ⚠️ deprecated | `junior[deepagents]` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` — prefer `pydantic` |
 | `pi` | *(core)* | `pi` CLI (`npm install -g @earendil-works/pi-coding-agent`); provider key — or none for local models |
 | GitLab | `junior[gitlab]` | `GITLAB_TOKEN` |
-| GitHub | `junior[github]` | `gh` CLI + `GITHUB_TOKEN` |
+| GitHub | `junior[github]` | `GITHUB_TOKEN` |
 | Bitbucket DC | `junior[bitbucket]` | `BITBUCKET_*` env vars |
 
 ## Getting started
 
 ```bash
-junior init        # one-time setup wizard
-junior dry-run     # free preview: exactly what the AI would get (no AI call)
-junior run         # review your local diff → structured JSON verdict
+junior init                              # one-time setup wizard (picks your default runbook)
+junior dry-run --runbook local_review    # free preview: exactly what the AI would get (no AI call)
+junior run --runbook local_review        # review your local diff → structured JSON verdict
 junior run --runbook github_pr_review --publish   # review the PR + post comments
 ```
 

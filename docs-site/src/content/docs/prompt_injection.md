@@ -73,7 +73,7 @@ only the MR author.
 The discussion section is rendered with an inline warning (`build_user_message()` prepends a
 notice telling the LLM to treat comments as untrusted), but this is a mitigation, not a hard
 defense. The 50-comment cap (`MAX_COMMENTS` in `collect/gitlab.py` and `collect/github.py`) also
-limits the size of this surface.
+limits the size of this surface (it lives in `collect/{gitlab,github,bitbucket}.py`).
 
 **Fix — structured delimiters + system prompt hardening:**
 
@@ -95,12 +95,22 @@ Add to system prompt:
 | | |
 |---|---|
 | **Severity** | High |
-| **Status** | Open |
+| **Status** | Partially mitigated |
 
-`context.full_diff` is embedded without size limit. A large MR (1000+ files) produces
-megabytes of diff → millions of LLM tokens → hundreds of dollars per review.
+A large MR (1000+ files) produces megabytes of diff → millions of LLM tokens → a costly
+review. How exposed you are depends on the harness:
 
-**Fix:** truncate in `build_user_message()`:
+- **`file_access` harnesses** (`claudecode` / `codex` / `pi`) inline the diff only while it
+  is ≤ `INLINE_DIFF_MAX_CHARS` (50 000, in `runbooks/code_review/base.py`); above that they
+  get just the changed-files list and read files with their own tools — so the inlined prompt
+  is bounded.
+- **SDK harnesses** (`pydantic` / `deepagents`) always inline the **full** `context.full_diff`
+  regardless of size — so a giant MR is still a direct cost vector there.
+
+There is no hard character cap on the collected diff itself.
+
+**Fix:** truncate `context.full_diff` in `build_user_message()` so the bound applies to every
+harness:
 
 ```python
 MAX_DIFF_CHARS = 200_000

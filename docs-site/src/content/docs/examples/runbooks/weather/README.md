@@ -1,6 +1,6 @@
 # Example: a manifest runbook (`weather-advice`)
 
-A complete [repo-local runbook](../../../adding_backends.md#4-repo-local-in-juniorrunbooks)
+A complete [repo-local runbook](../../../adding_runbooks.md#4-repo-local-in-juniorrunbooks)
 defined **without any Python class** — just a YAML manifest plus two scripts. It fetches the
 local weather and asks the harness what to wear.
 

@@ -17,27 +17,24 @@ something with it. Junior treats that plumbing as the product and the LLM as a
 single, replaceable component inside it.
 
 ```
-  you write these (deterministic)          this is the only AI step
-  ────────────────────────────────         ────────────────────────
-  collect  →  render  →  [ system + user message ]  →  HARNESS  →  output (your schema)  →  publish
-  └──────────────── a Runbook you control ───────────────┘     └─ swappable ─┘   └─ you control ─┘
+  ┌────── a Runbook you control (deterministic) ──────┐
+     collect   →     AI process   →    publish
+                    └─ Harness ─┘
+                     (swappable)
 ```
 
-- **You invent the modules.** A runbook is just *collect context → hand it to an
-  LLM → take a correctly-shaped result → publish it however you like*. Code review
-  of a git diff is the built-in example, but the same frame fits reviewing a Jira
-  ticket, summarising a Confluence page, or auditing a config file. You write the
-  collection and publication; nothing about the framework assumes "diff" or "PR".
-- **The harness just fills in the schema.** Each runbook declares the output
-  schema it needs. The harness (`claudecode`, `codex`, `pydantic`, `deepagents`,
-  `pi`) is schema-agnostic — it takes that schema as a parameter and returns an
-  instance of it. The name is deliberate: these are wrappers around agentic CLIs and SDKs,
-  so Junior *harnesses* a model rather than being the inference engine. Swap
-  harnesses freely; the deterministic parts on either side don't change.
-- **Determinism as much as possible.** The non-deterministic surface is squeezed
-  down to one call with a fixed input and a validated, typed output. Everything
-  around it is ordinary, testable, reviewable code. That's what makes a run
-  reproducible enough to trust in CI.
+- **You write the runbook.** A runbook is just *collect context → hand it to an
+  LLM → take a correctly-shaped result → publish it*. Code review of a git diff is
+  the built-in example, but the same frame fits a Jira ticket, a Confluence page,
+  or a config file — nothing in the framework assumes "diff" or "PR".
+- **The harness just fills in the schema.** Each runbook declares the output schema
+  it needs; the harness (`claudecode`, `codex`, `pydantic`, `pi`) takes that schema
+  as a parameter and returns an instance of it. The name is deliberate — Junior
+  *harnesses* an existing model rather than being the inference engine. Swap
+  harnesses freely; the deterministic parts don't change.
+- **Determinism as much as possible.** The non-deterministic surface is one call
+  with a fixed input and a validated, typed output. Everything around it is
+  ordinary, testable code — reproducible enough to trust in CI.
 
 > [!NOTE]
 > This is why the extension points are **Runbook** and **Harness** and nothing else — see
@@ -77,4 +74,4 @@ they would be if a junior on your team had drafted them and you'd approved them.
   Junior implements a clear contract and fails loudly if they miss a method —
   rather than discovering a silent gap at runtime. Adding a runbook or a harness
   is implementing one interface, not patching the core. See
-  [Adding runbooks & harnesses](adding_backends.md).
+  [Adding a runbook](adding_runbooks.md) or [a harness](adding_harnesses.md).

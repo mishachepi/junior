@@ -149,7 +149,7 @@ remains a deterministic single step: same input, same prompt, one validated JSON
 
 Repo-local manifests are one of four ways to add a runbook (built-in, pip entry-point,
 `--runbook pkg.module:Class`, repo-local) — see
-[Adding runbooks & harnesses](adding_backends.md). A complete copy-paste example
+[Adding a runbook](adding_runbooks.md). A complete copy-paste example
 (weather → what to wear, scripts in `python3`, no API key) lives in
 [`examples/runbooks/weather/`](examples/runbooks/weather/).
 

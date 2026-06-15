@@ -6,18 +6,42 @@ title: "CLI Reference"
 
 Junior is a Typer app with subcommands. `junior` alone shows help — the canonical verb for the runbook is `junior run`.
 
+## Common commands
+
+```bash
+junior run --runbook local_review                # review your branch's diff → JSON
+junior run --runbook local_review --publish      # …as a pretty Markdown review in the terminal
+junior run --runbook gitlab_pr_review --publish  # review + post back to the MR/PR (in CI)
+junior dry-run --runbook local_review            # preview the prompt + context, no AI call
+junior runs last | jq .output                    # replay the newest run's result
+junior list                                      # which runbooks & harnesses are available
+junior init                                      # one-time interactive setup
+```
+
 ## Commands
+
+**Run** — do the work:
 
 | Command | What it does |
 |---------|--------------|
 | [`junior run`](#junior-run) | Run the selected runbook end-to-end: collect → AI review (harness) → publish (writes a run record unless `--no-record`) |
 | [`junior dry-run`](#junior-dry-run) | No-AI inspector: preview the full run (plan, collected context, exact system prompt + user message). `-o FILE` also saves the context JSON for `run --from-file` |
+
+**Inspect** — see state & history:
+
+| Command | What it does |
+|---------|--------------|
 | [`junior runs`](#junior-runs) | Browse run records (the audit trail): `runs` lists recent ones, `runs last` prints the newest record's JSON (pipe-safe) |
-| [`junior config init`](#junior-config-init) | Interactive setup wizard — config location (global/local), runbook, harness, publish & output → YAML (`junior init` is an alias) |
-| [`junior config list`](#junior-config-list) | List available runbooks + harnesses (descriptions, your default, install state + readiness). Filter: `list runbooks` / `list harnesses`. `junior list` is an alias |
+| [`junior config list`](#junior-config-list) | List runbooks + harnesses (descriptions, your default, install state + readiness). Filter: `list runbooks` / `list harnesses`. `junior list` is an alias |
 | [`junior config show`](#junior-config) | Print your current effective config as YAML + status header (config source, harness readiness) |
 | [`junior config env`](#junior-config-env) | Env vars a harness + runbook need (required/optional, set/unset) |
 | [`junior config path`](#junior-config) | Locate config files |
+
+**Configure** — set up once:
+
+| Command | What it does |
+|---------|--------------|
+| [`junior config init`](#junior-config-init) | Interactive setup wizard → YAML (`junior init` is an alias): config location (global/local), runbook, harness, publish & output |
 
 Global options live on the parent command (apply to any subcommand):
 
@@ -38,6 +62,8 @@ Position: global options come **before** the subcommand: `junior --config foo.ya
 ---
 
 ## `junior run`
+
+**Usage:** `junior run [OPTIONS] [INPUT]`
 
 Run a runbook: collect → AI review → output. The runbook is always an explicit choice — `--runbook`, env `RUNBOOK`, or config `runbook:` (set by `junior init`); with none of them set, `junior run` exits 2. There is no magic platform auto-detection — to post to a PR/MR you select the matching runbook and pass `--publish`.
 
@@ -80,8 +106,8 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 | `--target-branch` | `main` | Target branch for diff. Alias for `--env TARGET_BRANCH=…` (CI auto-var: `CI_MERGE_REQUEST_TARGET_BRANCH_NAME`) |
 | `--prompt TEXT` | — | Inline prompt text for the LLM. Repeatable. Appends to `context.prompts` |
 | `--prompt-file FILE` | — | `.md` prompt file. Repeatable. Sugar for `--prompt file://<abs>` |
-| `--context KEY="text"` | — | Extra prompt instructions. Repeatable |
-| `--context-file KEY=path` | — | Data files to attach. Repeatable |
+| `--context KEY="text"` | — | A named **fact** folded into the user message under `KEY` — data, *not* instructions (for those use `--prompt`). Repeatable |
+| `--context-file KEY=path` | — | Like `--context`, but the value is read from a file. Repeatable |
 | `--from-file CONTEXT_FILE` | — | Skip phase 1; load pre-collected context JSON |
 
 ### Options — Review (how to review)
@@ -181,6 +207,8 @@ junior run -i --source staged    # source pre-selected, everything else prompted
 
 ## `junior dry-run`
 
+**Usage:** `junior dry-run [OPTIONS] [INPUT]`
+
 The unified no-AI inspector. It mirrors `junior run`'s flags but never calls the LLM and never posts — it shows you exactly what the run *would* do, so you can validate config, prompts, and the collected diff before spending tokens. With `-o FILE` it also saves the collected context as JSON for `junior run --from-file`.
 
 ```bash
@@ -220,6 +248,8 @@ Either way there is no AI call.
 
 ## `junior runs`
 
+**Usage:** `junior runs [list|last] [PROJECT_DIR]`
+
 The read side of the run record: every `junior run` writes a secret-free JSON trace to `<project_dir>/.junior/output/{timestamp}.json`, and `junior runs` lets you browse them without digging through the directory.
 
 ```bash
@@ -238,6 +268,8 @@ Exit code 2 when there are no records (or the target is unknown).
 ---
 
 ## `junior config list`
+
+**Usage:** `junior config list [runbooks|harnesses]`  ·  alias: `junior list`
 
 List the extension points you can plug into `--runbook` / `--harness`. It rounds out the config-inspection trio: `config list` shows *what exists*, [`config show`](#junior-config) *their config fields*, [`config env`](#junior-config-env) *their env vars*. No arguments prints both sections; `runbooks` / `harnesses` filters to one. Also available as the top-level alias **`junior list`**.
 
@@ -267,12 +299,14 @@ Harnesses
   claudecode   *   claude CLI subprocess (no API key)        ✓ installed · ready
   codex            codex CLI subprocess                      ✓ installed · ready
   pydantic         single structured call via pydantic-ai    ✓ installed · not ready: set OPENAI_API_KEY / ANTHROPIC_API_KEY
-  deepagents       LangChain orchestrator + subagents        ✗ not installed (pip install 'junior[deepagents]')
+  deepagents       LangChain orchestrator — DEPRECATED        ✗ not installed (pip install 'junior[deepagents]')
 ```
 
 ---
 
 ## `junior config init`
+
+**Usage:** `junior config init`  ·  alias: `junior init`
 
 Interactive setup wizard (also available as the top-level alias `junior init`). Each step explains what it configures and prompts for:
 
@@ -304,6 +338,8 @@ Configuration utilities.
 
 ### `junior config show`
 
+**Usage:** `junior config show [--harness X] [--runbook Y]`
+
 Print your **current effective configuration** as YAML — and, because the header reports where it loaded from and whether the harness is ready, it doubles as a status view. There's no separate `junior status`.
 
 With **no flags** it resolves the harness + runbook from your config (harness defaults to `claudecode`; the runbook has no default) and prints *their* `context:` / `llm:` / `output:` fields at your **real current values** — most group fields are harness- or runbook-specific (e.g. `ci_server_url` only for `gitlab_pr_review`, `max_tokens_per_agent` only for `pydantic`), and each harness/runbook declares its own, so plugins show up too. Pass **`--harness X`** / **`--runbook Y`** to inspect a different combination instead.
@@ -329,6 +365,8 @@ junior config show --harness pydantic --runbook gitlab_pr_review > .junior.yaml
 
 ### `junior config env`
 
+**Usage:** `junior config env [--harness X] [--runbook Y]`
+
 Show the **environment variables a harness + runbook rely on** — API keys, platform tokens, CI vars — each marked required/optional and whether it's currently set. Defaults to your configured harness/runbook; override with `--harness` / `--runbook`.
 
 ```bash
@@ -339,6 +377,8 @@ junior config env --harness pydantic --runbook github_pr_review
 `claudecode` / `codex` need no env var (they use local CLI auth); `pydantic` / `deepagents` need `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. `github_pr_review` needs `GITHUB_TOKEN` (+ `GITHUB_REPOSITORY`, `GITHUB_EVENT_NUMBER`); `gitlab_pr_review` needs `GITLAB_TOKEN` (+ `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`); `bitbucket_pr_review` needs all of `BITBUCKET_URL`, `BITBUCKET_TOKEN`, `BITBUCKET_PROJECT`, `BITBUCKET_REPO`, `BITBUCKET_PR_ID` (Bitbucket DC has no pipelines, so nothing is auto-provided). Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner.
 
 ### `junior config path`
+
+**Usage:** `junior config path`
 
 Print where junior looks for config files and whether each one exists.
 
@@ -366,64 +406,30 @@ After install, tab completes subcommands, flag names, and enum values (e.g. `--s
 
 ---
 
-## Examples
+## Recipes
+
+Beyond the [common commands](#common-commands) — cross-cutting workflows:
 
 ```bash
-# Review the current branch (no task prompt: diff + AGENT.md + base rules)
-junior run
+# Domain context for the AI (facts, not instructions)
+junior run --runbook local_review \
+  --context lang="Python 3.12, FastAPI" \
+  --context-file lint=ruff.json
 
-# Inline prompts — repeatable
-junior run --prompt "Check security issues" --prompt "Check error handling"
+# Split collect and review across machines (collect locally, review in CI with the key)
+junior dry-run --runbook local_review -o ctx.json     # machine A
+junior run --from-file ctx.json --harness pydantic    # machine B
 
-# File prompts — repeatable
-junior run --prompt-file ./prompts/security.md --prompt-file ./prompts/logic.md
+# Generate locally now, publish to the PR later
+junior run --runbook local_review -o review.md
+junior run --runbook github_pr_review --publish-file review.md
 
-# Review staged changes only
-junior run --source staged --prompt "Quick correctness check"
-
-# Post to a GitHub PR (GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_EVENT_NUMBER set)
-junior run --runbook github_pr_review --publish
-
-# Post to a GitLab MR (GITLAB_TOKEN, CI_PROJECT_ID, CI_MERGE_REQUEST_IID set)
-junior run --runbook gitlab_pr_review --publish
-
-# Post to a Bitbucket DC PR (BITBUCKET_URL/TOKEN/PROJECT/REPO/PR_ID set)
-junior run --runbook bitbucket_pr_review --publish
-
-# Save to file AND publish to the GitHub PR
-junior run --runbook github_pr_review -o review.md --publish
-
-# Pick a different harness with a prompt
-junior run --harness codex --prompt "Find bugs"
+# Load a preset config from anywhere — or pipe one in
+junior --config .junior/security.yaml run --runbook local_review
+generate-config.sh | junior --config - run --runbook local_review
 
 # Run an external runbook by import path
 junior run --runbook "mypkg.module:JiraReview"
-
-# Load a preset from anywhere (no special "templates" registry)
-junior --config .junior/security.yaml run
-
-# Or pipe a generated config in
-generate-junior-config.sh | junior --config - run
-
-# Split collect and review across machines
-junior dry-run -o ctx.json                              # machine A
-junior run --from-file ctx.json --harness pydantic      # machine B
-
-# Two-step: generate locally, publish later from CI
-junior run -o review.md
-junior run --runbook github_pr_review --publish-file review.md
-
-# Provide domain context to the AI
-junior run --context lang="Python 3.12, FastAPI" \
-           --context team="strict on error handling" \
-           --context-file lint_results=ruff.json
-
-# Debug what would be reviewed
-junior dry-run --source branch --target-branch develop
-
-# One-time setup
-junior init
-junior config path        # verify it landed where you expected
 ```
 
 ---

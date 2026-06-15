@@ -1,131 +1,139 @@
 ---
-title: "Prompts"
+title: "Prompts & context"
 ---
 
-# Prompts
+# Prompts & context — what reaches the LLM
 
-Junior ships no *task* prompts — you provide the instructions yourself (code_review adds only its base review rules: severity scale, focus on the diff). Three ways that all stack:
+Every Junior run ends in **one** call to the model, and that call carries exactly **two
+strings**:
+
+- a **System Prompt** — *how* to do the job (the role, your instructions, the rules), and
+- a **User Message** — *what* to work on (the diff and the facts around it).
+
+Everything Junior gathers is sorted into one of those two. Nothing else reaches the model:
+no hidden state, no file contents (unless a harness reads them with its own tools), no
+environment variables or tokens.
+
+## The whole picture
+
+```
+  THE RUNBOOK PROVIDES  (e.g. code review)    WHAT THE LLM GETS
+  ────────────────────────────────────────    ─────────────────
+
+  role  (SYSTEM_PROMPT)               ┐
+  built-in review rules               ├─────►  SYSTEM PROMPT    how to do the job
+  AGENT.md / AGENTS.md / CLAUDE.md    ┘            ▲
+                                         you add: --prompt / --prompt-file
+
+  e.g.  git diff  +  changed files    ┐
+        PR/MR metadata  +  commits    ├─────►  USER MESSAGE     what to work on
+        prior PR/MR comments          ┘            ▲
+                                         you add: --context / --context-file
+```
+
+The **runbook provides the bulk on its own** — the left column shows what the code-review
+runbook gathers; another runbook supplies its own equivalents. On top of that you inject
+two things, and each has a fixed destination:
+
+- **`--prompt` / `--prompt-file`** (or `context.prompts` in config) = *instructions* →
+  **System Prompt** (“Focus on security.”).
+- **`--context KEY=…` / `--context-file KEY=path`** = *named facts* → **User Message**
+  (`spec=SPEC.md`, `ticket="JIRA-12 …"`).
+
+(`[INPUT]`, the positional argument, is the *subject itself* — reviewed in place of the
+git diff, or the user message for a collect-less YAML runbook.)
+
+## What's in the System Prompt
+
+The built-in **code-review** runbooks assemble theirs in this order (all are
+recommendations to the model, not hard rules):
+
+1. **Role** — the runbook's one-line `SYSTEM_PROMPT` (“You are a senior code reviewer…”).
+2. **Your prompts** — every entry in `context.prompts`, from `--prompt`, `--prompt-file`,
+   the config, or env `PROMPTS` — appended right after the role.
+3. **Review rules** — the built-in `BASE_RULES`: focus on the diff, the severity scale,
+   when to use `request_changes`.
+4. **Project instructions** — the first of `AGENT.md` / `AGENTS.md` / `CLAUDE.md` found at
+   the repo root, inlined verbatim (up to 30 000 chars, then truncated with a warning).
+
+> A YAML or [custom runbook](adding_runbooks.md)'s system prompt is just its own
+> `SYSTEM_PROMPT` plus your `context.prompts` — no review rules, no project file. You own it.
+
+> [!NOTE]
+> Project instructions are read from the **working tree**, not the target branch — a
+> malicious PR can change them. See [Security](prompt_injection.md).
+
+## What's in the User Message
+
+The **collect** step builds it. For code review, in order:
+
+1. **PR/MR metadata** — title, description, source → target branch, labels.
+2. **Additional context** — your `--context KEY=text` and `--context-file KEY=path`, each
+   under its key.
+3. **Commits** — the commit messages in the change.
+4. **Prior discussion** — existing PR/MR comments (newest 50), so the model doesn't
+   re-raise resolved points. Marked **untrusted** — the model is told not to obey
+   instructions written inside them ([Security](prompt_injection.md)).
+5. **Changed files** — the list with status (added / modified / deleted).
+6. **The diff** — the full unified diff, inlined while ≤ 50 000 chars. Above that,
+   `file_access` harnesses read the changed files with their own tools instead.
+
+**Not** sent: whole file contents (a harness may read them itself), unchanged files, git
+history beyond the diff, environment variables or tokens.
+
+> For a YAML runbook the user message is simply the stdout of its `collect` command — or
+> piped stdin / the positional `[INPUT]` when there is no `collect`.
+
+## Supplying your own instructions
+
+Three sources, and they **stack** (CLI flags *append* to config):
 
 | Source | How |
 |--------|-----|
-| Inline | `--prompt "Check security issues"` (repeatable) |
-| File | `--prompt-file path/to/rules.md` (repeatable). Sugar for `--prompt file://<abs>` |
-| Config | `context.prompts` — one list, each entry is inline text or `file://...` URI |
+| Inline | `--prompt "Check for SQL injection"` (repeatable) |
+| File | `--prompt-file ./rules/security.md` (repeatable) — sugar for `--prompt file://<abs>` |
+| Config | `context.prompts:` — a list; each entry is inline text or a `file://…` URI |
 
-CLI flags **append** to config values — you can keep a baseline in config and add ad-hoc instructions on the command line. Empty is fine too: the LLM still gets the diff, MR metadata, prior discussion, and project instructions from `AGENT.md` / `CLAUDE.md`.
+Leaving it empty is fine: the model still gets the role, the rules, the diff, the
+metadata, and your project instructions.
 
-> [!NOTE]
-> Don't confuse `--prompt` with `--context` or `[INPUT]`. **`--prompt`** carries *instructions* (what to do / what to focus on). **`--context KEY="…"`** / **`--context-file KEY=path`** carry *named facts* folded into the user message (e.g. `ticket="JIRA-12 …"`), not instructions. **`[INPUT]`** (positional) is the *subject* to act on — the content itself.
-
-## Examples
-
-Inline only:
-
-```bash
-junior run \
-  --prompt "Find security vulnerabilities — auth bypass, secrets, injection" \
-  --prompt "Check error handling and edge cases"
-```
-
-File + inline:
-
-```bash
-junior run \
-  --prompt-file ./rules/api-standards.md \
-  --prompt "Pay extra attention to the new caching layer"
-```
-
-Config + CLI:
+**`file://` in a config file:** a *relative* URI (`file://./prompts/x.md`) resolves against
+**the config file's own directory** — so presets in `.junior/*.yaml` can each reference
+`file://./prompts/foo.md` unambiguously; an *absolute* URI (`file:///abs/x.md`) is used
+as-is; anything else is inline text. Prompt files are `.md`; optional frontmatter
+(`name`, `description`) only makes logs readable — otherwise the filename is the name.
 
 ```yaml
 # .junior.yaml
 context:
-  prompts:
-    - file://./prompts/security.md       # resolved relative to this file
-    - "Check error handling and edge cases"
+  prompts:                            # → System Prompt (instructions)
+    - file://./prompts/security.md    # relative to this file
+    - "Pay extra attention to the migration script"
+  context:                            # → User Message (= --context KEY=text)
+    ticket: "JIRA-12: refactor auth"
+  context_files:                      # → User Message (= --context-file KEY=path)
+    spec: SPEC.md
 ```
 
 ```bash
-# Runs: security.md + the inline config prompt + the ad-hoc CLI one
-junior run --prompt "Focus on the migration script in this MR"
+junior run --runbook local_review --prompt "And the new caching layer"
+# System Prompt = role + security.md + the config line + this CLI line + rules + CLAUDE.md
 ```
 
-## file:// URIs in config
+The named facts you'd pass with `--context` / `--context-file` have config equivalents too
+— `context.context` (inline) and `context.context_files` (key → path). Both land in the
+**User Message**, not the system prompt. Note the asymmetry: `file://` URIs in
+`context.prompts` resolve against the config file's directory, but `context_files` paths
+are plain paths resolved against the run's working directory (write them from the repo root
+in CI).
 
-Inside a config file (`.junior.yaml`, `--config foo.yaml`, global config), `context.prompts` entries that start with `file://` point at a `.md` file:
-
-- **Relative** URI (`file://./prompts/x.md`, `file://prompts/x.md`) resolves against **the config file's own directory** — so multiple presets in `.junior/*.yaml` can each reference `file://./prompts/foo.md` without ambiguity.
-- **Absolute** URI (`file:///abs/path/x.md`) is used as-is.
-- Anything else is treated as inline prompt text.
-
-CLI `--prompt-file foo.md` is just a shortcut: junior converts the path to an absolute `file://...` URI and appends to the same list.
-
-## Prompt file format
-
-Plain `.md` works. Frontmatter is optional — useful for readable logs:
-
-```markdown
----
-name: api-standards
-description: API design rules for our team
----
-
-You are an expert reviewing REST API code...
-```
-
-Without frontmatter, the file's stem is used as the name.
-
-## Example prompts
-
-See [`examples/prompts/`](examples/prompts/) for five reference prompts you can copy and adapt:
-
-- `security.md` — auth/authz bypass, TOCTOU, path traversal, hardcoded secrets
-- `logic.md` — wrong conditionals, missing edge cases, error handling
-- `design.md` — misleading names, DRY/KISS/SRP, O(n²), N+1 queries
-- `docs.md` — docs gaps for new features, flags, APIs
-- `common.md` — all of the above in one prompt (cheaper than running them separately)
-
-Drop them into your repo or `~/.junior/`, then reference with `--prompt-file`:
-
-```bash
-junior run --prompt-file ./prompts/security.md --prompt-file ./prompts/logic.md
-```
+Ready-to-copy prompts (security, logic, design, docs) live in
+[`examples/prompts/`](examples/prompts/).
 
 ## One system prompt, one call
 
-All prompt bodies are merged into a **single** system prompt and the harness runs
-**once** — there is no per-prompt fan-out. How each harness then reaches the model and
-the diff (inlined vs read via file tools) is covered in
-[Choosing a harness](agent_backends.md).
-
-## What the LLM sees
-
-### System prompt
-
-1. **Prompt body** — from `--prompt`, `--prompt-file`, or `context.prompts` in the config
-2. **Base rules** — shared instructions: focus on changed code, be constructive, use `request_changes` only for critical/multiple high issues
-3. **Project instructions** — first found file from the repo root: `AGENT.md`, `AGENTS.md`, `CLAUDE.md`. Loaded verbatim up to 30k chars (`MAX_INSTRUCTIONS_CHARS`); anything beyond is truncated with a warning. **Security note:** read from the working tree, not target branch — a malicious MR can modify them. See [Security](prompt_injection.md)
-
-### User message
-
-Built by `build_user_message()` from collected context:
-
-1. **MR metadata** — title, description, source→target branch, labels
-2. **Extra context** — from `--context` and `--context-file` flags
-3. **Commit messages** — list of commits in the MR
-4. **Prior discussion** — human comments on the MR/PR (general notes + inline review threads), fetched on each iteration so the agent can see what reviewers already raised and avoid duplicating feedback that was addressed. System notes are filtered; capped at 50 newest (`MAX_COMMENTS`). Marked as untrusted input — see [Security](prompt_injection.md)
-5. **Changed files list** — paths with status (added/modified/deleted)
-6. **Code diff** — full unified diff, inlined while ≤ 50k chars (`INLINE_DIFF_MAX_CHARS`); above that, file-access harnesses fall back to "read the changed files via your tools"
-
-### What is NOT sent in the user message
-
-- File contents (agents can read files via tools if needed)
-- Unchanged files (unless the harness explores them via its file tools)
-- Git history beyond the diff
-- CI environment variables, API keys, or tokens
-
-## Where the review goes
-
-Without `--publish` the raw JSON result goes to stdout/`-o`; with `--publish` the
-runbook's custom publish runs instead. Details:
-[CLI → Publish vs raw output](cli.md#publish-vs-raw-output).
+All your prompt bodies merge into a **single** system prompt and the harness runs
+**once** — there is no per-prompt fan-out. How each harness then reaches the model (diff
+inlined vs read via file tools) is in [Choosing a harness](agent_backends.md); where the
+result goes — raw JSON vs `--publish` — is in
+[CLI → output](cli.md#publish-vs-raw-output).

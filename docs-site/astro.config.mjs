@@ -81,7 +81,7 @@ export default defineConfig({
             { label: "Run in CI", link: "/ci/" },
             { label: "Write a runbook in YAML", link: "/script_runbooks/" },
             { label: "Choosing a harness", link: "/agent_backends/" },
-            { label: "Prompts", link: "/prompts/" },
+            { label: "Prompts and Context", link: "/prompts/" },
           ],
         },
         {
@@ -98,7 +98,8 @@ export default defineConfig({
           items: [
             { label: "Overview", link: "/architecture/" },
             { label: "The runbook framework", link: "/architecture/runbooks/" },
-            { label: "Adding runbooks & harnesses", link: "/adding_backends/" },
+            { label: "Adding a runbook", link: "/adding_runbooks/" },
+            { label: "Adding a harness", link: "/adding_harnesses/" },
             {
               label: "Harness internals",
               items: [

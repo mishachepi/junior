@@ -1,14 +1,14 @@
-/* Indigo accent — matches the previous MkDocs Material theme. */
+/* Green accent — matches the Junior logo gradient (#22c55e → #15803d). */
 :root {
-  --sl-color-accent-low: #1e1b4b;
-  --sl-color-accent: #4f46e5;
-  --sl-color-accent-high: #c7d2fe;
+  --sl-color-accent-low: #052e16;
+  --sl-color-accent: #16a34a;
+  --sl-color-accent-high: #bbf7d0;
 }
 
 :root[data-theme="light"] {
-  --sl-color-accent-low: #e0e7ff;
-  --sl-color-accent: #4f46e5;
-  --sl-color-accent-high: #312e81;
+  --sl-color-accent-low: #dcfce7;
+  --sl-color-accent: #15803d;
+  --sl-color-accent-high: #14532d;
 }
 
 /* Landing page (template: splash) — Starlight's default hero padding grows to

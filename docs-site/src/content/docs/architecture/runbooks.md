@@ -11,7 +11,7 @@ runbooks review code diffs, but nothing in the framework is git-shaped.
 
 This page is the deep-dive on those two abstractions. For the high-level picture
 see [Architecture](../architecture.md); to add your own, see
-[Adding runbooks & harnesses](../adding_backends.md).
+[Adding runbooks & harnesses](../adding_runbooks.md).
 
 ## Why a framework
 
@@ -177,9 +177,11 @@ class Runbook(ABC, Generic[C, R]):
         """Turn context into the user message. file_access tells whether the harness
         reads files itself (so a full diff need not be inlined)."""
 
+    SYSTEM_PROMPT: ClassVar[str] = ""        # one-line role; override per runbook
+
     def system_prompt(self, settings: "Settings") -> str:
-        """Role + rules. Override per domain; default is empty."""
-        return ""
+        """SYSTEM_PROMPT role + user --prompts. Override to append domain rules."""
+        return self._compose_prompt(self.SYSTEM_PROMPT, settings)
 
     # --- phase 3: publish (only with --publish) ---
     @abstractmethod
@@ -210,10 +212,7 @@ It is domain-agnostic and never mentions diffs or MRs. Collection is the
 ```python
 def run_runbook(runbook, harness, context, settings, *, publish_enabled) -> LLMResult:
     result = harness.complete(
-        system_prompt=merge_system_prompt(           # runbook default + user layer
-            runbook.system_prompt(settings),
-            list(settings.llm.system_prompt),
-        ),
+        system_prompt=runbook.system_prompt(settings),   # SYSTEM_PROMPT role + --prompts
         user_message=runbook.render(context, settings, file_access=harness.file_access),
         output_schema=runbook.result_model,         # ← R schema
         settings=settings,
@@ -231,15 +230,13 @@ so `--from-file` knows which runbook produced it). The exit code is
 
 ## LLM settings
 
-Harness selection, model, keys, prompts, and limits live in one group,
-`settings.llm` (`LLMSettings`) — renamed from the old `settings.review`. It
-mirrors a split between the **system prompt** (role/identity) and the **task**:
+Harness selection, model, keys, and limits live in one group,
+`settings.llm` (`LLMSettings`) — renamed from the old `settings.review`:
 
 ```python
 class LLMSettings(BaseSettings):
     harness: HarnessKind = HarnessKind.CLAUDECODE      # which LLM driver
     model: str = ""                                    # "provider:model" or ""
-    system_prompt: list[str] = []                      # inline | file://  (role layer)
     # API keys, max_file_size, max_tokens_per_agent …
 ```
 
@@ -247,10 +244,9 @@ class LLMSettings(BaseSettings):
 > `llm.harness` (env `HARNESS`, flag `--harness`) is canonical. The old
 > `llm.backend` / `BACKEND` / `--backend` is kept as a deprecated alias.
 
-`system_prompt` is an **extra** layer the user can add on top of the runbook's
-own `system_prompt()` default — the runner merges them. The task layer for code
-review is the runbook's own `context.prompts`. Both accept inline text or
-`file://...` URIs via the shared `prompt_loader`.
+The system prompt is the runbook's own: its one-line `SYSTEM_PROMPT` role merged
+with the user's `context.prompts` (`--prompt` / `--prompt-file`) via the shared
+`prompt_loader.merge_prompts()`. Entries accept inline text or `file://...` URIs.
 
 ## The built-in code-review family
 
@@ -277,7 +273,7 @@ Where the shared pieces come from:
 | `context_model` | `CollectedContext` (`junior.runbooks.code_review.models`) |
 | `result_model` | `LLMReviewOutput` (`junior.runbooks.code_review.models`) |
 | `render()` | `build_user_message()` (`code_review/render.py`) |
-| `system_prompt()` | `build_review_prompt()` + `BASE_RULES` + AGENT.md (`code_review/instructions.py`) |
+| `system_prompt()` | `SYSTEM_PROMPT` role + user prompts, then `build_review_prompt()` adds `BASE_RULES` + AGENT.md (`code_review/instructions.py`) |
 | `collect()` | `junior.collect.{local,github,gitlab}.collect(settings)` |
 | `publish()` (`--publish`) | `_post_to_platform`: local → `junior.publish.local` Markdown; github/gitlab → `post_review(...)` |
 | `render_output()` (no `--publish`) | the raw `LLMReviewOutput` as JSON (default hook) |
@@ -309,12 +305,11 @@ class JiraReview(Runbook[JiraTicket, TicketAssessment]):
     name = "jira_review"
     context_model = JiraTicket
     result_model = TicketAssessment
+    SYSTEM_PROMPT = "You are a backlog-refinement reviewer. ..."   # one-line role
 
     def collect(self, settings):  ...                 # hit Jira API → JiraTicket
     def render(self, ticket, settings, *, file_access):  ...   # ticket → text
     def publish(self, settings, result, usage, *, errors):  ...   # only with --publish
-    def system_prompt(self, settings):
-        return "You are a backlog-refinement reviewer. ..."
 ```
 
 `JiraReview` gets all five LLM harnesses, the whole prompt/config mechanism, JSON
@@ -350,7 +345,7 @@ sources:
 4. **Repo-local** (opt-in `local_runbooks: true`) — `load_local_runbooks()` loads
    `<project>/.junior/runbooks/*.py` (`@register_runbook` classes) and YAML
    manifests driving a `ScriptRunbook` (any language). Executes repo code, so
-   it's off by default. See [Adding runbooks](../adding_backends.md#4-repo-local-in-juniorrunbooks).
+   it's off by default. See [Adding runbooks](../adding_runbooks.md#4-repo-local-in-juniorrunbooks).
 
 ## Module layout
 

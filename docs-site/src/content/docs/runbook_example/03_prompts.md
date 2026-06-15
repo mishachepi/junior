@@ -20,9 +20,9 @@ Junior assembles the system instructions from whatever the user supplied via `--
 
 ## How Prompts Are Used
 
-All three prompts are concatenated into a **single** system prompt. The role layer
-(`llm.system_prompt`) plus the runbook's task layer (`context.prompts`) are merged by
-the runner, and the pydantic harness makes one structured LLM call:
+All three prompts are concatenated into a **single** system prompt. The runbook's
+`SYSTEM_PROMPT` role plus the user's `context.prompts` (`--prompt` / `--prompt-file`)
+are merged into the system prompt, and the pydantic harness makes one structured LLM call:
 
 ```
 [merged system prompt] + [user message] --> single structured LLM call --> ReviewResult (summary + recommendation + comments)

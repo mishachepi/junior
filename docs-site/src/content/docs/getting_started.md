@@ -43,7 +43,7 @@ codex                codex CLI subprocess                 ✗ not installed
 ```
 
 If `claudecode` says `✓ installed · ready`, you're good. Prefer another harness —
-`codex`, `pydantic`, `deepagents`, or `pi` for local models? Each is one extra away —
+`codex`, `pydantic`, or `pi` for local models? Each is one extra away —
 see the [install matrix](index.md#install) and [Choosing a harness](agent_backends.md).
 
 <!-- 🎥 VIDEO 2 — "Install & verify" (~60s, embed here)
@@ -89,18 +89,24 @@ cd /path/to/your/repo
 git checkout my-feature-branch
 ```
 
+> [!NOTE]
+> The commands below use the runbook you picked in `junior init` — this walkthrough
+> assumes **`local_review`**. There is no implicit default: with nothing configured,
+> `junior run` exits 2 and asks you to choose one. Not sure what's set? `junior config show`.
+> Override any run with `--runbook local_review`.
+
 Start with the free preview — `dry-run` shows the plan, the collected context, and the
 **exact** system prompt + user message the harness would receive, without calling any AI:
 
 ```bash
-junior dry-run
+junior dry-run --runbook local_review
 ```
 
 Happy with it? Run the real thing:
 
 ```bash
-junior run               # raw structured result (JSON) → stdout
-junior run --publish     # pretty Markdown review in the terminal
+junior run --runbook local_review              # raw structured result (JSON) → stdout
+junior run --runbook local_review --publish    # pretty Markdown review in the terminal
 ```
 
 Without `--publish` you get the raw JSON — stable, pipe- and redirect-safe (logs go to
@@ -160,7 +166,7 @@ You delegated the review — the record is how you own it. Disable with `--no-re
 - **Build your own runbook in YAML** — a manifest with a prompt, an optional schema,
   and two shell commands; chain several Juniors with pipes.
   [Runbooks in YAML](script_runbooks.md).
-- **Tune the prompts** — instructions, the role layer, and ready-to-copy examples:
-  [Prompts](prompts.md).
+- **Tune the prompts** — how `--prompt` / `--prompt-file` layer onto the runbook's
+  role, plus ready-to-copy examples: [Prompts](prompts.md).
 - **Understand the design** — why Junior is a deterministic wrapper around a
   non-deterministic worker: [Philosophy](philosophy.md).

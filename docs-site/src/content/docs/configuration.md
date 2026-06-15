@@ -22,12 +22,12 @@ Junior settings split into three mutually-independent groups, plus a couple of t
 | Group | What it controls |
 |-------|------------------|
 | **Context** | What to review — source mode, prompts, extra instructions, MR metadata |
-| **LLM** | How to call the model — harness, model, API keys, system prompt, runtime limits |
+| **LLM** | How to call the model — harness, model, API keys, runtime limits |
 | **Output** | Where to send — local file path, `publish` toggle, platform tokens, CI vars |
 
 In a config file the three groups are nested explicitly under `context:` / `llm:` / `output:`, with `runbook:`, `log_level:` and `local_runbooks:` at the top level. In env vars they are flat — the *names* are the field names uppercased (`HARNESS`, `MODEL`, `SOURCE`, `PUBLISH`, `RUNBOOK`, `LOCAL_RUNBOOKS`, …) plus industry-standard aliases (`GITLAB_TOKEN`, `CI_*`, `GITHUB_*`, `ANTHROPIC_API_KEY`) and not prefixed with the group.
 
-> **`local_runbooks`** (top-level, default `false`). Opt-in: load runbooks from `<project>/.junior/runbooks/` (see [adding runbooks](adding_backends.md#4-repo-local-in-juniorrunbooks)). It executes Python shipped in the repo, so enable it only in repos you trust.
+> **`local_runbooks`** (top-level, default `false`). Opt-in: load runbooks from `<project>/.junior/runbooks/` (see [adding runbooks](adding_runbooks.md#4-repo-local-in-juniorrunbooks)). It executes Python shipped in the repo, so enable it only in repos you trust.
 
 > [!NOTE]
 > **Deprecated alias:** `--backend` / env `BACKEND` and the config key `backend` are accepted as a deprecated alias for `harness` (kept for one version). Prefer `harness` / `HARNESS` / `--harness`.
@@ -85,6 +85,7 @@ llm:
   model: anthropic:claude-opus-4-6
   anthropic_api_key: sk-ant-...                 # prefer env var — see warning below
   max_file_size: 100000                         # skip files larger than this (bytes)
+  timeout: 600                                  # CLI harnesses: kill the subprocess after N seconds
 output:
   output_file: review.md
   publish: false                                # true → post to the runbook's platform
@@ -134,8 +135,8 @@ export PUBLISH=false
 | `INPUT_TEXT` | `[INPUT]` (positional) | — | Free-form task input handed to the runbook's collect step — the collector decides how to use it |
 | `CI_MERGE_REQUEST_TARGET_BRANCH_NAME` | `--target-branch` | `main` | Target branch for diff |
 | `PROMPTS` (JSON) | `--prompt TEXT` / `--prompt-file FILE` | `[]` | One list, each entry is inline text or `file://...`. JSON array in env (`PROMPTS='["..."]'`); CLI flags both append to config |
-| `CONTEXT` (JSON) | `--context KEY="text"` | `{}` | Extra prompt instructions (KEY=text). Repeatable on CLI |
-| `CONTEXT_FILES` (JSON) | `--context-file KEY=path` | `{}` | Data files to attach. Repeatable on CLI |
+| `CONTEXT` (JSON) | `--context KEY="text"` | `{}` | Named facts folded into the **user message** (KEY=text) — data, *not* instructions (for those use prompts). Repeatable on CLI |
+| `CONTEXT_FILES` (JSON) | `--context-file KEY=path` | `{}` | Like `CONTEXT`, but each value is read from a file. Repeatable on CLI |
 | `CI_MERGE_REQUEST_TITLE` | — | — | MR/PR title (auto-set by CI; passed to LLM) |
 | `CI_MERGE_REQUEST_DESCRIPTION` | — | — | MR/PR description (auto-set by CI; passed to LLM) |
 | `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` | — | — | Source branch name (auto-set by CI) |
@@ -150,9 +151,9 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 | `MODEL` | `--model` | per provider | Accepts `provider:model` (e.g. `anthropic:claude-opus-4-6`) or bare `model` |
 | `OPENAI_API_KEY` | — | — | OpenAI API key |
 | `ANTHROPIC_API_KEY` | — | — | Anthropic API key |
-| `SYSTEM_PROMPT` (JSON) | — | `[]` | Role/identity layer merged on top of the runbook's own system prompt. Each entry is inline text or a `file://...` URI (like `context.prompts`) |
 | `MAX_TOKENS_PER_AGENT` | — | `0` | Response token cap, 0 = no limit (`pydantic` harness only) |
 | `MAX_FILE_SIZE` | — | `100000` | Skip file content above this size, bytes (collection + `pydantic`) |
+| `TIMEOUT` | — | `600` | Kill the CLI-harness subprocess (`claudecode`/`codex`/`pi`) after N seconds |
 
 > [!NOTE]
 > `BACKEND` / `--backend` and the config key `backend` remain accepted as a deprecated alias for `HARNESS` / `--harness` / `harness` (kept for one version).
@@ -221,7 +222,7 @@ A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). A
 | `pi` | core — no extra | ✅ yes | per provider — or **none** for local models (`~/.pi/agent/models.json`) | the `pi` CLI; env key, `~/.pi/agent/auth.json`, or a local model |
 
 - **`file_access`** — `claudecode`/`codex`/`pi` explore the repo with their own tools, so the runbook does **not** inline the full diff into the prompt. `pydantic`/`deepagents` get the diff inlined (they also have read-only file tools for extra exploration).
-- **Honored config fields** — every API harness reads `llm.model` and `llm.max_file_size`; only `pydantic` additionally honors `llm.max_tokens_per_agent` (response-token cap). `claudecode`/`codex` ignore `model` unless you set it explicitly (the CLI picks otherwise).
+- **Honored config fields** — every API harness reads `llm.model` and `llm.max_file_size`; only `pydantic` additionally honors `llm.max_tokens_per_agent` (response-token cap); the CLI harnesses (`claudecode`/`codex`/`pi`) honor `llm.timeout` (subprocess kill after N seconds, default 600 — lower it to fail fast on a stuck agent). `claudecode`/`codex` ignore `model` unless you set it explicitly (the CLI picks otherwise).
 - **No required env for the CLI harnesses** — `claudecode`/`codex` carry their own auth; `junior config env --harness pydantic` (or `deepagents`) lists the provider key. Setting both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` is fine — pass `--model anthropic:...` / `--model openai:...` to disambiguate.
 
 Per-harness deep dives: [Harnesses](agent_backends.md).
@@ -241,7 +242,7 @@ A **runbook** runs collect → render → LLM → publish, and the platform (loc
 - **`needs_git`** — gates the preflight `.git` check. Code-review runbooks require a repo; `weather_advice` (and most local runbooks) run in any directory.
 - **Honored config fields** — the code-review runbooks read `context.source`, `context.base_sha`, `context.target_branch`, and `llm.max_file_size`; `gitlab_pr_review` additionally reads `output.ci_server_url`, and `bitbucket_pr_review` reads `output.bitbucket_url`. `weather_advice` declares none.
 - **Required env applies only when `--publish` is set** — without it, every runbook emits its raw output to stdout/`-o` and needs no token. Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner; `junior config env --runbook X` lists exactly what your combination needs.
-- Beyond these you can run an external runbook by import path (`--runbook pkg.module:ClassName`) or a repo-local one from `.junior/runbooks/` (opt-in `local_runbooks`). See [Adding runbooks & harnesses](adding_backends.md).
+- Beyond these you can run an external runbook by import path (`--runbook pkg.module:ClassName`) or a repo-local one from `.junior/runbooks/` (opt-in `local_runbooks`). See [Adding a runbook](adding_runbooks.md).
 
 > [!NOTE]
 > Setting both `GITLAB_TOKEN` and `GITHUB_TOKEN` is no longer an error — the runbook you select decides which one is used.

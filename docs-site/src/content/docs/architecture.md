@@ -125,7 +125,7 @@ class Runbook(ABC, Generic[C, R]):
     def collect(self, settings) -> C: ...                         # may dispatch gitlab/github/local
     @abstractmethod
     def render(self, context, settings, *, file_access) -> str: ...
-    def system_prompt(self, settings) -> str: ...                 # default: ""
+    def system_prompt(self, settings) -> str: ...                 # SYSTEM_PROMPT role + --prompts
     @abstractmethod
     def publish(self, settings, result, usage, *, errors) -> None: ...    # only with --publish
     def render_output(self, result) -> str: ...                   # no --publish output (default JSON)
@@ -167,7 +167,7 @@ The registry (`src/junior/runbook/registry.py`) merges runbooks from four source
 3. **Direct path** — `--runbook "pkg.module:ClassName"` loads a `Runbook` subclass directly.
 4. **Repo-local** — with `local_runbooks: true` (opt-in; executes repo code), `registry.load_local_runbooks()` loads `<project>/.junior/runbooks/*.py` (`@register_runbook` classes) and YAML manifests (driving a `ScriptRunbook`).
 
-See [Adding runbooks & harnesses](adding_backends.md) and the [runbook framework deep-dive](architecture/runbooks.md).
+See [Adding a runbook](adding_runbooks.md) or [a harness](adding_harnesses.md) and the [runbook framework deep-dive](architecture/runbooks.md).
 
 ## The code-review runbook family
 
@@ -188,14 +188,14 @@ Settings split into three frozen groups plus two top-level scalars:
 
 | Group | Holds |
 |-------|-------|
-| `settings.context` (`ContextSettings`) | source/diff inputs, project dir, `context.prompts` (the task layer) |
-| `settings.llm` (`LLMSettings`) | `harness` (the LLM driver), `model`, API keys, `system_prompt` (role layer), limits |
+| `settings.context` (`ContextSettings`) | source/diff inputs, project dir, `context.prompts` (the user's `--prompt`s) |
+| `settings.llm` (`LLMSettings`) | `harness` (the LLM driver), `model`, API keys, limits |
 | `settings.output` (`OutputSettings`) | output file, platform tokens/IDs, `publish` flag |
 | `settings.runbook` | which runbook to run (registry name or `module:ClassName`) |
 | `settings.log_level` | logging verbosity |
 
 > [!NOTE]
-> `settings.llm` was previously `settings.review` (`ReviewSettings`). `system_prompt` is the role layer the runner merges *on top of* the runbook's own `system_prompt()`; for code review the task layer is `context.prompts`.
+> `settings.llm` was previously `settings.review` (`ReviewSettings`). The system prompt is the runbook's own — its `SYSTEM_PROMPT` role merged with the user's `context.prompts` (`--prompt` / `--prompt-file`).
 
 Validation is split: **generic** checks (context files, LLM API key) live in `Settings.preflight`; **runbook-specific** checks (e.g. a publishing runbook needs `GITHUB_TOKEN`) live in `Runbook.validate`.
 
