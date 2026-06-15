@@ -97,7 +97,8 @@ class PiHarness(Harness):
             )
         except FileNotFoundError:
             raise RuntimeError(
-                "pi CLI not found — install with: npm install -g @mariozechner/pi"
+                "pi CLI not found — install with: "
+                "npm install -g @earendil-works/pi-coding-agent"
             )
         except subprocess.TimeoutExpired:
             raise RuntimeError("pi CLI timed out after 10 minutes")

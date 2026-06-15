@@ -217,7 +217,7 @@ A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). A
 | `claudecode` (default) | core — no extra | ✅ yes | optional — `ANTHROPIC_API_KEY` switches the CLI to API mode (`--bare`) | the `claude` CLI; run `claude` once to log in (Claude subscription) |
 | `codex` | `junior[codex]` | ✅ yes | optional — `OPENAI_API_KEY` as fallback | the `codex` CLI; authenticate it once (OAuth) |
 | `pydantic` | `junior[pydantic]` | ❌ no — diff is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key (matches your `--model` provider) |
-| `deepagents` | `junior[deepagents]` | ❌ no — context is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key |
+| `deepagents` ⚠️ **deprecated** | `junior[deepagents]` | ❌ no — context is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key. Unreliable — use `pydantic` instead |
 | `pi` | core — no extra | ✅ yes | per provider — or **none** for local models (`~/.pi/agent/models.json`) | the `pi` CLI; env key, `~/.pi/agent/auth.json`, or a local model |
 
 - **`file_access`** — `claudecode`/`codex`/`pi` explore the repo with their own tools, so the runbook does **not** inline the full diff into the prompt. `pydantic`/`deepagents` get the diff inlined (they also have read-only file tools for extra exploration).

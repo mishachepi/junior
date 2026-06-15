@@ -14,6 +14,9 @@ Junior ships no *task* prompts — you provide the instructions yourself (code_r
 
 CLI flags **append** to config values — you can keep a baseline in config and add ad-hoc instructions on the command line. Empty is fine too: the LLM still gets the diff, MR metadata, prior discussion, and project instructions from `AGENT.md` / `CLAUDE.md`.
 
+> [!NOTE]
+> Don't confuse `--prompt` with `--context` or `[INPUT]`. **`--prompt`** carries *instructions* (what to do / what to focus on). **`--context KEY="…"`** / **`--context-file KEY=path`** carry *named facts* folded into the user message (e.g. `ticket="JIRA-12 …"`), not instructions. **`[INPUT]`** (positional) is the *subject* to act on — the content itself.
+
 ## Examples
 
 Inline only:

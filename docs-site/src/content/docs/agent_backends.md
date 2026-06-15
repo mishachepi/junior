@@ -17,7 +17,7 @@ env `HARNESS`, or config `harness:`; default `claudecode`.
 | Predictable CI cost | `pydantic` | One structured API call, no agentic wandering |
 | The OpenAI/Codex stack | `codex` | `codex exec` in a sandbox, OAuth or API key |
 | **Local / offline models** | `pi` | Ollama / LM Studio / vLLM via `~/.pi/agent/models.json` — no API key, nothing leaves the machine |
-| To experiment with orchestration | `deepagents` | LangChain orchestrator — **unstable**, may skip the submit tool |
+| ~~To experiment with orchestration~~ | `deepagents` | **Deprecated** — LangChain orchestrator, unreliable (may skip the submit tool). Use `pydantic` instead |
 
 ## Comparison
 
@@ -26,7 +26,7 @@ env `HARNESS`, or config `harness:`; default `claudecode`.
 | `claudecode` | *(core)* | single `claude -p` subprocess | subscription or `ANTHROPIC_API_KEY` | stable |
 | `codex` | `junior[codex]` | single `codex exec` in sandbox | OAuth or `OPENAI_API_KEY` | stable |
 | `pydantic` | `junior[pydantic]` | single structured pydantic-ai call | API key **required** | stable |
-| `deepagents` | `junior[deepagents]` | LangChain orchestrator + subagents | API key **required** | **unstable** |
+| `deepagents` | `junior[deepagents]` | LangChain orchestrator + subagents | API key **required** | **deprecated** |
 | `pi` | *(core)* | single `pi --mode json` subprocess | provider key, `auth.json`, or **none (local models)** | stable |
 
 `junior config list harnesses` shows what's installed and ready on your machine;

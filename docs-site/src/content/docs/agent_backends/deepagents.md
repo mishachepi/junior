@@ -4,6 +4,12 @@ title: "Harness: DeepAgents"
 
 # Harness: DeepAgents
 
+> [!WARNING]
+> **`deepagents` is deprecated.** It's the least reliable harness — it can skip the
+> `submit_review` tool entirely, struggles past ~30KB of diff, and has no retry
+> logic. Selecting it prints a deprecation warning at startup. Prefer **`pydantic`**
+> (one structured call) for the same "API-only, no CLI" use case.
+
 **File:** `src/junior/harnesses/deepagents.py`
 **Env var:** `HARNESS=deepagents` (`BACKEND` is a deprecated alias)
 **Dependencies:** `deepagents`, `langchain`, `langchain-anthropic`, `langchain-openai`

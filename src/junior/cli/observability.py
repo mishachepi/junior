@@ -107,6 +107,12 @@ def _startup_warnings(
     if not config_files and not has_auth and needs_setup:
         yield "No config file or API keys/tokens detected — run 'junior init' for setup."
 
+    if settings.llm.harness == HarnessKind.DEEPAGENTS:
+        yield (
+            "The 'deepagents' harness is deprecated (unreliable — may skip the submit "
+            "tool, struggles past ~30KB). Prefer 'pydantic' for a single structured call."
+        )
+
     if (
         publish_enabled
         and settings.runbook == "gitlab_pr_review"

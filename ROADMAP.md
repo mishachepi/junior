@@ -2,9 +2,10 @@
 
 ## Known Issues
 
-### DeepAgents harness (experimental)
+### DeepAgents harness (deprecated)
 
-`deepagents` is the least reliable harness — treat it as experimental:
+`deepagents` is **deprecated** — the least reliable harness; selecting it now
+prints a deprecation warning. Kept for one more version, but prefer `pydantic`:
 
 - Fails on large diffs (>30KB) — timeout or the orchestrator skips `submit_review`.
 - With a single prompt (the common case) the orchestrator can get lost and never

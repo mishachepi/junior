@@ -33,12 +33,12 @@ FROM base AS pydantic
 # 1) Resolve and install dependencies only — this layer is reused as long as
 #    pyproject.toml and uv.lock are unchanged, even when src/ changes.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --extra gitlab
+    uv sync --frozen --no-install-project --extra gitlab --extra pydantic
 
 # 2) Install the project itself — busts only when src/ changes.
 COPY src/ ./src/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-editable --extra gitlab
+    uv sync --frozen --no-editable --extra gitlab --extra pydantic
 
 RUN useradd -u 1000 --create-home junior
 USER junior
@@ -75,23 +75,27 @@ RUN git config --global --add safe.directory '*'
 CMD ["junior"]
 
 
-# ---- full: all backends ----
+# ---- full: all backends (pydantic + codex + pi + deepagents, all platforms) ----
 FROM base AS full
 
+# Node.js + the two CLI harnesses that need it: codex (@openai/codex) and
+# pi (@earendil-works/pi-coding-agent — provides the `pi` binary). `pi` is a
+# core harness (no Python extra) but still needs its CLI on PATH to run;
+# `--extra all` already covers the pydantic/codex Python deps.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates gnupg \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g @openai/codex \
+    && npm install -g @openai/codex @earendil-works/pi-coding-agent \
     && npm cache clean --force
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --extra all --extra codex
+    uv sync --frozen --no-install-project --extra all
 
 COPY src/ ./src/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-editable --extra all --extra codex
+    uv sync --frozen --no-editable --extra all
 
 RUN useradd -u 1000 --create-home junior
 USER junior

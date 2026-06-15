@@ -6,7 +6,7 @@ title: "Harness: Pi CLI"
 
 **File:** `src/junior/harnesses/pi.py`
 **Env var:** `HARNESS=pi`
-**Dependencies:** `pi` CLI (`npm install -g @mariozechner/pi`) — no Python extra (core install)
+**Dependencies:** `pi` CLI (`npm install -g @earendil-works/pi-coding-agent`) — no Python extra (core install)
 **Auth:** any pi provider — env key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, …), `~/.pi/agent/auth.json`, **or none at all for local models**
 
 ## Why pi

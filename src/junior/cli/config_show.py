@@ -36,7 +36,7 @@ _HINTS = {
     "system_prompt": "role layer — inline text or file://./path.md",
     "max_tokens_per_agent": "pydantic: cap response tokens (0 = none)",
     "max_file_size": "skip files larger than this many bytes",
-    "record": "write .junior/output/{timestamp}.json each run",
+    "record": "run history / audit trail → .junior/output/{ts}.json (not the result itself)",
     "ci_server_url": "GitLab base URL",
     "bitbucket_url": "Bitbucket DC base URL",
 }

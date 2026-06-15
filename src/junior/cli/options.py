@@ -54,6 +54,23 @@ EnvOpt = Annotated[
 ]
 
 
+# The same --config as the parent callback, repeated on flag-heavy subcommands
+# so it works *after* the command too (`junior run --config x.yaml`), not only
+# before it. There is still one effective config: the post-command value wins
+# when both positions are given (see app.run / dry_run).
+ConfigOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        "--config",
+        metavar="FILE",
+        help="YAML config file ('-' = stdin). Same flag as before the subcommand; "
+        "overrides .junior.{yaml,yml} + global config.",
+        rich_help_panel=OPS_PANEL,
+        show_default=False,
+    ),
+]
+
+
 # === Small parsers / callbacks ===
 
 
@@ -97,9 +114,9 @@ InputArg = Annotated[
     typer.Argument(
         metavar="[INPUT]",
         help=(
-            "Free-form input text handed to the runbook's collect step — the "
-            "collector decides how to use it (code_review reviews this text "
-            "instead of a git diff; a script runbook uses it as the user message)"
+            "The subject to act on — the content itself, not instructions about "
+            "it. code_review reviews THIS text instead of a git diff; a script "
+            "runbook uses it as the user message. For instructions use --prompt."
         ),
         show_default=False,
         rich_help_panel=CTX_PANEL,
@@ -155,7 +172,9 @@ ContextInstructionOpt = Annotated[
     typer.Option(
         "--context",
         metavar='KEY="text"',
-        help="Extra prompt instructions as KEY=text. Repeatable",
+        help='Named background fact folded into the prompt as "KEY: text" '
+        '(e.g. ticket="JIRA-12 …"). Repeatable. Data, not instructions — '
+        "for instructions use --prompt.",
         rich_help_panel=CTX_PANEL,
         show_default=False,
     ),
@@ -166,7 +185,8 @@ ContextFileOpt = Annotated[
     typer.Option(
         "--context-file",
         metavar="KEY=path",
-        help="Data files as KEY=path. Repeatable",
+        help="Named data file folded into the prompt as KEY — like --context, "
+        "but the value is read from a file. Repeatable.",
         rich_help_panel=CTX_PANEL,
         show_default=False,
     ),
@@ -177,7 +197,9 @@ PromptOpt = Annotated[
     typer.Option(
         "--prompt",
         metavar="TEXT",
-        help="Inline prompt text — instructions for the LLM. Repeatable",
+        help="Instructions for the LLM — what to do / what to focus on. "
+        "Repeatable. (Background facts → --context; the thing to act on → "
+        "the [INPUT] argument.)",
         rich_help_panel=CTX_PANEL,
         show_default=False,
     ),
@@ -188,7 +210,8 @@ PromptFileOpt = Annotated[
     typer.Option(
         "--prompt-file",
         metavar="FILE",
-        help="Prompt .md file. Repeatable",
+        help="Instructions from a .md file — like --prompt, read from a file. "
+        "Repeatable.",
         rich_help_panel=CTX_PANEL,
         show_default=False,
     ),

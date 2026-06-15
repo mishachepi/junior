@@ -78,7 +78,7 @@ Built-in harnesses:
 | `claudecode` (default) | core | ✅ reads files | optional (`ANTHROPIC_API_KEY` → API mode) | the `claude` CLI |
 | `codex` | `junior[codex]` | ✅ reads files | optional (`OPENAI_API_KEY`) | the `codex` CLI |
 | `pydantic` | `junior[pydantic]` | ❌ diff inlined | **required** (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | a single structured pydantic-ai call |
-| `deepagents` | `junior[deepagents]` | ❌ context inlined | **required** (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | a LangChain orchestrator |
+| `deepagents` ⚠️ deprecated | `junior[deepagents]` | ❌ context inlined | **required** (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | a LangChain orchestrator (unreliable — use `pydantic`) |
 | `pi` | core | ✅ reads files | per provider — or none for local models | the `pi` CLI (incl. Ollama/LM Studio/vLLM) |
 
 **`file_access`** is a `ClassVar[bool]` on the harness: `True` means it explores

@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.2.1 — 2026-06-15
+
+Maintenance release — no breaking changes.
+
+- **`deepagents` harness deprecated.** It's the least reliable harness (skips the
+  submit tool, struggles past ~30KB, no retry). Selecting it now prints a startup
+  deprecation warning and it's marked deprecated in `config list harnesses` and the
+  docs. Prefer `pydantic`.
+- **Docker `pydantic` target now actually installs the pydantic harness** — it was
+  building with `--extra gitlab` only, so `pydantic_ai` was missing and
+  `--harness pydantic` failed at runtime with `No module named 'pydantic_ai'`.
+  Now `--extra gitlab --extra pydantic`.
+- **Docker `full` target installs the `pi` CLI** (`@earendil-works/pi-coding-agent`)
+  so the `pi` harness works in the image; it bundles pydantic + codex + pi + deepagents.
+- **Fixed the `pi` install instructions** everywhere (harness error message + docs):
+  the CLI ships as `@earendil-works/pi-coding-agent`, not `@mariozechner/pi` (which
+  installs an unrelated `pi-pods` binary).
+- **`.dockerignore`** excludes `docs-site/`, `.junior/`, `.github/` — smaller build context.
+- **Rewrote the CI guide** (`ci.md`) as a "Junior as a code-review tool in CI" page:
+  the manual-button-on-MR GitLab pattern, trigger variants, image build + push, and the
+  `--platform linux/amd64` runner-architecture gotcha.
+- **Refreshed dependencies** to the latest compatible versions (`uv lock --upgrade`).
+
 ## 0.2.0 — 2026-06-14
 
 0.2.0 is a large, breaking release that turns Junior from a hard-wired

@@ -216,7 +216,11 @@ HARNESS_META: dict[HarnessKind, tuple[str, str, str]] = {
     HarnessKind.CLAUDECODE: ("claude CLI subprocess (no API key)", "", ""),
     HarnessKind.CODEX: ("codex CLI subprocess", "codex", "openai"),
     HarnessKind.PYDANTIC: ("single structured call via pydantic-ai", "pydantic", "pydantic_ai"),
-    HarnessKind.DEEPAGENTS: ("LangChain orchestrator + subagents", "deepagents", "deepagents"),
+    HarnessKind.DEEPAGENTS: (
+        "LangChain orchestrator — DEPRECATED (unreliable; use pydantic)",
+        "deepagents",
+        "deepagents",
+    ),
     HarnessKind.PI: ("pi CLI subprocess — incl. local models (models.json)", "", ""),
 }
 

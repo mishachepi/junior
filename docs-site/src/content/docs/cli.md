@@ -30,7 +30,7 @@ Global options live on the parent command (apply to any subcommand):
 | `--show-completion` | Print completion script for manual install |
 | `-h`, `--help` | Show help for any command |
 
-Position: global options come **before** the subcommand: `junior --config foo.yaml run --harness pydantic`. (`-v`/`--verbose` is the exception — it also works *after* the subcommand: `junior run -v`.)
+Position: global options come **before** the subcommand: `junior --config foo.yaml run --harness pydantic`. Two are also accepted **after** `run`/`dry-run` for convenience: `-v`/`--verbose` (`junior run -v`) and `--config` (`junior run --config foo.yaml`). When `--config` is given on both sides, the one nearest the command wins — there is always a single effective config.
 
 > [!NOTE]
 > User-facing output goes to **stdout** as human-readable presentation (a pretty Markdown render in a TTY, raw Markdown when piped or redirected); errors, status, warnings, and structlog logs go to **stderr**. So stdout stays pipe-safe — `junior run > review.md` yields clean Markdown.
@@ -73,7 +73,7 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `[INPUT]` | — | Free-form input text (positional) handed to the runbook's collect step — the collector decides how to use it: code_review reviews the text instead of a git diff (no git repo required), a collect-less script runbook takes it as the user message (over stdin) |
+| `[INPUT]` | — | The subject to act on — the content itself, not instructions about it (for instructions use `--prompt`). Handed to the runbook's collect step, which decides how to use it: code_review reviews this text instead of a git diff (no git repo required); a collect-less script runbook takes it as the user message (positional arg first, else stdin) |
 | `--project-dir PATH` | `.` | Path to git repository. Alias for `--env PROJECT_DIR=…` |
 | `--source` | `auto` | Git-diff strategy (git-based runbooks): `auto`, `staged`, `commit`, `branch`. Alias for `--env SOURCE=…` |
 | `--base-sha SHA` | — | Diff against this commit (overrides CI auto-vars). Alias for `--env BASE_SHA=…` |

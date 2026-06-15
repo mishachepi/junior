@@ -1,5 +1,9 @@
 .git
 .venv
+docs-site
+.junior
+.workmux.yaml
+.github
 __pycache__
 *.pyc
 .pytest_cache

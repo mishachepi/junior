@@ -27,6 +27,7 @@ from junior.cli.actions import (
 from junior.cli.config_show import print_example_config
 from junior.cli.options import (
     BaseShaOpt,
+    ConfigOpt,
     ContextFileOpt,
     ContextInstructionOpt,
     EnvOpt,
@@ -137,6 +138,18 @@ def _callback(
     ctx.obj = GlobalOpts(config=config, verbose=verbose)
 
 
+def _resolve_globals(ctx: typer.Context, config: Optional[str]) -> GlobalOpts:
+    """Merge a post-command `--config` with the parent (global-position) one.
+
+    There is one effective config: the value nearest the command wins, so
+    `junior run --config x` works and `junior --config a run --config b` uses b.
+    """
+    globals_: GlobalOpts = ctx.obj or GlobalOpts()
+    if config:
+        return GlobalOpts(config=config, verbose=globals_.verbose)
+    return globals_
+
+
 @app.command()
 def run(
     ctx: typer.Context,
@@ -159,6 +172,7 @@ def run(
     no_record: NoRecordOpt = False,
     interactive: InteractiveOpt = False,
     env: EnvOpt = None,
+    config: ConfigOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """Run the selected runbook end-to-end: collect → AI review (harness) → publish.
@@ -178,7 +192,7 @@ def run(
             param_hint="[INPUT]",
         )
 
-    globals_: GlobalOpts = ctx.obj
+    globals_ = _resolve_globals(ctx, config)
     settings, logger = prepare_settings(
         globals_,
         verbose=verbose,
@@ -292,6 +306,7 @@ def dry_run(
         ),
     ] = None,
     env: EnvOpt = None,
+    config: ConfigOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """Preview a run without calling the AI — the plan + exactly what the harness gets.
@@ -309,7 +324,7 @@ def dry_run(
             param_hint="-o",
         )
 
-    globals_: GlobalOpts = ctx.obj
+    globals_ = _resolve_globals(ctx, config)
     settings, logger = prepare_settings(
         globals_,
         verbose=verbose,

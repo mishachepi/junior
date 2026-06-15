@@ -786,6 +786,44 @@ def test_run_no_record_flag_skips_record(monkeypatch, tmp_path):
     assert not (tmp_path / ".junior").exists()
 
 
+def test_config_flag_after_subcommand_is_honored(monkeypatch, tmp_path):
+    """`--config FILE` works *after* the subcommand, not only before it (it used
+    to be a parent-callback-only option — a positional foot-gun)."""
+    _make_git_repo(tmp_path)
+    import junior.collect.local
+
+    monkeypatch.setattr(junior.collect.local, "collect", lambda s: _fake_context())
+    cfg = tmp_path / "j.yaml"
+    cfg.write_text("runbook: local_review\nharness: claudecode\nmodel: zzz-unique-model\n")
+
+    result = runner.invoke(
+        app, ["dry-run", "--config", str(cfg), "--project-dir", str(tmp_path)]
+    )
+    assert result.exit_code == 0, result.stdout + result.stderr
+    assert "zzz-unique-model" in result.stdout  # value came from the post-command --config
+
+
+def test_config_flag_nearest_command_wins(monkeypatch, tmp_path):
+    """Both positions given → the one nearest the command wins (single effective
+    config), so `junior --config A dry-run --config B` uses B."""
+    _make_git_repo(tmp_path)
+    import junior.collect.local
+
+    monkeypatch.setattr(junior.collect.local, "collect", lambda s: _fake_context())
+    a = tmp_path / "a.yaml"
+    a.write_text("model: from-A-global\n")
+    b = tmp_path / "b.yaml"
+    b.write_text("runbook: local_review\nharness: claudecode\nmodel: from-B-local\n")
+
+    result = runner.invoke(
+        app,
+        ["--config", str(a), "dry-run", "--config", str(b), "--project-dir", str(tmp_path)],
+    )
+    assert result.exit_code == 0, result.stdout + result.stderr
+    assert "from-B-local" in result.stdout
+    assert "from-A-global" not in result.stdout
+
+
 def test_run_from_file_skips_collect(monkeypatch, tmp_path):
     """`--from-file ctx.json` should not call collect — context is read from disk."""
     import junior.collect.local
