@@ -113,13 +113,8 @@ export default defineConfig({
             {
               label: "Runbook example",
               items: [
-                { label: "Overview", link: "/runbook_example/readme/" },
-                { label: "0 · Test repository", link: "/runbook_example/00_test_repo/" },
-                { label: "1 · Collect", link: "/runbook_example/01_collect/" },
-                { label: "2 · Context builder", link: "/runbook_example/02_context_build/" },
-                { label: "3 · System prompts", link: "/runbook_example/03_prompts/" },
-                { label: "4 · AI review", link: "/runbook_example/04_review/" },
-                { label: "5 · Publish", link: "/runbook_example/05_publish/" },
+                { label: "Anatomy of a run", link: "/runbook_example/readme/" },
+                { label: "Review output in detail", link: "/runbook_example/output/" },
               ],
             },
           ],

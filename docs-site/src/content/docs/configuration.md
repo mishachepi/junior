@@ -293,11 +293,11 @@ As an env var it's a JSON-encoded list: `PROMPTS='["file:///abs/security.md","Qu
 
 ### `OUTPUT_FILE` / `-o`
 
-Write the rendered review to a local file. Independent from `--publish`: you can set both — `-o` always writes locally, `--publish` always posts to the platform.
+Where the **raw result JSON** goes when you're *not* publishing (default stdout). With `--publish` the runbook handles its own output — `local_review` renders Markdown to stdout, platform runbooks post to the PR/MR — so `-o` is ignored; redirect with `>` to save the rendered review.
 
 ```bash
-junior run --prompt "Quick review" -o review.md
-junior run -o review.md --publish     # both: file + platform
+junior run --prompt "Quick review" -o review.json   # raw JSON → file
+junior run --publish > review.md                     # rendered Markdown → file (redirect)
 ```
 
 ### Run record (`RECORD` / `--no-record`)

@@ -79,11 +79,11 @@ junior run --runbook github_pr_review --publish         # review the GitHub PR +
 junior dry-run                                           # preview what would be reviewed (no AI)
 ```
 
-`local_review` reviews the local diff (raw JSON to stdout; `--publish` renders Markdown locally); the runbook is always chosen explicitly — `junior init` sets yours. To post, pick a platform runbook (`github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`) and add `--publish`. Split collect from review (handy across machines or for CI fan-out):
+`local_review` reviews the local diff (raw JSON to stdout; `--publish` renders Markdown to stdout — redirect with `>` to save); the runbook is always chosen explicitly — `junior init` sets yours. To post, pick a platform runbook (`github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`) and add `--publish`. Split collect from review (handy across machines or for CI fan-out):
 
 ```bash
 junior dry-run -o ctx.json                # collect + preview, save context (no AI)
-junior run --from-file ctx.json -o review.md
+junior run --from-file ctx.json --publish > review.md
 junior run --runbook gitlab_pr_review --publish-file review.md   # post a saved .md, skip the runbook
 ```
 

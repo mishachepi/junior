@@ -64,7 +64,15 @@ so they're available on feature branches):
 | `OPENAI_API_KEY` | `sk-...` — or `ANTHROPIC_API_KEY`; `pydantic` auto-detects the provider from whichever key is set |
 
 GitLab auto-provides the rest: `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`,
-`CI_MERGE_REQUEST_DIFF_BASE_SHA`, `CI_PROJECT_DIR`, `CI_MERGE_REQUEST_TARGET_BRANCH_NAME`.
+`CI_MERGE_REQUEST_DIFF_BASE_SHA`, `CI_COMMIT_SHA`, `CI_PROJECT_DIR`,
+`CI_MERGE_REQUEST_TARGET_BRANCH_NAME`.
+
+> [!NOTE]
+> The summary note always posts. **Inline comments** additionally need both
+> `CI_MERGE_REQUEST_DIFF_BASE_SHA` and `CI_COMMIT_SHA` (they anchor each comment's
+> diff position); if either is missing Junior skips the inline comments and posts only
+> the summary note. Both are auto-provided on a merge-request pipeline, so this just
+> works in CI — it only bites when you run the runbook outside one.
 
 > [!TIP]
 > The `image` must contain Junior with the `pydantic` extra — build it from the
@@ -190,6 +198,34 @@ stage('Code Review') {
 > header, so the instance must be reached over **HTTPS**; plain `http://` URLs are
 > rejected when publishing. Basic auth is not supported.
 
+### TeamCity
+
+TeamCity is just another CI that drives Bitbucket DC builds, so the same five
+`BITBUCKET_*` variables apply — only *where* you set them is TeamCity-specific:
+
+- **The run itself** is a **Build Step → Command Line → Custom script**:
+  ```bash
+  junior run --runbook bitbucket_pr_review --harness pydantic --publish
+  ```
+- **The variables** go on the build configuration's **Parameters** tab. Junior reads
+  them from the environment, so add each as an **Environment Variable** (the `env.`
+  prefix) — not a configuration or system parameter. Give `BITBUCKET_TOKEN` and the LLM
+  API key the **Password** type so they're masked in the build log.
+
+| Parameter (Parameters tab) | Value |
+|----------------------------|-------|
+| `env.BITBUCKET_URL` | `https://bitbucket.example.com` (HTTPS only) |
+| `env.BITBUCKET_TOKEN` | HTTP access token — **Password** type |
+| `env.BITBUCKET_PROJECT` | project key, e.g. `PROJ` |
+| `env.BITBUCKET_REPO` | repository slug, e.g. `my-repo` |
+| `env.BITBUCKET_PR_ID` | `%teamcity.pullRequest.number%` |
+| `env.OPENAI_API_KEY` | `sk-...` (or `ANTHROPIC_API_KEY`) — **Password** type |
+
+`%teamcity.pullRequest.number%` is published by the built-in **Pull Requests** build
+feature (configure it for Bitbucket Server/DC). Enable it on the build configuration so
+the PR-triggered build knows which PR to review; without it you must supply
+`env.BITBUCKET_PR_ID` some other way.
+
 With `--publish` Junior posts a summary comment plus inline comments anchored to the
 diff (`lineType: ADDED` on the effective diff); an inline comment whose line falls
 outside the diff degrades to a general comment carrying the `file:line` location.
@@ -200,7 +236,7 @@ GitLab discussions.
 
 | Platform | Auto-provided | You must set |
 |----------|--------------|--------------|
-| GitLab CI | `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA`, `CI_PROJECT_DIR`, `CI_MERGE_REQUEST_TARGET_BRANCH_NAME` | `GITLAB_TOKEN` + an LLM API key |
+| GitLab CI | `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA`, `CI_COMMIT_SHA`, `CI_PROJECT_DIR`, `CI_MERGE_REQUEST_TARGET_BRANCH_NAME` | `GITLAB_TOKEN` + an LLM API key |
 | GitHub Actions | `GITHUB_REPOSITORY` | `GITHUB_TOKEN`, `GITHUB_EVENT_NUMBER` + an LLM API key |
 | Bitbucket DC (any CI) | — (nothing is auto-provided) | `BITBUCKET_URL`, `BITBUCKET_TOKEN`, `BITBUCKET_PROJECT`, `BITBUCKET_REPO`, `BITBUCKET_PR_ID` + an LLM API key |
 

@@ -16,7 +16,7 @@ independent of the **runbook** (see below) — any harness serves any runbook. T
 
 The runbook picks the platform — collect → review → publish — and you choose it explicitly (`--runbook NAME`, config `runbook:`, or env `RUNBOOK`). There is no auto-detection and no implicit default: with nothing set, `junior run` exits 2.
 
-- **`local_review`** — reviews your local git diff and writes raw output to stdout / `-o FILE`. `--publish` renders the review as pretty Markdown locally (no posting).
+- **`local_review`** — reviews your local git diff and writes raw output to stdout / `-o FILE`. `--publish` renders the review as pretty Markdown to stdout (no posting; redirect with `>` to save).
 - **`github_pr_review`** — reviews a GitHub PR; posts comments with `--publish`. Needs `GITHUB_TOKEN`, `GITHUB_REPOSITORY`, `GITHUB_EVENT_NUMBER`.
 - **`gitlab_pr_review`** — reviews a GitLab MR; posts a note with `--publish`. Needs `GITLAB_TOKEN`, `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`.
 - **`bitbucket_pr_review`** — reviews a Bitbucket Data Center PR; posts comments with `--publish`. Needs `BITBUCKET_URL`, `BITBUCKET_TOKEN`, `BITBUCKET_PROJECT`, `BITBUCKET_REPO`, `BITBUCKET_PR_ID`.
@@ -158,9 +158,11 @@ Junior Docker image) is a planned feature — see the project ROADMAP.
 ## How do I review without publishing?
 
 ```bash
-junior run --source branch -o review.md     # generate locally, inspect
-junior run --runbook github_pr_review --publish-file review.md   # publish that .md when ready (or gitlab_pr_review)
+junior run --source branch --publish > review.md   # render Markdown locally, inspect
+junior run --runbook github_pr_review --publish-file review.md   # post that .md when ready (or gitlab_pr_review)
 ```
+
+`--publish-file` expects a rendered Markdown review, so generate it with `--publish` (a `-o` file holds raw JSON instead).
 
 ## Where does Junior save what it did?
 
@@ -219,7 +221,7 @@ The token must be issued **on the same instance** you're targeting. A `gitlab.co
 **4. Run**
 
 ```bash
-junior run --source branch -o review.md    # generate locally, inspect first
+junior run --source branch --publish > review.md   # render Markdown locally, inspect first
 junior run --runbook gitlab_pr_review --publish-file review.md   # post the summary as an MR note
 ```
 

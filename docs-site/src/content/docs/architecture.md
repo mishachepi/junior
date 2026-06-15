@@ -6,7 +6,9 @@ title: "Architecture"
 
 ## Overview
 
-Junior is an AI review agent that runs in **CI pipelines** (GitLab CI, GitHub Actions) or **locally as a CLI tool**. It is a small *review-runbook framework*: a **runbook** collects domain context deterministically, hands it to a schema-agnostic **LLM harness** for analysis, and publishes the structured result. The built-in runbooks review code diffs (MRs/PRs), but the framework itself knows nothing about git.
+Junior is a **runbook executor**. You hand it a *runbook* — a deterministic recipe of **collect → one schema-validated LLM call → publish** — and it runs it, in **CI pipelines** (GitLab CI, GitHub Actions) or **locally as a CLI tool**. The framework itself knows nothing about any particular task: **code review of MRs/PRs is the built-in flagship runbook, not the boundary.**
+
+The division of labour is deliberate (it's the whole point — see [Philosophy](philosophy.md)): *you*, the senior, spell the runbook out in detail — what to collect, the exact output schema, how to publish — and the LLM fills in only the single non-deterministic step in the middle. The more of the work you pin down deterministically, the more reliable the run; a **runbook** collects context deterministically, hands it to a schema-agnostic **LLM harness**, and publishes the validated result.
 
 ## Runbook × Harness
 
@@ -212,6 +214,7 @@ src/junior/
     listing.py          ← `junior list` / `config list`: runbooks + harnesses (+ readiness)
     console.py          ← shared Rich consoles: stdout (content) + stderr (status/errors)
     actions.py          ← orchestration: collect, run, emit raw output / publish
+    runs.py             ← `junior runs`: browse run records under .junior/output/
   interactive/          ← wizard for `init` + `run -i`
   config.py             ← Settings groups (Context / LLM / Output) + runbook + log_level + local_runbooks
   init_config.py        ← `junior config init` saves to ~/.config/junior/settings.yaml

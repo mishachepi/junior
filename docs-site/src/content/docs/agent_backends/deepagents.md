@@ -112,7 +112,7 @@ def _make_submit_tool(output_schema: type[BaseModel]):
   the LLM retries
 - If `submit_review` is never called: `RuntimeError` — the review fails
 
-## File Access
+## File access
 
 Provided by `FilesystemBackend(root_dir=settings.context.project_dir)`:
 

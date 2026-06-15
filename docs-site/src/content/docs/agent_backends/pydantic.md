@@ -76,7 +76,7 @@ instance of that schema — for code review, an `LLMReviewOutput` (summary,
 recommendation, comments). No post-hoc parsing or programmatic recommendation step
 lives in the harness; the model fills the schema directly.
 
-## File Tools
+## File access
 
 Three tools are registered on the agent, all restricted to
 `settings.context.project_dir`. Because the diff is already inlined, these are for

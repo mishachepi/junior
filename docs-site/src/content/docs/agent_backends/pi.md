@@ -85,12 +85,12 @@ _parse_response(text, output_schema)
 LLMResult(output=<output_schema instance>, usage=Usage(...))
 ```
 
-## Hermetic runs
+## Prompt Handling
 
-Pi normally loads user extensions, skills, prompt templates, and `AGENTS.md`/`CLAUDE.md`
-context files. The harness disables **all** of that: Junior's runbook is the single
-source of the prompt, so a run behaves the same on every machine. Sessions are not
-persisted (`--no-session`), and `PI_OFFLINE=1` suppresses startup network calls.
+`system_prompt` and the JSON-Schema output contract are combined into a single
+`--system-prompt` value; the runbook's `user_message` is passed as one positional
+argument. It's a single subprocess call — no parallelism. Because `file_access = True`,
+an oversized diff is left to pi's file tools while a small one is inlined by the runbook.
 
 ## Output Format
 
@@ -105,6 +105,12 @@ A reply that doesn't validate fails the run — exactly like every other harness
 > models too — but smaller models fail validation more often than cloud models. If a
 > local model keeps failing, try a coder-tuned variant or raise `maxTokens` for it in
 > `models.json`.
+
+## File access
+
+`file_access = True`. Pi explores the repo with **read-only** tools — `read`, `grep`,
+`find`, `ls` (`--tools read,grep,find,ls`); `bash` / `edit` / `write` are deliberately
+excluded so a review can never mutate the repository.
 
 ## Token Tracking
 
@@ -124,3 +130,10 @@ cost nothing).
 | No assistant message in the event stream | `RuntimeError` |
 | Reply is not JSON | `RuntimeError` (logged with the raw reply) |
 | Schema validation failure | `RuntimeError` from `output_schema.model_validate()` |
+
+## Hermetic runs
+
+Pi normally loads user extensions, skills, prompt templates, and `AGENTS.md`/`CLAUDE.md`
+context files. The harness disables **all** of that: Junior's runbook is the single
+source of the prompt, so a run behaves the same on every machine. Sessions are not
+persisted (`--no-session`), and `PI_OFFLINE=1` suppresses startup network calls.

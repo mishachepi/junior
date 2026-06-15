@@ -101,6 +101,13 @@ def _build_output_schema(output_schema: type[BaseModel]) -> dict:
 `_parse_response` strips markdown fences, extracts the JSON between the first `{`
 and last `}`, then validates into `output_schema`.
 
+## File access
+
+`file_access = True` — codex explores the repository through its own sandbox (reads
+files, runs commands) rather than receiving the whole repo in the prompt. Because of
+that the runbook inlines only a small diff (≤ 50k chars) and leaves an oversized one
+to the sandbox.
+
 ## Token Tracking
 
 Codex writes usage to stderr:

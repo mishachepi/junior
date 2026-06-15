@@ -93,7 +93,7 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 |--------|---------|-------------|
 | `--runbook NAME` | — (required via flag/env/config) | Which runbook to run: `local_review`, `github_pr_review`, `gitlab_pr_review`, `bitbucket_pr_review`, the example `weather_advice`, or `pkg.module:ClassName` for an external runbook. `junior config list` shows them all. env: `RUNBOOK` |
 
-`local_review` reviews the local git diff; `github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review` collect from a PR/MR. **What `--publish` does is per-runbook** (see [Output: publish vs raw](#publish-vs-raw-output)): with `--publish` `local_review` renders pretty Markdown locally while the platform runbooks post to the PR/MR; without it, every runbook just emits its raw result.
+`local_review` reviews the local git diff; `github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review` collect from a PR/MR. **What `--publish` does is per-runbook** (see [Output: publish vs raw](#publish-vs-raw-output)): with `--publish` `local_review` renders pretty Markdown to stdout (redirect with `>` to save) while the platform runbooks post to the PR/MR; without it, every runbook just emits its raw result.
 
 ### Options — Context (what to review)
 
@@ -124,7 +124,7 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `-o`, `--output-file FILE` | stdout | Where the **raw output** goes when not publishing (default stdout). `-o -` forces stdout, overriding an `output_file` from config. Alias for `--env OUTPUT_FILE=…` |
+| `-o`, `--output-file FILE` | stdout | Where the **raw result JSON** goes when *not* publishing (default stdout). Ignored with `--publish` (the runbook renders to stdout / posts to the platform — redirect with `>` to save). `-o -` forces stdout, overriding an `output_file` from config. Alias for `--env OUTPUT_FILE=…` |
 | `--no-record` | record on | Disable the JSON run record. By default a successful run writes a secret-free record to `<project_dir>/.junior/output/{timestamp}.json`. Alias for `--env RECORD=false` |
 | `--publish` / `--no-publish` | config (`false`) | Run / skip the runbook's **custom publish** (post to platform, pretty render, …). Overrides `output.publish`: `--publish` forces on, `--no-publish` forces off. Alias for `--env PUBLISH=true\|false` |
 | `--publish-file REVIEW_FILE` | — | Skip the runbook; just post this pre-generated `.md` via the chosen runbook's platform |
@@ -134,12 +134,13 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 Every runbook follows the same rule:
 
 - **No `--publish`** (default): you get the **raw LLM result** — the structured output as JSON, unformatted — on **stdout**, or in the file given by `-o`. Pipe-/redirect-safe. (Run metadata — tokens, errors, blocking — is in the run record under `.junior/output/`.)
-- **`--publish`**: the runbook's **custom publish** runs instead — `github_pr_review`/`gitlab_pr_review`/`bitbucket_pr_review` post to the PR/MR, `local_review` renders pretty Markdown, `weather_advice` prints a Rich panel, a script runbook runs its `publish` command. The raw output is **not** printed (it's still in the run record).
+- **`--publish`**: the runbook's **custom publish** runs instead — `github_pr_review`/`gitlab_pr_review`/`bitbucket_pr_review` post to the PR/MR, `local_review` renders pretty Markdown **to stdout**, `weather_advice` prints a Rich panel, a script runbook runs its `publish` command. The raw JSON is **not** printed, and `-o` is ignored — to save the rendered review, redirect with `>`.
 
 ```bash
 junior run                      # raw JSON → stdout
 junior run -o result.json       # raw JSON → file
-junior run --publish            # custom publish (post / pretty), raw hidden
+junior run --publish            # custom publish: local_review → Markdown on stdout; platform runbooks → post
+junior run --publish > review.md  # save the rendered Markdown via redirect
 junior run --no-publish         # force raw even if config sets publish: true
 junior run -o -                 # force stdout even if config sets output_file
 ```
@@ -421,7 +422,7 @@ junior dry-run --runbook local_review -o ctx.json     # machine A
 junior run --from-file ctx.json --harness pydantic    # machine B
 
 # Generate locally now, publish to the PR later
-junior run --runbook local_review -o review.md
+junior run --runbook local_review --publish > review.md   # rendered Markdown
 junior run --runbook github_pr_review --publish-file review.md
 
 # Load a preset config from anywhere — or pipe one in

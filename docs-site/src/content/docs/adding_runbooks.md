@@ -30,7 +30,7 @@ libraries that a runbook's `collect()` / `publish()` call directly.
 To add a runbook, subclass `Runbook[CtxModel, ResultModel]`.
 
 > [!TIP]
-> For a complete, working **non-code-review** example, read `src/junior/runbooks/weather/` (`weather_advice`): it collects live weather instead of a git diff and asks the harness what to wear — no git, no platform, no API key. Having no platform, it repurposes `--publish` as a presentation toggle (`--publish` → pretty Rich panel; default → plain text). Run it with `junior run --runbook weather_advice`. It's the smallest end-to-end runbook in the repo and a good copy-paste starting point.
+> For a complete, working **non-code-review** example, read `src/junior/runbooks/weather/` (`weather_advice`): it collects live weather instead of a git diff and asks the harness what to wear — no git, no platform, no API key. Having no platform, it repurposes `--publish` as a presentation toggle (`--publish` → pretty Rich panel; default → the raw result as JSON). Run it with `junior run --runbook weather_advice`. It's the smallest end-to-end runbook in the repo and a good copy-paste starting point.
 
 ```python
 from junior.config import Settings

@@ -71,19 +71,15 @@ _extract_output(messages, output_schema)
 LLMResult(output=<output_schema instance>, usage=Usage(input, output, total))
 ```
 
-## Key Design Decisions
+## Prompt Handling
 
-| Decision | Rationale |
-|----------|-----------|
-| `--json-schema` from `output_schema.model_json_schema()` | Forces structured output via the StructuredOutput tool — always a dict, no parsing ambiguity, and works for any result schema |
-| `file_access = True` | Claude reads files itself via sandbox tools — runbook avoids inlining the full diff |
-| `stdin` for `user_message` | Avoids OS argument length limits on large metadata |
-| `bypassPermissions` | Required for non-interactive subprocess (no TTY) |
-| `--bare` when API key set | `settings.llm.anthropic_api_key` present → API mode; otherwise uses subscription auth |
-| Read-only Bash | `Bash(git log:*,git show:*,git diff:*,git blame:*)` — no write operations |
-| `settings.llm.model` optional | Claude CLI defaults to its own model; override with `MODEL=claude-sonnet-4-6` etc. |
+`system_prompt` is passed via `--append-system-prompt`; the runbook's `user_message`
+goes in on **stdin** (avoids OS argument-length limits on large metadata). It's a single
+subprocess call — no parallelism. `settings.llm.model` is optional (the Claude CLI uses
+its own default unless `--model` is set, e.g. `MODEL=claude-sonnet-4-6`); with
+`settings.llm.anthropic_api_key` set the harness adds `--bare` for API mode.
 
-## Output Parsing
+## Output Format
 
 Claude `--output-format json` returns a JSON array of message objects:
 
@@ -103,9 +99,19 @@ Claude `--output-format json` returns a JSON array of message objects:
 ```
 
 `_extract_output` finds the last `StructuredOutput` tool_use and validates its
-`input` dict into the requested `output_schema`. Token usage is extracted from the
-`result.usage` object (input + cache-creation + cache-read tokens as input, plus
-output tokens) and returned as a `Usage`.
+`input` dict into the requested `output_schema`.
+
+## File access
+
+`file_access = True` — Claude reads the repository itself, so the runbook needn't inline
+an oversized diff. The tools are read-only: `Read`, `Grep`, `Glob`, and
+`Bash(git log:*,git show:*,git diff:*,git blame:*)` — no write operations.
+`--permission-mode bypassPermissions` is required because the subprocess has no TTY.
+
+## Token Tracking
+
+Token usage is read from the result message's `usage` object (input + cache-creation +
+cache-read tokens counted as input, plus output tokens) and returned as a `Usage`.
 
 ## Error Handling
 
@@ -119,14 +125,6 @@ output tokens) and returned as a `Usage`.
 | No StructuredOutput | RuntimeError |
 | Validation failure | RuntimeError from `output_schema.model_validate()` |
 
-## vs. Other Harnesses
-
-| Aspect | claudecode | codex | pydantic |
-|--------|-----------|-------|----------|
-| Driver | `claude -p` subprocess | `codex exec` subprocess | pydantic-ai SDK |
-| Provider | Anthropic only | OpenAI only | Any (via pydantic-ai) |
-| `file_access` | True (Read/Grep/Glob tools; small diff still inlined) | True (codex sandbox; small diff still inlined) | False (diff always inlined; tools for extra exploration) |
-| Structured output | `--json-schema` → StructuredOutput tool | `--output-schema` (strict) file | `output_type=output_schema` |
-| Calls | Single subprocess | Single subprocess | Single structured call |
-| Model config | `settings.llm.model` (optional) | OpenAI models only | `settings.llm.model_string` (`provider:model`) |
-| Auth | OAuth or `ANTHROPIC_API_KEY` | OAuth or `OPENAI_API_KEY` | API key via SDK |
+> [!TIP]
+> How claudecode compares to the other harnesses (driver, provider, structured-output
+> mechanism, auth) is in the [harness comparison](../agent_backends.md#comparison).

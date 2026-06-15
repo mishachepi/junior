@@ -1,13 +1,14 @@
 ---
-title: "Runbooks — generic review framework (design)"
+title: "The runbook framework"
 ---
 
-# Runbooks — the generic review framework
+# The runbook framework
 
-Junior is a small *review-runbook framework*. A **runbook** owns one domain
-(collect → render → publish against its own schemas); a set of shared, schema-
-agnostic **LLM harnesses** drive the model for every runbook. The built-in
-runbooks review code diffs, but nothing in the framework is git-shaped.
+Junior is a small *runbook framework* — an **executor of any runbook**. A
+**runbook** owns one task (collect → render → publish against its own schemas);
+a set of shared, schema-agnostic **LLM harnesses** drive the model for every
+runbook. The built-in runbooks review code diffs — the flagship, not the
+boundary — but nothing in the framework is git-shaped.
 
 This page is the deep-dive on those two abstractions. For the high-level picture
 see [Architecture](../architecture.md); to add your own, see
@@ -180,8 +181,8 @@ class Runbook(ABC, Generic[C, R]):
     SYSTEM_PROMPT: ClassVar[str] = ""        # one-line role; override per runbook
 
     def system_prompt(self, settings: "Settings") -> str:
-        """SYSTEM_PROMPT role + user --prompts. Override to append domain rules."""
-        return self._compose_prompt(self.SYSTEM_PROMPT, settings)
+        """SYSTEM_PROMPT role + the user's context.prompts. Override to append rules."""
+        return merge_prompts(self.SYSTEM_PROMPT, list(settings.context.prompts))
 
     # --- phase 3: publish (only with --publish) ---
     @abstractmethod
@@ -274,8 +275,8 @@ Where the shared pieces come from:
 | `result_model` | `LLMReviewOutput` (`junior.runbooks.code_review.models`) |
 | `render()` | `build_user_message()` (`code_review/render.py`) |
 | `system_prompt()` | `SYSTEM_PROMPT` role + user prompts, then `build_review_prompt()` adds `BASE_RULES` + AGENT.md (`code_review/instructions.py`) |
-| `collect()` | `junior.collect.{local,github,gitlab}.collect(settings)` |
-| `publish()` (`--publish`) | `_post_to_platform`: local → `junior.publish.local` Markdown; github/gitlab → `post_review(...)` |
+| `collect()` | `junior.collect.{local,github,gitlab,bitbucket}.collect(settings)` |
+| `publish()` (`--publish`) | `_post_to_platform`: local → `junior.publish.local` Markdown; github/gitlab/bitbucket → `post_review(...)` |
 | `render_output()` (no `--publish`) | the raw `LLMReviewOutput` as JSON (default hook) |
 | `is_blocking()` | any critical comment **or** `recommendation == request_changes` |
 
@@ -354,13 +355,13 @@ src/junior/
   runbook/                 ← the framework (domain-agnostic)
     base.py                 ← Runbook + Harness ABCs, LLMResult, Usage
     runner.py               ← run_runbook()
-    registry.py             ← get_runbook (built-in + entry-point + path), get_harness
+    registry.py             ← get_runbook (built-in + entry-point + path + repo-local), get_harness
   harnesses/                ← shared LLM drivers (each exposes HARNESS)
     claudecode.py  codex.py  pydantic.py  deepagents.py  pi.py
   runbooks/
     code_review/            ← the built-in runbook family
       base.py               ← CodeReviewRunbook (shared render/prompt/publish)
-      local.py  github.py  gitlab.py   ← per-platform collect + _post_to_platform
+      local.py  github.py  gitlab.py  bitbucket.py   ← per-platform collect + _post_to_platform
       models.py             ← CollectedContext, LLMReviewOutput, ReviewResult, …
       render.py             ← build_user_message()
       instructions.py       ← build_review_prompt() + BASE_RULES
