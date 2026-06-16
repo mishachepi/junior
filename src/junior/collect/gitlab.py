@@ -27,6 +27,13 @@ def _fetch_gitlab_metadata(
     settings: Settings,
 ) -> tuple[str, list[str], list[MRComment]]:
     """Fetch MR description, labels, and discussion comments from GitLab API."""
+    out = settings.output
+    if out.gitlab_token and not out.ci_server_url.startswith("https://"):
+        # Warn but keep going — local/intranet HTTP instances stay usable.
+        logger.warning(
+            "CI_SERVER_URL is not HTTPS — the private token is sent in cleartext",
+            url=out.ci_server_url,
+        )
     try:
         import gitlab
 

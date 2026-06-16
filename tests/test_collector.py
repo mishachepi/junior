@@ -173,6 +173,91 @@ def test_gitlab_comments_caps_at_max(monkeypatch):
     assert [c.body for c in out] == ["c8", "c9", "c10"]
 
 
+# --- non-HTTPS cleartext-token warning ---
+
+
+def _gitlab_settings(url: str, token: str) -> Settings:
+    return Settings(
+        output=OutputSettings(
+            ci_server_url=url,
+            gitlab_token=token,
+            ci_project_id=1,
+            ci_merge_request_iid=1,
+        )
+    )
+
+
+def _warned_cleartext(records) -> bool:
+    return any(
+        r.get("event", "").startswith("CI_SERVER_URL is not HTTPS") for r in records
+    )
+
+
+def test_collect_warns_on_non_https_with_token():
+    from structlog.testing import capture_logs
+
+    from junior.collect.gitlab import _fetch_gitlab_metadata
+
+    with capture_logs() as logs:
+        # The API call then soft-fails (no server) — we only assert the warning fired.
+        _fetch_gitlab_metadata(_gitlab_settings("http://gitlab.intranet", "secret"))
+    assert _warned_cleartext(logs)
+
+
+def test_collect_no_warning_on_https():
+    from structlog.testing import capture_logs
+
+    from junior.collect.gitlab import _fetch_gitlab_metadata
+
+    with capture_logs() as logs:
+        _fetch_gitlab_metadata(_gitlab_settings("https://gitlab.com", "secret"))
+    assert not _warned_cleartext(logs)
+
+
+def test_collect_no_warning_when_token_empty():
+    from structlog.testing import capture_logs
+
+    from junior.collect.gitlab import _fetch_gitlab_metadata
+
+    with capture_logs() as logs:
+        _fetch_gitlab_metadata(_gitlab_settings("http://gitlab.intranet", ""))
+    assert not _warned_cleartext(logs)
+
+
+def test_publish_warns_on_non_https_with_token():
+    from structlog.testing import capture_logs
+
+    from junior.publish.gitlab import post_review
+    from junior.runbooks.code_review.models import ReviewResult
+
+    with capture_logs() as logs:
+        try:
+            post_review(
+                _gitlab_settings("http://gitlab.intranet", "secret"),
+                ReviewResult(summary="s"),
+            )
+        except Exception:
+            pass  # no server — warning fires before the API call fails
+    assert _warned_cleartext(logs)
+
+
+def test_publish_no_warning_on_https():
+    from structlog.testing import capture_logs
+
+    from junior.publish.gitlab import post_review
+    from junior.runbooks.code_review.models import ReviewResult
+
+    with capture_logs() as logs:
+        try:
+            post_review(
+                _gitlab_settings("https://gitlab.com", "secret"),
+                ReviewResult(summary="s"),
+            )
+        except Exception:
+            pass
+    assert not _warned_cleartext(logs)
+
+
 # --- GitHub comment parsing ---
 
 

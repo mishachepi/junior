@@ -13,6 +13,14 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
     """Post review results to GitLab MR."""
     import gitlab
 
+    out = settings.output
+    if out.gitlab_token and not out.ci_server_url.startswith("https://"):
+        # Warn but keep going — local/intranet HTTP instances stay usable.
+        logger.warning(
+            "CI_SERVER_URL is not HTTPS — the private token is sent in cleartext",
+            url=out.ci_server_url,
+        )
+
     gl = gitlab.Gitlab(
         settings.output.ci_server_url, private_token=settings.output.gitlab_token
     )
