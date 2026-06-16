@@ -19,6 +19,11 @@
   the subprocess timeout (default 600s) is now configurable, so you can fail fast on a
   stuck or runaway agent (e.g. `llm.timeout: 120`). The timeout error now reports the
   actual value instead of a hard-coded "10 minutes".
+- **`claudecode` "no StructuredOutput" failure now explains itself.** When the CLI
+  returns without the `StructuredOutput` tool call (rate limit, refusal, or out of
+  turns), the error names the likely cause and quotes what claude said as text instead —
+  visible at error level without `-v`. Running with `-v` also dumps the full raw
+  response (`claude response parsed` debug log) for deeper troubleshooting.
 - **System prompt unified to one channel.** Every runbook now declares a single-line
   `SYSTEM_PROMPT` role; the base `Runbook.system_prompt()` assembles it plus the user's
   `context.prompts` (`--prompt` / `--prompt-file`) through one shared helper
