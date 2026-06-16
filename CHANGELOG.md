@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.3 — 2026-06-17
 
 - **Refactor: code-review models composed over the framework envelope + renamed.**
   `ReviewResult` is now a thin subclass of the shared `LLMResult` — it composes the
