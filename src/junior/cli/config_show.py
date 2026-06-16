@@ -36,6 +36,7 @@ _HINTS = {
     "max_tokens_per_agent": "pydantic: cap response tokens (0 = none)",
     "timeout": "CLI harnesses (claudecode/codex/pi): kill the subprocess after N seconds",
     "max_file_size": "skip files larger than this many bytes",
+    "max_diff_chars": "hard cap on inlined diff chars (0 = no limit)",
     "record": "run history / audit trail → .junior/output/{ts}.json (not the result itself)",
     "ci_server_url": "GitLab base URL",
     "bitbucket_url": "Bitbucket DC base URL",

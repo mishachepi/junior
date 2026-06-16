@@ -52,7 +52,7 @@ flowchart TD
 
     subgraph PL["Runbook (domain-owned)"]
         B["runbook.collect(settings)\n→ Context (C)"] --> R["runbook.render(context,\nfile_access)\n→ user message"]
-        R --> SP["runbook.system_prompt(settings)\n(role + BASE_RULES + AGENT.md)"]
+        R --> SP["runbook.system_prompt(settings)\n(role + BASE_RULES)"]
     end
 
     SP --> ENG
@@ -240,7 +240,7 @@ src/junior/
       models.py         ← domain models: CollectedContext, LLMReviewOutput, ReviewResult, … (frozen)
       local.py  github.py  gitlab.py  bitbucket.py   ← per-platform collect + _post_to_platform
       render.py         ← build_user_message()
-      instructions.py   ← build_review_prompt() + BASE_RULES (AGENT.md/CLAUDE.md)
+      instructions.py   ← build_review_prompt() + BASE_RULES
     weather/            ← example non-code-review runbook (live weather → what to wear)
     script/             ← ScriptRunbook: manifest-driven (prompt + optional schema/collect/publish)
 

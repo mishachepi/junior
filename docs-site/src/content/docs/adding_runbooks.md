@@ -238,7 +238,7 @@ The code-review runbooks lean on these helper modules (call them, don't reimplem
 |--------|---------|
 | `junior.collect.core` | `collect_base()`, `enrich_with_metadata()` |
 | `junior.runbooks.code_review.render` | `build_user_message()` |
-| `junior.runbooks.code_review.instructions` | `build_review_prompt()`, `BASE_RULES`, project-instruction reading |
+| `junior.runbooks.code_review.instructions` | `build_review_prompt()`, `BASE_RULES` |
 | `junior.publish.core` | `format_summary()`, `format_inline_comment()`, `MAX_INLINE_COMMENTS` |
 
 ## Removing a runbook

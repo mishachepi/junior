@@ -2,20 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import structlog
-
-logger = structlog.get_logger()
-
-_INSTRUCTION_FILES = ["AGENT.md", "AGENTS.md", "CLAUDE.md"]
-
-# Project instructions are inlined into every review's system prompt. A huge
-# AGENT.md/CLAUDE.md would crowd out the diff and inflate every call, so it is
-# truncated beyond this size (with a warning — trim the file or use --prompt-file
-# for a curated review prompt instead).
-MAX_INSTRUCTIONS_CHARS = 30_000
-
 BASE_RULES = """
 ## Rules
 - Only report issues you are confident about
@@ -37,49 +23,19 @@ You can explore the repository files for additional context if needed.
 """
 
 
-def build_review_prompt(head: str, project_dir: str) -> str:
-    """Append the shared review rules + project instructions to `head` (the
-    runbook's role plus any user prompts).
+def build_review_prompt(head: str) -> str:
+    """Append the shared review rules to `head` (the runbook's role plus any
+    user prompts).
 
     Built once per run by `CodeReviewRunbook.system_prompt()` and passed
     unchanged to whatever harness is selected — every harness gets the same
     system prompt; only the user message varies by `file_access`.
+
+    Project instruction files (AGENT.md/AGENTS.md/CLAUDE.md) are deliberately
+    *not* inlined here: the diff's author controls them, so doing so would let
+    a reviewed branch rewrite the reviewer's instructions. A harness that wants
+    project memory reads it itself from its own cwd (claudecode → CLAUDE.md,
+    codex → AGENTS.md).
     """
     parts = [head, BASE_RULES]
-
-    project_instructions = read_project_instructions(project_dir)
-    if project_instructions:
-        parts.append(f"## Project-Specific Instructions\n{project_instructions}")
-
     return "\n\n".join(p.strip() for p in parts if p.strip())
-
-
-def read_project_instructions(project_dir: str) -> str | None:
-    """Read project-specific AI instructions from repo root.
-
-    Searches for AGENT.md → AGENTS.md → CLAUDE.md in priority order.
-    Returns file content or None if not found.
-    """
-    root = Path(project_dir).resolve()
-    for filename in _INSTRUCTION_FILES:
-        path = root / filename
-        if path.is_file():
-            try:
-                content = path.read_text(encoding="utf-8", errors="ignore")
-            except OSError as e:
-                logger.warning("failed to read project instructions", file=filename, error=str(e))
-                continue
-            if len(content) > MAX_INSTRUCTIONS_CHARS:
-                logger.warning(
-                    "project instructions truncated",
-                    file=filename,
-                    length=len(content),
-                    max_chars=MAX_INSTRUCTIONS_CHARS,
-                )
-                content = (
-                    content[:MAX_INSTRUCTIONS_CHARS]
-                    + "\n\n[...truncated by junior — file exceeds the prompt budget]"
-                )
-            logger.debug("loaded project instructions", file=filename, length=len(content))
-            return content
-    return None

@@ -39,7 +39,7 @@ class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
     result_model = LLMReviewOutput
     needs_git = True  # every code-review variant diffs a local git repo
     # Diff/collection settings every code-review variant honours.
-    config_fields = ("source", "base_sha", "target_branch", "max_file_size")
+    config_fields = ("source", "base_sha", "target_branch", "max_file_size", "max_diff_chars")
     SYSTEM_PROMPT = (
         "You are a senior code reviewer. Review the diff in the context of the "
         "surrounding codebase and report concise, actionable findings tied to the diff "
@@ -55,15 +55,22 @@ class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
         # File-access engines (claudecode/codex) get it too while it's small —
         # only an oversized diff falls back to "read the files yourself".
         include_diff = not file_access or len(context.full_diff) <= INLINE_DIFF_MAX_CHARS
-        return build_user_message(context, include_diff=include_diff)
+        # `max_diff_chars` is a separate, harder cap: whenever the diff *is*
+        # inlined, truncate it so even an SDK engine can't be handed millions
+        # of tokens (0 = no cap).
+        return build_user_message(
+            context,
+            include_diff=include_diff,
+            max_diff_chars=settings.context.max_diff_chars,
+        )
 
     def system_prompt(self, settings: Settings) -> str:
         from junior.prompt_loader import merge_prompts
         from junior.runbooks.code_review.instructions import build_review_prompt
 
-        # role + user prompts, then the review rules + project instructions.
+        # role + user prompts, then the shared review rules.
         head = merge_prompts(self.SYSTEM_PROMPT, list(settings.context.prompts))
-        return build_review_prompt(head, str(settings.context.project_dir))
+        return build_review_prompt(head)
 
     def is_blocking(self, result: LLMReviewOutput) -> bool:
         critical = any(c.severity == Severity.CRITICAL for c in result.comments)

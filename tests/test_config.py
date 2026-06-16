@@ -82,6 +82,16 @@ class TestContextSettings:
         s = ContextSettings(base_sha="cli-sha")
         assert s.base_sha == "cli-sha"
 
+    def test_max_diff_chars_default_and_zero(self):
+        assert ContextSettings().max_diff_chars == 200_000
+        assert ContextSettings(max_diff_chars=0).max_diff_chars == 0  # 0 = no limit
+
+    def test_max_diff_chars_rejects_negative(self):
+        # A negative cap would truthily slice the diff and emit "exceeds -N chars";
+        # ge=0 turns it into a config error (exit 2) instead.
+        with pytest.raises(ValidationError):
+            ContextSettings(max_diff_chars=-5)
+
 
 # ---------------------------------------------------------------------------
 # LLMSettings — how to review

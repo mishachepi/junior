@@ -9,10 +9,6 @@ Threat model: attacker is the author of a malicious MR targeting a repo with Jun
 ## Attack Surface
 
 ```
-GIT REPO ──────> collect
-  AGENT.md / AGENTS.md / CLAUDE.md
-                   → system prompt         [prompt poisoning]
-
 Platform API ──> collect
   MR title         → user message          [prompt injection]
   MR description   → user message          [prompt injection]
@@ -30,21 +26,19 @@ AI Agent ──────> publish
 | | |
 |---|---|
 | **Severity** | Critical |
-| **Status** | Open |
+| **Status** | Resolved |
 
-`AGENT.md` / `AGENTS.md` / `CLAUDE.md` from the **reviewed repo's working tree** is injected into the
-**system prompt**. System prompt has highest authority for the LLM.
+Previously the code-review runbook inlined `AGENT.md` / `AGENTS.md` / `CLAUDE.md` from the
+**reviewed repo's working tree** into the **system prompt**, which has the highest authority
+for the LLM. A malicious MR that added or modified any of these files with override
+instructions could achieve full agent takeover — the AI would approve any code.
 
-A malicious MR that adds or modifies any of these files with override instructions achieves full
-agent takeover — the AI will approve any code.
-
-The files are read from HEAD (includes MR changes), not from the target branch.
-
-**Fix options:**
-
-1. Read instruction files from the **target branch** via `git show main:AGENT.md`
-2. Demote to user-level content (not system prompt) with a warning prefix
-3. If `AGENT.md` is changed in the MR diff, flag it and exclude from system prompt
+**Fixed:** the runbook no longer reads project instruction files into the prompt at all.
+Project memory is now the harness's concern, read from *its own* working directory rather
+than the reviewed branch: `claudecode` reads `CLAUDE.md`, `codex` reads `AGENTS.md`. The
+SDK harnesses (`pydantic`/`deepagents`/`pi`) get no project instructions — a deliberate
+trade-off. Since the harness's cwd is the trusted operator's environment, not the diff's,
+the author of a reviewed branch can no longer rewrite the reviewer's instructions.
 
 ---
 
@@ -95,28 +89,21 @@ Add to system prompt:
 | | |
 |---|---|
 | **Severity** | High |
-| **Status** | Partially mitigated |
+| **Status** | Mitigated |
 
 A large MR (1000+ files) produces megabytes of diff → millions of LLM tokens → a costly
-review. How exposed you are depends on the harness:
+review. Two independent bounds apply:
 
-- **`file_access` harnesses** (`claudecode` / `codex` / `pi`) inline the diff only while it
-  is ≤ `INLINE_DIFF_MAX_CHARS` (50 000, in `runbooks/code_review/base.py`); above that they
-  get just the changed-files list and read files with their own tools — so the inlined prompt
-  is bounded.
-- **SDK harnesses** (`pydantic` / `deepagents`) always inline the **full** `context.full_diff`
-  regardless of size — so a giant MR is still a direct cost vector there.
-
-There is no hard character cap on the collected diff itself.
-
-**Fix:** truncate `context.full_diff` in `build_user_message()` so the bound applies to every
-harness:
-
-```python
-MAX_DIFF_CHARS = 200_000
-if len(context.full_diff) > MAX_DIFF_CHARS:
-    diff_text = context.full_diff[:MAX_DIFF_CHARS] + "\n\n[TRUNCATED]"
-```
+- **Inline-vs-file-tools threshold** — `file_access` harnesses (`claudecode` / `codex` /
+  `pi`) inline the diff only while it is ≤ `INLINE_DIFF_MAX_CHARS` (50 000, in
+  `runbooks/code_review/base.py`); above that they get just the changed-files list and read
+  files with their own tools.
+- **Hard cap** — `context.max_diff_chars` (default 200 000, `0` = no cap) truncates the
+  inlined diff with a marker in `build_user_message()` *before* it reaches the model. This
+  applies to **every** harness, including the SDK harnesses (`pydantic`/`deepagents`) that
+  always inline the full diff regardless of size, so a giant MR can no longer be an unbounded
+  cost vector. Tune it per repo via `context.max_diff_chars` (a code-review runbook config
+  field).
 
 ## Repo-local Runbooks Execute Repo Code
 

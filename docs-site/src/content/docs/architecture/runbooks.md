@@ -274,7 +274,7 @@ Where the shared pieces come from:
 | `context_model` | `CollectedContext` (`junior.runbooks.code_review.models`) |
 | `result_model` | `LLMReviewOutput` (`junior.runbooks.code_review.models`) |
 | `render()` | `build_user_message()` (`code_review/render.py`) |
-| `system_prompt()` | `SYSTEM_PROMPT` role + user prompts, then `build_review_prompt()` adds `BASE_RULES` + AGENT.md (`code_review/instructions.py`) |
+| `system_prompt()` | `SYSTEM_PROMPT` role + user prompts, then `build_review_prompt()` adds `BASE_RULES` (`code_review/instructions.py`) |
 | `collect()` | `junior.collect.{local,github,gitlab,bitbucket}.collect(settings)` |
 | `publish()` (`--publish`) | `_post_to_platform`: local → `junior.publish.local` Markdown; github/gitlab/bitbucket → `post_review(...)` |
 | `render_output()` (no `--publish`) | the raw `LLMReviewOutput` as JSON (default hook) |
