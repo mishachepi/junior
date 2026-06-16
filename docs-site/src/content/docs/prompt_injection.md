@@ -94,15 +94,16 @@ Add to system prompt:
 A large MR (1000+ files) produces megabytes of diff → millions of LLM tokens → a costly
 review. Two independent bounds apply:
 
-- **Inline-vs-file-tools threshold** — `file_access` harnesses (`claudecode` / `codex`)
-  inline the diff only while it is ≤ `INLINE_DIFF_MAX_CHARS` (50 000, in
+- **Inline-vs-file-tools threshold** — `file_access` harnesses (`claudecode` / `codex` /
+  `pi`) inline the diff only while it is ≤ `INLINE_DIFF_MAX_CHARS` (50 000, in
   `runbooks/code_review/base.py`); above that they get just the changed-files list and read
   files with their own tools.
 - **Hard cap** — `context.max_diff_chars` (default 200 000, `0` = no cap) truncates the
   inlined diff with a marker in `build_user_message()` *before* it reaches the model. This
-  applies to **every** harness, including the SDK harnesses (`pydantic`/`deepagents`/`pi`)
-  that always inline, so a giant MR can no longer be an unbounded cost vector. Tune it per
-  repo via `context.max_diff_chars` (a code-review runbook config field).
+  applies to **every** harness, including the SDK harnesses (`pydantic`/`deepagents`) that
+  always inline the full diff regardless of size, so a giant MR can no longer be an unbounded
+  cost vector. Tune it per repo via `context.max_diff_chars` (a code-review runbook config
+  field).
 
 ## Repo-local Runbooks Execute Repo Code
 

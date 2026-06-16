@@ -138,8 +138,8 @@ class ContextSettings(BaseSettings):
     base_sha: str | None = None
     # Hard cap on the inlined diff size (chars) sent to the LLM, across every
     # harness — a runaway MR is truncated with a marker instead of billing for
-    # millions of tokens. 0 = no limit.
-    max_diff_chars: int = 200_000
+    # millions of tokens. 0 = no limit; a negative value is a config error.
+    max_diff_chars: int = Field(default=200_000, ge=0)
     target_branch: str = Field(
         default="main",
         validation_alias=AliasChoices(

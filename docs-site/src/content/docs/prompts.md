@@ -77,10 +77,11 @@ The **collect** step builds it. For code review, in order:
    instructions written inside them ([Security](prompt_injection.md)).
 5. **Changed files** — the list with status (added / modified / deleted).
 6. **The diff** — the full unified diff, inlined while ≤ 50 000 chars. Above that,
-   `file_access` harnesses (claudecode/codex) read the changed files with their own tools
-   instead; the SDK harnesses still get it inlined. Either way the inlined diff is
-   hard-capped at `context.max_diff_chars` (default 200 000, `0` = no cap) and truncated
-   with a marker beyond that — a cost/DoS guard that applies to **every** harness.
+   `file_access` harnesses (claudecode/codex/pi) read the changed files with their own tools
+   instead; the SDK harnesses (pydantic/deepagents) still get it inlined. Either way the
+   inlined diff is hard-capped at `context.max_diff_chars` (default 200 000, `0` = no cap)
+   and truncated with a marker beyond that — a cost/DoS guard that applies to **every**
+   harness.
 
 **Not** sent: whole file contents (a harness may read them itself), unchanged files, git
 history beyond the diff, environment variables or tokens.
