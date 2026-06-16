@@ -20,7 +20,7 @@ complete(*, system_prompt: str, user_message: str,
          output_schema: type[BaseModel], settings: Settings) -> LLMResult
 ```
 
-The code-review runbook passes `LLMReviewOutput` as `output_schema`, but the same
+The code-review runbook passes `ReviewOutput` as `output_schema`, but the same
 harness drives any runbook's result model. `LLMResult.output` is a validated
 instance of `output_schema`; `.usage` carries measured token counts.
 

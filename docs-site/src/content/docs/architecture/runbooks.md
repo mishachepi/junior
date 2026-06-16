@@ -16,8 +16,8 @@ see [Architecture](../architecture.md); to add your own, see
 
 ## Why a framework
 
-The data flowing between phases is git/MR-shaped — `CollectedContext` in,
-`LLMReviewOutput` out:
+The data flowing between phases is git/MR-shaped — `ReviewContext` in,
+`ReviewOutput` out:
 
 ```python
 project_id, mr_iid, mr_title, source_branch, target_branch, labels,
@@ -61,7 +61,7 @@ local) is folded into a runbook's own `collect`/`publish`.
 
 The key move: **the output schema is a parameter of the harness, not a hard-coded
 type.** That's what lets one set of harnesses serve every domain. The code-review
-runbooks ask the harness for `LLMReviewOutput`; a fork's `JiraReview` asks the
+runbooks ask the harness for `ReviewOutput`; a fork's `JiraReview` asks the
 same harness for `TicketAssessment`.
 
 ## Interfaces (ABC, not Protocol)
@@ -251,13 +251,13 @@ with the user's `context.prompts` (`--prompt` / `--prompt-file`) via the shared
 
 ## The built-in code-review family
 
-The built-in code-review runbooks all review a git diff with the same `CollectedContext`
-in and `LLMReviewOutput` out, so they share a base class `CodeReviewRunbook`
+The built-in code-review runbooks all review a git diff with the same `ReviewContext`
+in and `ReviewOutput` out, so they share a base class `CodeReviewRunbook`
 (`src/junior/runbooks/code_review/base.py`). It holds everything common —
 `render`, `system_prompt`, `result_model`, `is_blocking`, `is_empty`, `summary`,
 and a **template-method `publish`** that (only with `--publish`) assembles a
 `ReviewResult` and delegates to `_post_to_platform`. Without `--publish`, all
-of them emit the raw `LLMReviewOutput` as JSON via `render_output`. The variants
+of them emit the raw `ReviewOutput` as JSON via `render_output`. The variants
 differ only in `collect` and `_post_to_platform`:
 
 | Runbook | `collect` | `_post_to_platform` (`--publish`) | `validate` requires |
@@ -271,20 +271,21 @@ Where the shared pieces come from:
 
 | Framework slot | Implementation |
 |---|---|
-| `context_model` | `CollectedContext` (`junior.runbooks.code_review.models`) |
-| `result_model` | `LLMReviewOutput` (`junior.runbooks.code_review.models`) |
+| `context_model` | `ReviewContext` (`junior.runbooks.code_review.models`) |
+| `result_model` | `ReviewOutput` (`junior.runbooks.code_review.models`) |
 | `render()` | `build_user_message()` (`code_review/render.py`) |
 | `system_prompt()` | `SYSTEM_PROMPT` role + user prompts, then `build_review_prompt()` adds `BASE_RULES` (`code_review/instructions.py`) |
 | `collect()` | `junior.collect.{local,github,gitlab,bitbucket}.collect(settings)` |
 | `publish()` (`--publish`) | `_post_to_platform`: local → `junior.publish.local` Markdown; github/gitlab/bitbucket → `post_review(...)` |
-| `render_output()` (no `--publish`) | the raw `LLMReviewOutput` as JSON (default hook) |
+| `render_output()` (no `--publish`) | the raw `ReviewOutput` as JSON (default hook) |
 | `is_blocking()` | any critical comment **or** `recommendation == request_changes` |
 
 Each variant imports the collect/publish helper it needs directly — there is no
 central `resolved_collector` / `resolved_publisher` dispatch. `pre_formatted` (the
-`--publish-file` shortcut) is handled by `publish_prepared`. Runtime fields
-(`tokens_used`, `input/output_tokens`, `review_errors`) come from the shared
-`LLMResult`/`Usage` envelope, assembled into a `ReviewResult` at publish time.
+`--publish-file` shortcut) is handled by `publish_prepared`. At publish time the
+`ReviewOutput` is wrapped into a `ReviewResult` — a thin subclass of the shared
+`LLMResult` envelope that composes the LLM `output` with the `usage` token counts
+and `errors` (no flat duplication), adding only the domain `pre_formatted`.
 
 ## Adding a runbook (Jira example)
 
@@ -362,7 +363,7 @@ src/junior/
     code_review/            ← the built-in runbook family
       base.py               ← CodeReviewRunbook (shared render/prompt/publish)
       local.py  github.py  gitlab.py  bitbucket.py   ← per-platform collect + _post_to_platform
-      models.py             ← CollectedContext, LLMReviewOutput, ReviewResult, …
+      models.py             ← ReviewContext, ReviewOutput, ReviewResult, …
       render.py             ← build_user_message()
       instructions.py       ← build_review_prompt() + BASE_RULES
     weather/                ← example non-code-review runbook (live weather → outfit)

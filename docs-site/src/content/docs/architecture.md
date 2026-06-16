@@ -41,7 +41,7 @@ flowchart LR
 - A **`Runbook`** (`src/junior/runbook/base.py`, generic over Context `C` and Result `R`) owns one domain. It brings its own `context_model` / `result_model` schemas and the domain logic: `collect → render → system_prompt → publish`. The platform variants live *inside* the runbook family.
 - A **`Harness`** (same file) is shared across all runbooks. It knows nothing about diffs, MRs, or Jira: `complete()` takes a system prompt, a user message, and an **`output_schema` parameter**, calls the model, and returns an `LLMResult` whose `.output` is a validated instance of that schema. One set of harnesses serves every runbook.
 
-The key move: **the output schema is a parameter of the harness, not a hard-coded type.** That is what lets five harnesses serve every runbook. The code-review runbooks ask for `LLMReviewOutput`; a fork's Jira runbook would ask the same harnesses for its own `TicketAssessment`.
+The key move: **the output schema is a parameter of the harness, not a hard-coded type.** That is what lets five harnesses serve every runbook. The code-review runbooks ask for `ReviewOutput`; a fork's Jira runbook would ask the same harnesses for its own `TicketAssessment`.
 
 ## Review Flow
 
@@ -173,7 +173,7 @@ See [Adding a runbook](adding_runbooks.md) or [a harness](adding_harnesses.md) a
 
 ## The code-review runbook family
 
-The built-in code-review runbooks all review a git diff with the same `CollectedContext` in and `LLMReviewOutput` out. They share a base class `CodeReviewRunbook` (`src/junior/runbooks/code_review/base.py`) holding render, `system_prompt`, `result_model`, `is_blocking`, `summary`, and a **template-method `publish`** that delegates to `_post_to_platform` (run only with `--publish`). The variants differ only in `collect()` and `_post_to_platform()`. Without `--publish`, all of them emit the raw `LLMReviewOutput` as JSON to stdout/`-o`:
+The built-in code-review runbooks all review a git diff with the same `ReviewContext` in and `ReviewOutput` out. They share a base class `CodeReviewRunbook` (`src/junior/runbooks/code_review/base.py`) holding render, `system_prompt`, `result_model`, `is_blocking`, `summary`, and a **template-method `publish`** that delegates to `_post_to_platform` (run only with `--publish`). The variants differ only in `collect()` and `_post_to_platform()`. Without `--publish`, all of them emit the raw `ReviewOutput` as JSON to stdout/`-o`:
 
 | Runbook | collect | `--publish` does |
 |----------|---------|------------------|
@@ -182,7 +182,7 @@ The built-in code-review runbooks all review a git diff with the same `Collected
 | `gitlab_pr_review` | GitLab MR via API | posts MR note + inline threads |
 | `bitbucket_pr_review` | Bitbucket DC PR via API | posts PR comment + inline comments |
 
-The collector/publisher implementations live in `src/junior/collect/{local,gitlab,github,bitbucket}.py` (`collect(settings) -> CollectedContext`) and `src/junior/publish/{local,gitlab,github,bitbucket}.py` (`post_review(settings, result)`). Each runbook variant imports the one it needs directly — there is no central `resolved_collector`/`resolved_publisher` dispatch.
+The collector/publisher implementations live in `src/junior/collect/{local,gitlab,github,bitbucket}.py` (`collect(settings) -> ReviewContext`) and `src/junior/publish/{local,gitlab,github,bitbucket}.py` (`post_review(settings, result)`). Each runbook variant imports the one it needs directly — there is no central `resolved_collector`/`resolved_publisher` dispatch.
 
 ## Settings groups
 
@@ -237,7 +237,7 @@ src/junior/
   runbooks/            ← built-in runbooks (auto-discovered)
     code_review/
       base.py           ← CodeReviewRunbook (shared render/prompt/publish)
-      models.py         ← domain models: CollectedContext, LLMReviewOutput, ReviewResult, … (frozen)
+      models.py         ← domain models: ReviewContext, ReviewOutput, ReviewResult, … (frozen)
       local.py  github.py  gitlab.py  bitbucket.py   ← per-platform collect + _post_to_platform
       render.py         ← build_user_message()
       instructions.py   ← build_review_prompt() + BASE_RULES

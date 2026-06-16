@@ -28,7 +28,7 @@ OPENAI_API_KEY=sk-... junior run \
 ```
 
 `--publish` makes `local_review` render the result as Markdown (Phase 5); the
-redirect just saves it. Drop `--publish` and you get the raw `ReviewResult` JSON
+redirect just saves it. Drop `--publish` and you get the raw `ReviewOutput` JSON
 on stdout instead — the [output contract](../cli.md) every runbook follows.
 
 | Setting | Value |
@@ -59,7 +59,7 @@ The diff under review — `feature/auth-system` vs `main`:
 
 **`junior.collect.local`** → `collect.core.collect.collect_base()`: runs `git
 diff`, parses changed files, reads commit messages, attaches any extra context.
-The output is a `CollectedContext`:
+The output is a `ReviewContext`:
 
 ```json
 {
@@ -86,7 +86,7 @@ both its diff and full content.
 ## Phase 2 — Build the user message
 
 **`junior.runbooks.code_review.render.build_user_message()`** turns the
-`CollectedContext` into the markdown **user message** the model sees (here ~12.3k
+`ReviewContext` into the markdown **user message** the model sees (here ~12.3k
 chars):
 
 ```markdown
@@ -139,18 +139,23 @@ and the pydantic harness makes **one** structured call.
 ## Phase 4 — The LLM review
 
 **`junior.harnesses.pydantic`** makes one structured call with
-`output_type=LLMReviewOutput`. The model returns `summary`, `recommendation`,
-and the `comments` list directly. Junior then wraps that into a `ReviewResult`,
-attaching the measured token usage:
+`output_type=ReviewOutput`. The model returns `summary`, `recommendation`,
+and the `comments` list directly. Junior then wraps that `ReviewOutput` into a
+`ReviewResult` — composing it with the measured token usage and any errors:
 
 ```json
 {
-  "summary": "The code quality is poor overall, with multiple critical security flaws...",
-  "recommendation": "request_changes",
-  "comments": [/* 38 findings */],
-  "input_tokens": 28174,
-  "output_tokens": 7224,
-  "tokens_used": 35398
+  "output": {
+    "summary": "The code quality is poor overall, with multiple critical security flaws...",
+    "recommendation": "request_changes",
+    "comments": [/* 38 findings */]
+  },
+  "usage": {
+    "input_tokens": 28174,
+    "output_tokens": 7224,
+    "total_tokens": 35398
+  },
+  "errors": []
 }
 ```
 
@@ -168,7 +173,8 @@ The full findings tables are on the [next page](output.md).
 With `--publish`, **`junior.publish.local.post_review()`** →
 `publish.core.formatter.format_summary()` renders the `ReviewResult` to Markdown
 on stdout (here redirected to `/tmp/junior_review_output.md`). Without `--publish`,
-`local_review` prints that same `ReviewResult` as raw JSON instead.
+`local_review` prints the raw `ReviewOutput` (summary + recommendation + comments)
+as JSON instead.
 
 Every run also writes a secret-free JSON trace to
 `<project_dir>/.junior/output/{timestamp}.json` (on by default; disable with
@@ -179,19 +185,19 @@ See the [rendered output](output.md#formatted-output) on the next page.
 ## The whole pipeline
 
 ```
-git diff ──▶ collect.local ─────────▶ CollectedContext
+git diff ──▶ collect.local ─────────▶ ReviewContext
                                           │
               render.build_user_message() ▼ ──▶ user message (~12KB markdown)
                                           │
        instructions.build_review_prompt() ▼ ──▶ system prompt (merged, ~4KB)
                                           │
-                    pydantic harness call ▼ ──▶ LLMReviewOutput ─▶ ReviewResult (+tokens)
+                    pydantic harness call ▼ ──▶ ReviewOutput ─▶ ReviewResult (+tokens)
                                           │
        (--publish) format_summary() ▼ ──▶ Markdown
                                           │
                        local.post_review() ▼ ──▶ stdout
                                           ·
-   (no --publish) raw ReviewResult JSON ─────▶ stdout / -o file
+   (no --publish) raw ReviewOutput JSON ─────▶ stdout / -o file
               .junior/output/{ts}.json trace ─▶ always written
 ```
 

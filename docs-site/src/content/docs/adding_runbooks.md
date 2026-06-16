@@ -213,8 +213,8 @@ runbook (weather → what to wear, scripts in `python3`, no API key) is in
 
 Junior ships the code-review domain as a family of runbooks that share the base class
 `CodeReviewRunbook` (`src/junior/runbooks/code_review/base.py`). They all review a git
-diff with the same context schema (`CollectedContext`), render, prompt, and result schema
-(`LLMReviewOutput`) — only *where the diff comes from* (collect) and *where the review
+diff with the same context schema (`ReviewContext`), render, prompt, and result schema
+(`ReviewOutput`) — only *where the diff comes from* (collect) and *where the review
 goes* (publish) differ:
 
 | Runbook name | Source | Publishes to |
