@@ -114,6 +114,9 @@ _DEFAULT_MODELS: dict[str, str] = {
 
 _SUPPORTED_PROVIDERS = ("openai", "anthropic")
 
+# Permission modes the `claude` CLI accepts for `--permission-mode`.
+_CLAUDECODE_PERMISSION_MODES = ("default", "acceptEdits", "plan", "bypassPermissions")
+
 _BASE_CONFIG = SettingsConfigDict(
     case_sensitive=False,
     extra="ignore",
@@ -186,6 +189,30 @@ class ContextSettings(BaseSettings):
 # --- Group 2: LLM (how to call the model) ---
 
 
+class ClaudeCodeSettings(BaseSettings):
+    """claudecode-only knobs, nested under `llm.claudecode`; ignored by other harnesses."""
+
+    model_config = _BASE_CONFIG
+
+    # Maps to `claude -p --permission-mode`. Default `bypassPermissions` so the
+    # CLI's built-in tools run unattended (junior is usually containerized);
+    # tighten it (e.g. `acceptEdits`/`plan`) for untrusted content outside a sandbox.
+    permission_mode: str = "bypassPermissions"
+
+    @field_validator("permission_mode", mode="before")
+    @classmethod
+    def validate_permission_mode(cls, v: Any) -> Any:
+        """Mirror `harness_by_name`: a human error instead of a bare enum dump.
+
+        Note `""` is rejected too (a config typo should fail as a config error,
+        not slip through to `claude --permission-mode ""` failing at runtime).
+        """
+        if isinstance(v, str) and v not in _CLAUDECODE_PERMISSION_MODES:
+            known = ", ".join(_CLAUDECODE_PERMISSION_MODES)
+            raise ValueError(f"unknown permission_mode '{v}'. Known: {known}")
+        return v
+
+
 class LLMSettings(BaseSettings):
     """How to call the LLM — harness (driver), model, API keys, limits.
 
@@ -229,6 +256,23 @@ class LLMSettings(BaseSettings):
     # CLI harnesses (claudecode/codex/pi): kill the subprocess after this many
     # seconds. Lower it to fail fast on a stuck/runaway agent.
     timeout: int = 600
+    # claudecode-only knobs (nested under `llm.claudecode`); other harnesses ignore it.
+    claudecode: ClaudeCodeSettings = Field(default_factory=ClaudeCodeSettings)
+
+    @field_validator("claudecode", mode="before")
+    @classmethod
+    def _coerce_claudecode(cls, v: Any) -> Any:
+        """Ignore a non-mapping leaking in from the env.
+
+        The field name collides with the bare `CLAUDECODE` env var that the
+        Claude Code runtime sets (`CLAUDECODE=1`); pydantic-settings' env source
+        feeds that `1` into this model field and validation would fail. Real
+        config always arrives as a mapping/model, so drop anything else back to
+        defaults. (Configure via YAML `llm.claudecode`, not an env var.)
+        """
+        if isinstance(v, (dict, ClaudeCodeSettings)):
+            return v
+        return {}
 
     @field_validator("model", mode="before")
     @classmethod
@@ -680,8 +724,12 @@ def _drop_env_shadowed(cfg: dict) -> dict:
             kept = {
                 fname: fval
                 for fname, fval in value.items()
+                # Only scalar file values are env-shadowed. A nested-model field
+                # (dict value, e.g. `llm.claudecode`) can't be expressed by a flat
+                # env var, so a name collision (e.g. `CLAUDECODE=1`) must not drop it.
                 if not (
                     fname in model.model_fields
+                    and not isinstance(fval, dict)
                     and _field_env_names(model, fname) & env_upper
                 )
             }

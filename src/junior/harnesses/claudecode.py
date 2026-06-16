@@ -25,7 +25,7 @@ _TOOLS = "Read,Bash(git log:*,git show:*,git diff:*,git blame:*),Grep,Glob"
 class ClaudeCodeHarness(Harness):
     name = "claudecode"
     file_access = True  # reads repo files via its own tools
-    config_fields = ("model", "timeout")
+    config_fields = ("model", "timeout", "claudecode")
     setup_note = "Uses the local `claude` CLI — run `claude` once to authenticate (no env var)."
 
     def is_ready(self) -> str:
@@ -54,7 +54,7 @@ class ClaudeCodeHarness(Harness):
             "--json-schema", schema_json,
             "--append-system-prompt", system_prompt,
             "--tools", _TOOLS,
-            "--permission-mode", "bypassPermissions",
+            "--permission-mode", settings.llm.claudecode.permission_mode,
             "--no-session-persistence",
         ]
         if settings.llm.anthropic_api_key:

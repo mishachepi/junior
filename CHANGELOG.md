@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **`claudecode` permission mode is now configurable.** The previously hard-coded
+  `--permission-mode bypassPermissions` is set from the new nested knob
+  `llm.claudecode.permission_mode` (default unchanged: `bypassPermissions`). Allowed
+  values mirror the `claude` CLI — `default`, `acceptEdits`, `plan`, `bypassPermissions`;
+  an unknown value fails fast in config validation. YAML only (set under `llm.claudecode`,
+  not an env var). Tighten it (e.g. `plan`) when running on untrusted content outside a
+  sandbox. `junior config show` lists it under `llm.claudecode` for the claudecode harness.
+
 ## 0.2.2 — 2026-06-15
 
 - **Breaking: `local_review --publish` now renders to stdout, not to `-o`.** With
