@@ -7,11 +7,11 @@ import pytest
 from junior.config import Settings
 from junior.harnesses import codex
 from junior.harnesses.codex import HARNESS, _build_output_schema, _parse_token_usage
-from junior.models import LLMReviewOutput
+from junior.runbooks.code_review.models import ReviewOutput
 
 
 def test_output_schema_is_strict():
-    schema = _build_output_schema(LLMReviewOutput)
+    schema = _build_output_schema(ReviewOutput)
 
     assert schema["type"] == "object"
     assert set(schema["required"]) == {"summary", "recommendation", "comments"}
@@ -62,7 +62,7 @@ def test_complete_cleans_up_temp_files_when_schema_build_fails(monkeypatch):
         HARNESS.complete(
             system_prompt="sys",
             user_message="msg",
-            output_schema=LLMReviewOutput,
+            output_schema=ReviewOutput,
             settings=Settings(),
         )
 

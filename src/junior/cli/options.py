@@ -310,7 +310,7 @@ FromFileOpt = Annotated[
         "--from-file",
         metavar="CONTEXT_FILE",
         help=(
-            "Load CollectedContext from JSON, skip phase 1. "
+            "Load ReviewContext from JSON, skip phase 1. "
             "Symmetric with `junior dry-run -o ctx.json`"
         ),
         rich_help_panel=CTX_PANEL,

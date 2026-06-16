@@ -6,17 +6,14 @@ then fetches MR description, labels, and discussion comments from GitLab MR API.
 
 import structlog
 
-from junior.collect.core import collect_base, enrich_with_metadata
+from junior.collect.core import collect_base, enrich_with_metadata, finalize_comments
 from junior.config import Settings
-from junior.runbooks.code_review.models import CollectedContext, MRComment
+from junior.runbooks.code_review.models import ReviewContext, MRComment
 
 logger = structlog.get_logger()
 
-# Cap on how many human comments we send to the LLM (newest first).
-MAX_COMMENTS = 50
 
-
-def collect(settings: Settings) -> CollectedContext:
+def collect(settings: Settings) -> ReviewContext:
     """Collect context with GitLab MR metadata enrichment."""
     context = collect_base(settings)
     description, labels, comments = _fetch_gitlab_metadata(settings)
@@ -61,7 +58,7 @@ def _fetch_gitlab_comments(mr) -> list[MRComment]:
     """Fetch all human discussion notes (including inline) for an MR.
 
     System notes ("assigned", "added label X", ...) are filtered out.
-    Returns at most MAX_COMMENTS newest entries.
+    Returns at most MAX_COMMENTS newest entries (see `finalize_comments`).
     """
     try:
         discussions = mr.discussions.list(get_all=True)
@@ -94,7 +91,4 @@ def _fetch_gitlab_comments(mr) -> list[MRComment]:
                 )
             )
 
-    parsed.sort(key=lambda c: c.created_at)
-    if len(parsed) > MAX_COMMENTS:
-        parsed = parsed[-MAX_COMMENTS:]
-    return parsed
+    return finalize_comments(parsed)

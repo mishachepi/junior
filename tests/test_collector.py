@@ -15,6 +15,28 @@ from junior.collect.gitlab import _fetch_gitlab_comments
 from junior.models import FileStatus
 
 
+# --- finalize_comments ---
+
+
+def test_finalize_comments_drops_empty_sorts_and_caps(monkeypatch):
+    from junior.collect.core import comments as comments_mod
+    from junior.collect.core.comments import finalize_comments
+    from junior.runbooks.code_review.models import MRComment
+
+    monkeypatch.setattr(comments_mod, "MAX_COMMENTS", 3)
+    raw = [
+        MRComment(body="c5", created_at="2025-01-05"),
+        MRComment(body="   ", created_at="2025-01-09"),  # empty after strip → dropped
+        MRComment(body="c1", created_at="2025-01-01"),
+        MRComment(body="c4", created_at="2025-01-04"),
+        MRComment(body="c3", created_at="2025-01-03"),
+        MRComment(body="c2", created_at="2025-01-02"),
+    ]
+    out = finalize_comments(raw)
+    # sorted oldest→newest, newest 3 kept, blank dropped
+    assert [c.body for c in out] == ["c3", "c4", "c5"]
+
+
 # --- _parse_diff_header ---
 
 
@@ -159,8 +181,9 @@ def test_gitlab_comments_inline_position():
 
 def test_gitlab_comments_caps_at_max(monkeypatch):
     from junior.collect import gitlab as gl_mod
+    from junior.collect.core import comments as comments_mod
 
-    monkeypatch.setattr(gl_mod, "MAX_COMMENTS", 3)
+    monkeypatch.setattr(comments_mod, "MAX_COMMENTS", 3)
     notes = [
         {"body": f"c{i}", "author": {"username": "u"}, "created_at": f"2025-01-{i:02d}"}
         for i in range(1, 11)
@@ -239,13 +262,13 @@ def test_publish_warns_on_non_https_with_token():
     from structlog.testing import capture_logs
 
     from junior.publish.gitlab import post_review
-    from junior.runbooks.code_review.models import ReviewResult
+    from junior.runbooks.code_review.models import ReviewOutput, ReviewResult
 
     with capture_logs() as logs:
         try:
             post_review(
                 _gitlab_settings("http://gitlab.intranet", "secret"),
-                ReviewResult(summary="s"),
+                ReviewResult(output=ReviewOutput(summary="s")),
             )
         except Exception:
             pass  # no server — warning fires before the API call fails
@@ -256,13 +279,13 @@ def test_publish_no_warning_on_https():
     from structlog.testing import capture_logs
 
     from junior.publish.gitlab import post_review
-    from junior.runbooks.code_review.models import ReviewResult
+    from junior.runbooks.code_review.models import ReviewOutput, ReviewResult
 
     with capture_logs() as logs:
         try:
             post_review(
                 _gitlab_settings("https://gitlab.com", "secret"),
-                ReviewResult(summary="s"),
+                ReviewResult(output=ReviewOutput(summary="s")),
             )
         except Exception:
             pass

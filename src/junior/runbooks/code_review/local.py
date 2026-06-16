@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from junior.config import Settings
-from junior.runbooks.code_review.models import CollectedContext, ReviewResult
+from junior.runbooks.code_review.models import ReviewContext, ReviewResult
 from junior.runbook.registry import register_runbook
 from junior.runbooks.code_review.base import CodeReviewRunbook
 
@@ -13,7 +13,7 @@ class LocalReview(CodeReviewRunbook):
     name = "local_review"
     description = "review the local git diff → raw JSON, or --publish for Markdown"
 
-    def collect(self, settings: Settings) -> CollectedContext:
+    def collect(self, settings: Settings) -> ReviewContext:
         from junior.collect.local import collect
 
         return collect(settings)

@@ -1,14 +1,14 @@
-"""Build user message from CollectedContext for all agent backends."""
+"""Build user message from ReviewContext for all agent backends."""
 
 import structlog
 
-from junior.runbooks.code_review.models import CollectedContext
+from junior.runbooks.code_review.models import ReviewContext
 
 logger = structlog.get_logger()
 
 
 def build_user_message(
-    context: CollectedContext, *, include_diff: bool = True, max_diff_chars: int = 0
+    context: ReviewContext, *, include_diff: bool = True, max_diff_chars: int = 0
 ) -> str:
     """Build user message with full MR context for AI agents.
 

@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **Refactor: code-review models composed over the framework envelope + renamed.**
+  `ReviewResult` is now a thin subclass of the shared `LLMResult` — it composes the
+  LLM `output` with `usage` (token counts) and `errors` instead of flatly duplicating
+  `summary`/`recommendation`/`comments` and unpacking tokens into `tokens_used`/
+  `input_tokens`/`output_tokens`/`review_errors`. The count/blocking logic
+  (`critical_count`, `high_count`, `has_blocking_issues`) moved onto `ReviewOutput`,
+  the owner of `comments` + `recommendation`. Two context/output schemas were renamed:
+  `CollectedContext` → `ReviewContext`, `LLMReviewOutput` → `ReviewOutput`.
+  - *Breaking for forks* importing the old names or reading the old flat
+    `ReviewResult` fields. The deprecated `junior.models` shim keeps
+    `CollectedContext` / `LLMReviewOutput` as aliases for one version; update to
+    `junior.runbooks.code_review.models`. `assemble_review_result(output, *, usage,
+    errors=...)` replaces the old `tokens_used=…, review_errors=…` signature.
+  - The raw (no `--publish`) JSON is now the `ReviewOutput` (summary / recommendation
+    / comments); `ReviewResult` (with nested `usage`) is the publish-time envelope.
+- **Refactor: collector comment finalisation deduplicated.** The repeated
+  `MAX_COMMENTS = 50` + drop-empty / sort-by-`created_at` / keep-newest block in the
+  gitlab/github/bitbucket collectors moved to a single
+  `junior.collect.core.finalize_comments` helper (mirroring `publish/core`'s
+  `MAX_INLINE_COMMENTS`). No behaviour change.
+
 - **`claudecode` permission mode is now configurable.** The previously hard-coded
   `--permission-mode bypassPermissions` is set from the new nested knob
   `llm.claudecode.permission_mode` (default unchanged: `bypassPermissions`). Allowed

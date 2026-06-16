@@ -47,7 +47,7 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
         )
         return
 
-    inline_comments = [c for c in result.comments if c.file_path and c.line_number]
+    inline_comments = [c for c in result.output.comments if c.file_path and c.line_number]
     posted = 0
 
     for comment in inline_comments[:MAX_INLINE_COMMENTS]:

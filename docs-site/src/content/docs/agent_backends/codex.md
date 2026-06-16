@@ -19,7 +19,7 @@ complete(*, system_prompt: str, user_message: str,
          output_schema: type[BaseModel], settings: Settings) -> LLMResult
 ```
 
-The code-review runbook passes `LLMReviewOutput`, but the harness works for any
+The code-review runbook passes `ReviewOutput`, but the harness works for any
 runbook's result model. `LLMResult.output` is a validated instance of
 `output_schema`.
 

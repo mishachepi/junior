@@ -3,7 +3,7 @@
 import pytest
 
 from junior.config import Settings
-from junior.models import LLMReviewOutput
+from junior.runbooks.code_review.models import ReviewOutput
 
 
 def test_complete_builds_file_tools_without_namerror(monkeypatch):
@@ -29,7 +29,7 @@ def test_complete_builds_file_tools_without_namerror(monkeypatch):
         output_tokens = 7
 
     class _Result:
-        output = LLMReviewOutput(summary="looks good", recommendation="approve", comments=[])
+        output = ReviewOutput(summary="looks good", recommendation="approve", comments=[])
 
         def usage(self):
             return _Usage()
@@ -54,7 +54,7 @@ def test_complete_builds_file_tools_without_namerror(monkeypatch):
     result = HARNESS.complete(
         system_prompt="You are a code reviewer.",
         user_message="diff goes here",
-        output_schema=LLMReviewOutput,
+        output_schema=ReviewOutput,
         settings=settings,
     )
 

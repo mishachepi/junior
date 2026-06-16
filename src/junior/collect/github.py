@@ -6,18 +6,15 @@ then fetches PR description, labels, and comments (issue + inline review) from G
 
 import structlog
 
-from junior.collect.core import collect_base, enrich_with_metadata
+from junior.collect.core import collect_base, enrich_with_metadata, finalize_comments
 from junior.config import Settings
 from junior.github_api import API_BASE, headers as github_headers
-from junior.runbooks.code_review.models import CollectedContext, MRComment
+from junior.runbooks.code_review.models import ReviewContext, MRComment
 
 logger = structlog.get_logger()
 
-# Cap on how many comments we send to the LLM (newest first).
-MAX_COMMENTS = 50
 
-
-def collect(settings: Settings) -> CollectedContext:
+def collect(settings: Settings) -> ReviewContext:
     """Collect context with GitHub PR metadata enrichment."""
     context = collect_base(settings)
     description, labels, comments = _fetch_github_metadata(settings)
@@ -80,7 +77,8 @@ def _paginate(client, url: str) -> list[dict]:
 def _parse_github_comments(
     issue_comments: list[dict], review_comments: list[dict]
 ) -> list[MRComment]:
-    """Merge general and inline review comments into MRComment list, newest last, capped."""
+    """Merge general and inline review comments into MRComment list, newest last,
+    capped (see `finalize_comments`)."""
     parsed: list[MRComment] = []
     for note in issue_comments:
         body = (note.get("body") or "").strip()
@@ -107,7 +105,4 @@ def _parse_github_comments(
             )
         )
 
-    parsed.sort(key=lambda c: c.created_at)
-    if len(parsed) > MAX_COMMENTS:
-        parsed = parsed[-MAX_COMMENTS:]
-    return parsed
+    return finalize_comments(parsed)

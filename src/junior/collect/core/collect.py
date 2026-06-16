@@ -15,12 +15,12 @@ from junior.collect.core.diff import (
     resolve_base_sha,
 )
 from junior.config import Settings
-from junior.runbooks.code_review.models import CollectedContext, MRComment
+from junior.runbooks.code_review.models import ReviewContext, MRComment
 
 logger = structlog.get_logger()
 
 
-def collect_base(settings: Settings) -> CollectedContext:
+def collect_base(settings: Settings) -> ReviewContext:
     """Collect base context without platform-specific enrichment.
 
     Steps:
@@ -28,7 +28,7 @@ def collect_base(settings: Settings) -> CollectedContext:
     2. Commit messages
     3. Extra context from --context (text) and --context-file (files)
 
-    Returns CollectedContext with mr_description/labels from env vars only.
+    Returns ReviewContext with mr_description/labels from env vars only.
     Backend modules should enrich with API data after calling this.
 
     Explicit input text (the positional CLI argument) replaces the git diff as
@@ -37,7 +37,7 @@ def collect_base(settings: Settings) -> CollectedContext:
     input_text = settings.context.input_text
     if input_text:
         logger.info("reviewing provided input text instead of a git diff", size=len(input_text))
-        context = CollectedContext(
+        context = ReviewContext(
             mr_title=settings.context.mr_title,
             full_diff=input_text,
             extra_context=dict(settings.context.context),
@@ -67,7 +67,7 @@ def collect_base(settings: Settings) -> CollectedContext:
     # 2. Commit messages
     commit_messages = get_commit_messages(project_dir, target_branch, base_sha)
 
-    context = CollectedContext(
+    context = ReviewContext(
         project_id=settings.output.ci_project_id or 0,
         mr_iid=settings.output.ci_merge_request_iid or 0,
         mr_title=settings.context.mr_title,
@@ -88,11 +88,11 @@ def collect_base(settings: Settings) -> CollectedContext:
 
 
 def enrich_with_metadata(
-    context: CollectedContext,
+    context: ReviewContext,
     description: str,
     labels: list[str],
     comments: list[MRComment] | None = None,
-) -> CollectedContext:
+) -> ReviewContext:
     """Update context with API-fetched MR metadata (description, labels, comments)."""
     updates = {}
     if description and not context.mr_description:
@@ -108,9 +108,9 @@ def enrich_with_metadata(
 
 
 def _apply_context_files(
-    context: CollectedContext,
+    context: ReviewContext,
     context_files: dict[str, str],
-) -> CollectedContext:
+) -> ReviewContext:
     """Process --context-file entries.
 
     All files are read as raw text and added to extra_context.
@@ -120,7 +120,7 @@ def _apply_context_files(
     return context
 
 
-def _load_raw_context_file(context: CollectedContext, key: str, path: str) -> CollectedContext:
+def _load_raw_context_file(context: ReviewContext, key: str, path: str) -> ReviewContext:
     """Read a file as text and add to extra_context under the given key."""
     content = Path(path).read_text(encoding="utf-8", errors="ignore")
     extra = {**context.extra_context, key: content}

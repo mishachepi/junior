@@ -23,19 +23,20 @@ def format_summary(result: ReviewResult, settings: Settings | None = None) -> st
     if result.pre_formatted:
         return result.pre_formatted
 
+    output = result.output
     parts = ["## Junior Code Review\n"]
-    parts.append(result.summary)
+    parts.append(output.summary)
     parts.append("")
 
     # Findings summary table
-    if result.comments:
+    if output.comments:
         parts.append("### Findings")
         parts.append("")
         parts.append("| Severity | Count |")
         parts.append("|----------|-------|")
 
         for severity in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW):
-            count = sum(1 for c in result.comments if c.severity == severity)
+            count = sum(1 for c in output.comments if c.severity == severity)
             if count > 0:
                 emoji = SEVERITY_EMOJI[severity]
                 parts.append(f"| {emoji} {severity.value.capitalize()} | {count} |")
@@ -44,7 +45,7 @@ def format_summary(result: ReviewResult, settings: Settings | None = None) -> st
 
         # Detailed findings grouped by severity
         for severity in (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW):
-            comments = [c for c in result.comments if c.severity == severity]
+            comments = [c for c in output.comments if c.severity == severity]
             if not comments:
                 continue
 
@@ -65,15 +66,15 @@ def format_summary(result: ReviewResult, settings: Settings | None = None) -> st
                     parts.append(f"  - Suggestion: {c.suggestion}")
 
             parts.append("")
-    elif result.summary:
+    elif output.summary:
         parts.append("No issues found. Great work!")
         parts.append("")
 
     # Errors
-    if result.review_errors:
+    if result.errors:
         parts.append("### ⚠️ Review Warnings")
         parts.append("")
-        for err in result.review_errors:
+        for err in result.errors:
             parts.append(f"- {err}")
         parts.append("")
 
@@ -84,10 +85,11 @@ def format_summary(result: ReviewResult, settings: Settings | None = None) -> st
         meta.append(settings.llm.harness_name)
         if settings.llm.display_model:
             meta.append(settings.llm.display_model)
-    if result.input_tokens or result.output_tokens:
-        meta.append(f"{result.input_tokens:,} in / {result.output_tokens:,} out tokens")
-    elif result.tokens_used:
-        meta.append(f"{result.tokens_used:,} tokens")
+    usage = result.usage
+    if usage.input_tokens or usage.output_tokens:
+        meta.append(f"{usage.input_tokens:,} in / {usage.output_tokens:,} out tokens")
+    elif usage.total_tokens:
+        meta.append(f"{usage.total_tokens:,} tokens")
     parts.append(f"*Reviewed by {' | '.join(meta)}*")
 
     return "\n".join(parts)

@@ -25,7 +25,7 @@ complete(*, system_prompt: str, user_message: str,
          output_schema: type[BaseModel], settings: Settings) -> LLMResult
 ```
 
-The code-review runbook passes `LLMReviewOutput`, but the harness works for any
+The code-review runbook passes `ReviewOutput`, but the harness works for any
 runbook's result model. The `output_schema` becomes the `args_schema` of a
 `submit_review` tool that the orchestrator calls exactly once.
 

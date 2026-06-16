@@ -19,7 +19,7 @@ complete(*, system_prompt: str, user_message: str,
          output_schema: type[BaseModel], settings: Settings) -> LLMResult
 ```
 
-The code-review runbook passes `LLMReviewOutput`, but the harness works for any
+The code-review runbook passes `ReviewOutput`, but the harness works for any
 runbook's result model. The model returns an instance of `output_schema` directly.
 
 `file_access = False` — the diff is **inlined** into the user message by the
@@ -72,7 +72,7 @@ inlined, since `file_access = False`). The harness makes a single `agent.run()` 
 
 pydantic-ai handles structured output natively via `output_type`. The agent is
 constructed with `output_type=output_schema`, and `result.output` is a validated
-instance of that schema — for code review, an `LLMReviewOutput` (summary,
+instance of that schema — for code review, an `ReviewOutput` (summary,
 recommendation, comments). No post-hoc parsing or programmatic recommendation step
 lives in the harness; the model fills the schema directly.
 

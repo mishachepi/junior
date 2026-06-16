@@ -12,7 +12,7 @@ import pytest
 from junior.config import LLMSettings, Settings
 from junior.harnesses import claudecode as cc
 from junior.harnesses.claudecode import _extract_output
-from junior.runbooks.code_review.models import LLMReviewOutput, Recommendation
+from junior.runbooks.code_review.models import ReviewOutput, Recommendation
 
 
 def test_extract_from_structured_output_tool_use():
@@ -24,7 +24,7 @@ def test_extract_from_structured_output_tool_use():
         ]}},
         {"type": "result", "is_error": False, "usage": {}},
     ]
-    out = _extract_output(messages, LLMReviewOutput)
+    out = _extract_output(messages, ReviewOutput)
     assert out.summary == "via tool"
     assert out.recommendation == Recommendation.APPROVE
 
@@ -36,7 +36,7 @@ def test_extract_from_result_structured_output_field():
         {"type": "result", "is_error": False, "usage": {},
          "structured_output": {"summary": "via result", "recommendation": "comment", "comments": []}},
     ]
-    out = _extract_output(messages, LLMReviewOutput)
+    out = _extract_output(messages, ReviewOutput)
     assert out.summary == "via result"
     assert out.recommendation == Recommendation.COMMENT
 
@@ -51,7 +51,7 @@ def test_tool_use_takes_precedence_over_result_field():
         {"type": "result", "is_error": False, "usage": {},
          "structured_output": {"summary": "via result", "recommendation": "comment", "comments": []}},
     ]
-    assert _extract_output(messages, LLMReviewOutput).summary == "via tool"
+    assert _extract_output(messages, ReviewOutput).summary == "via tool"
 
 
 def test_no_structured_output_raises():
@@ -61,7 +61,7 @@ def test_no_structured_output_raises():
         {"type": "result", "is_error": False, "usage": {}},
     ]
     with pytest.raises(RuntimeError, match="No StructuredOutput"):
-        _extract_output(messages, LLMReviewOutput)
+        _extract_output(messages, ReviewOutput)
 
 
 # --- cmd assembly ---------------------------------------------------------
@@ -89,7 +89,7 @@ def _run_and_capture(monkeypatch, settings) -> list[str]:
     monkeypatch.setattr(cc.subprocess, "run", fake_run)
     cc.HARNESS.complete(
         system_prompt="sys", user_message="usr",
-        output_schema=LLMReviewOutput, settings=settings,
+        output_schema=ReviewOutput, settings=settings,
     )
     return captured["cmd"]
 

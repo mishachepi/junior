@@ -7,9 +7,10 @@ The old `junior.models` path still works for one version (re-export shim).
 """
 
 from enum import Enum
-from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from junior.runbook.base import LLMResult, Usage
 
 
 class Severity(str, Enum):
@@ -71,7 +72,7 @@ class MRComment(BaseModel):
     resolved: bool = False
 
 
-class CollectedContext(BaseModel):
+class ReviewContext(BaseModel):
     """Everything collected deterministically before agent invocation."""
 
     model_config = ConfigDict(frozen=True)
@@ -111,33 +112,33 @@ class ReviewComment(BaseModel):
     line_number: int | None = None
     suggestion: str | None = None
 
-    @model_validator(mode="after")
-    def check_line_requires_file(self) -> Self:
-        """Discard line_number if file_path is missing."""
-        if self.line_number is not None and not self.file_path:
-            object.__setattr__(self, "line_number", None)
-        return self
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_orphan_line(cls, data):
+        """Drop a line_number that has no file_path — meaningless for an inline
+        comment. Normalising *before* construction keeps the model truly frozen
+        (no object.__setattr__ on an already-built instance)."""
+        if (
+            isinstance(data, dict)
+            and data.get("line_number") is not None
+            and not data.get("file_path")
+        ):
+            return {**data, "line_number": None}
+        return data
 
 
-class LLMReviewOutput(BaseModel):
-    """Schema for a code review submitted by an AI agent."""
+class ReviewOutput(BaseModel):
+    """The review the LLM submits — the runbook's output schema (`result_model`).
+
+    A clean contract with the model: summary + recommendation + findings, plus
+    the derived counting/blocking logic that lives on the owner of those fields.
+    """
+
+    model_config = ConfigDict(frozen=True)
 
     summary: str
     recommendation: Recommendation = Recommendation.COMMENT
     comments: list[ReviewComment] = Field(default_factory=list)
-
-
-class ReviewResult(BaseModel):
-    """Assembled review — LLM output (summary/recommendation/comments) plus runtime metadata we measure."""
-
-    summary: str
-    recommendation: Recommendation = Recommendation.COMMENT
-    comments: list[ReviewComment] = Field(default_factory=list)
-    tokens_used: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    review_errors: list[str] = Field(default_factory=list)
-    pre_formatted: str | None = None  # pre-formatted markdown, bypasses format_summary
 
     @property
     def critical_count(self) -> int:
@@ -152,21 +153,25 @@ class ReviewResult(BaseModel):
         return self.critical_count > 0 or self.recommendation == Recommendation.REQUEST_CHANGES
 
 
+class ReviewResult(LLMResult):
+    """Assembled review: the LLM `output` plus the runtime metadata we measure.
+
+    A thin domain extension of the framework envelope `LLMResult` — it reuses
+    `output`/`usage`/`errors` (no flat duplication) and narrows `output` to the
+    code-review schema, adding only the domain-specific `pre_formatted`.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    output: ReviewOutput
+    pre_formatted: str | None = None  # pre-formatted markdown, bypasses format_summary
+
+
 def assemble_review_result(
-    review: LLMReviewOutput,
+    output: ReviewOutput,
     *,
-    tokens_used: int = 0,
-    input_tokens: int = 0,
-    output_tokens: int = 0,
-    review_errors: list[str] | None = None,
+    usage: Usage,
+    errors: list[str] | None = None,
 ) -> ReviewResult:
-    """Build the runbook result from LLM output plus runtime metadata measured by us."""
-    return ReviewResult(
-        summary=review.summary,
-        recommendation=review.recommendation,
-        comments=review.comments,
-        tokens_used=tokens_used,
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        review_errors=review_errors or [],
-    )
+    """Build the runbook result from LLM output plus the runtime metadata we measure."""
+    return ReviewResult(output=output, usage=usage, errors=errors or [])

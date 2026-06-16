@@ -9,11 +9,12 @@ from junior.collect.bitbucket import (
     collect,
 )
 from junior.config import OutputSettings, Settings
-from junior.models import (
-    CollectedContext,
+from junior.runbooks.code_review.models import (
     Recommendation,
     ReviewCategory,
     ReviewComment,
+    ReviewContext,
+    ReviewOutput,
     ReviewResult,
     Severity,
 )
@@ -166,8 +167,9 @@ def test_parse_comments_inline_anchor_applies_to_thread():
 
 def test_parse_comments_skips_empty_and_caps_at_max(monkeypatch):
     from junior.collect import bitbucket as bb_mod
+    from junior.collect.core import comments as comments_mod
 
-    monkeypatch.setattr(bb_mod, "MAX_COMMENTS", 3)
+    monkeypatch.setattr(comments_mod, "MAX_COMMENTS", 3)
     activities = [
         {
             "action": "COMMENTED",
@@ -214,7 +216,7 @@ def test_collect_sends_bearer_token_and_injects_base_sha(monkeypatch):
 
     def fake_collect_base(settings):
         seen_settings.append(settings)
-        return CollectedContext()
+        return ReviewContext()
 
     monkeypatch.setattr(bb_mod, "collect_base", fake_collect_base)
 
@@ -237,7 +239,7 @@ def test_collect_survives_api_failure(monkeypatch):
         raise OSError("connection refused")
 
     monkeypatch.setattr(httpx, "Client", boom)
-    monkeypatch.setattr(bb_mod, "collect_base", lambda settings: CollectedContext())
+    monkeypatch.setattr(bb_mod, "collect_base", lambda settings: ReviewContext())
 
     context = collect(_settings())  # soft failure: plain context, no metadata
     assert context.mr_description == ""
@@ -249,22 +251,24 @@ def test_collect_survives_api_failure(monkeypatch):
 
 def _review_result() -> ReviewResult:
     return ReviewResult(
-        summary="One issue found.",
-        recommendation=Recommendation.COMMENT,
-        comments=[
-            ReviewComment(
-                category=ReviewCategory.BUG,
-                severity=Severity.HIGH,
-                message="Off-by-one",
-                file_path="src/foo.py",
-                line_number=12,
-            ),
-            ReviewComment(
-                category=ReviewCategory.LOGIC,
-                severity=Severity.LOW,
-                message="General remark",  # no file/line — summary only
-            ),
-        ],
+        output=ReviewOutput(
+            summary="One issue found.",
+            recommendation=Recommendation.COMMENT,
+            comments=[
+                ReviewComment(
+                    category=ReviewCategory.BUG,
+                    severity=Severity.HIGH,
+                    message="Off-by-one",
+                    file_path="src/foo.py",
+                    line_number=12,
+                ),
+                ReviewComment(
+                    category=ReviewCategory.LOGIC,
+                    severity=Severity.LOW,
+                    message="General remark",  # no file/line — summary only
+                ),
+            ],
+        ),
     )
 
 
