@@ -106,6 +106,22 @@ def test_build_user_message_includes_forecast_and_extra_context():
     assert "lat:" not in hint_block and "lon:" not in hint_block
 
 
+def test_build_user_message_shows_zero_precip_probability():
+    """precipitation_prob=0 (a real reading) must render, unlike None (no data)."""
+    ctx = WeatherContext(
+        location="Testville", latitude=10.0, longitude=20.0, season="summer",
+        local_time="2026-07-01 12:00", current_temp_c=25.0, current_description="clear sky",
+        hourly=[
+            HourForecast(time="12:00", temp_c=25.0, description="clear sky", precipitation_prob=0),
+            HourForecast(time="13:00", temp_c=26.0, description="clear sky", precipitation_prob=None),
+        ],
+    )
+    msg = render.build_user_message(ctx, {})
+    lines = [line for line in msg.splitlines() if line.strip().startswith(("12:00", "13:00"))]
+    assert "0% precip" in lines[0]       # real 0 reading is shown
+    assert "precip" not in lines[1]      # None stays hidden
+
+
 def test_output_destination_reflects_publish_mode():
     """--publish = pretty terminal panel; default = -o file or stdout."""
     assert WeatherAdvice().output_destination(Settings(), publish_enabled=True) == "terminal"

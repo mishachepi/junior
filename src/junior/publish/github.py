@@ -1,10 +1,10 @@
 """GitHub API integration: post review results to PR.
 
-Uses the GitHub REST API via httpx — a hard dependency (declared in
-pyproject); no fallback path.
+Uses the GitHub REST API via httpx — the optional `github` extra, imported
+lazily inside the posting methods to keep the core install / registry scans
+cheap (matching the bitbucket backend).
 """
 
-import httpx
 import structlog
 
 from junior.config import Settings
@@ -37,6 +37,8 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
 
 def _post_comment(owner: str, repo: str, pr_number: int, token: str, body: str) -> None:
     """Post a general comment on a PR."""
+    import httpx
+
     resp = httpx.post(
         f"{API_BASE}/repos/{owner}/{repo}/issues/{pr_number}/comments",
         headers=github_headers(token),
@@ -55,6 +57,8 @@ def _post_review_comments(
     settings: Settings,
 ) -> None:
     """Post inline comments as a PR review."""
+    import httpx
+
     review_comments = [
         {
             "path": c.file_path,

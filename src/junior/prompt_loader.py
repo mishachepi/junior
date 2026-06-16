@@ -7,11 +7,13 @@ file. Both shapes flow through `context.prompts` (one list).
 Examples live in `docs-site/src/content/docs/examples/prompts/` (not loaded automatically).
 """
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import structlog
+import yaml
 
 logger = structlog.get_logger()
 
@@ -89,11 +91,16 @@ def _load_prompt_uri(uri: str) -> Prompt:
 
 
 def parse_prompt_file(path: Path) -> Prompt:
-    """Parse a .md file with ---frontmatter--- body format."""
-    text = path.read_text(encoding="utf-8")
-    parts = text.split("---", maxsplit=2)
+    """Parse a .md file with optional YAML frontmatter.
 
-    if len(parts) < 3:
+    Frontmatter is recognised only when the file *starts* with a `---` line
+    (Jekyll/Obsidian/Starlight convention). A bare `---` elsewhere in the body
+    (a horizontal rule, a YAML example) is left untouched. The block itself is
+    parsed as YAML — the project is YAML-only, so no hand-rolled key:value scan.
+    """
+    text = path.read_text(encoding="utf-8")
+    m = re.match(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", text, re.DOTALL)
+    if not m:
         return Prompt(
             name=path.stem,
             description="",
@@ -101,15 +108,13 @@ def parse_prompt_file(path: Path) -> Prompt:
             source_path=str(path),
         )
 
-    meta: dict[str, str] = {}
-    for line in parts[1].strip().splitlines():
-        if ":" in line:
-            key, _, value = line.partition(":")
-            meta[key.strip()] = value.strip()
+    meta = yaml.safe_load(m.group(1)) or {}
+    if not isinstance(meta, dict):
+        meta = {}
 
     return Prompt(
-        name=meta.get("name", path.stem),
-        description=meta.get("description", ""),
-        body=parts[2].strip(),
+        name=str(meta.get("name", path.stem)),
+        description=str(meta.get("description", "")),
+        body=m.group(2).strip(),
         source_path=str(path),
     )
