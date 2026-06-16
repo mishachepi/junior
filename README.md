@@ -70,13 +70,15 @@ Install only the harness you run and you skip every other harness's SDK — e.g.
 ## Quick Start
 
 ```bash
-junior init                                              # one-time interactive setup
-junior run                                               # your configured runbook: review the diff → stdout
-junior run --prompt "Find security issues"               # inline LLM instructions, repeatable
-junior run --runbook local_review "def f(uid): q(uid)"   # review pasted text — no git needed
-junior run --prompt-file my-rules.md                     # prompt from a .md file, repeatable
-junior run --runbook github_pr_review --publish         # review the GitHub PR + post comments
+junior init                                              # one-time interactive setup — sets your default runbook
+junior run                                               # run your configured runbook → stdout
 junior dry-run                                           # preview what would be reviewed (no AI)
+
+# Every run targets a runbook; --prompt / --prompt-file layer extra LLM instructions on top (repeatable):
+junior run --runbook local_review --prompt "Find security issues"
+junior run --runbook local_review --prompt-file my-rules.md
+junior run --runbook local_review "def f(uid): q(uid)"   # review pasted text — no git needed
+junior run --runbook github_pr_review --publish          # review the GitHub PR + post comments
 ```
 
 `local_review` reviews the local diff (raw JSON to stdout; `--publish` renders Markdown to stdout — redirect with `>` to save); the runbook is always chosen explicitly — `junior init` sets yours. To post, pick a platform runbook (`github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`) and add `--publish`. Split collect from review (handy across machines or for CI fan-out):
