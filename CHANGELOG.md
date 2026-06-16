@@ -30,6 +30,36 @@
   an unknown value fails fast in config validation. YAML only (set under `llm.claudecode`,
   not an env var). Tighten it (e.g. `plan`) when running on untrusted content outside a
   sandbox. `junior config show` lists it under `llm.claudecode` for the claudecode harness.
+- **Security: the code-review runbook no longer inlines `AGENT.md` / `AGENTS.md` /
+  `CLAUDE.md` into the system prompt.** Previously these files from the reviewed
+  branch's working tree were read verbatim into the prompt, letting a PR rewrite the
+  reviewer's own instructions (prompt poisoning). The runbook now reads no
+  project-instruction files at all; a harness that wants project memory reads it from
+  its own working directory (`claudecode` → `CLAUDE.md`, `codex` → `AGENTS.md`), while
+  the SDK harnesses (`pydantic`/`deepagents`) get none. Removed
+  `read_project_instructions` / `MAX_INSTRUCTIONS_CHARS`; `build_review_prompt` no
+  longer takes `project_dir`.
+- **New runbook setting `context.max_diff_chars`** (default `200000`; `0` = no cap). A
+  hard ceiling on the inlined diff size that applies to *every* harness. Previously
+  `INLINE_DIFF_MAX_CHARS` only gated the inline-vs-file-tools threshold for file-access
+  harnesses, while the SDK harnesses (`pydantic`/`deepagents`) inlined the full diff
+  unbounded — a cost/DoS hazard on a huge MR. Oversized diffs are truncated with a
+  marker; a negative value is rejected in config validation.
+- **Security: GitLab & Bitbucket warn when the access token would travel in
+  cleartext.** A non-HTTPS `ci_server_url` (GitLab) / `bitbucket_url` now logs a
+  warning in both the collect and publish paths (it does not hard-fail — local/intranet
+  HTTP keeps working). The scheme check is case-insensitive; the token is never logged.
+- **Prompt-file frontmatter parsing hardened.** `parse_prompt_file` treats `---` as
+  YAML frontmatter only when it's the leading delimiter of the file (parsed with
+  `yaml.safe_load`), so a `.md` prompt whose body contains `---` (a horizontal rule or
+  a YAML example) is no longer mis-parsed as metadata.
+- **`codex` no longer leaks a temp file when output-schema construction fails** — both
+  temp files are created inside the `try`, and `finally` unlinks whichever exist.
+- **`weather_advice` shows a real `0%` precipitation reading** instead of hiding it via
+  a truthiness check (`None` = no data is still hidden).
+- **Internal: the GitHub collector/publisher import `httpx` lazily** (inside the request
+  methods, matching the Bitbucket backend), keeping registry scans / `junior list`
+  cheap on a core install.
 
 ## 0.2.2 — 2026-06-15
 
