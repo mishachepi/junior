@@ -99,7 +99,11 @@ Claude `--output-format json` returns a JSON array of message objects:
 ```
 
 `_extract_output` finds the last `StructuredOutput` tool_use and validates its
-`input` dict into the requested `output_schema`.
+`input` dict into the requested `output_schema`. Newer CLI versions also embed
+the validated object directly on the result message as `structured_output`; when
+no tool_use is present, the harness falls back to that field — so both output
+shapes parse. If neither is found (claude ended on plain text — rate limit,
+refusal, out of turns), it raises with the cause and the last text.
 
 ## File access
 

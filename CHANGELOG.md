@@ -24,6 +24,10 @@
   turns), the error names the likely cause and quotes what claude said as text instead —
   visible at error level without `-v`. Running with `-v` also dumps the full raw
   response (`claude response parsed` debug log) for deeper troubleshooting.
+- **`claudecode` parses both structured-output shapes.** When the CLI returns no
+  `StructuredOutput` tool_use, the harness now falls back to the result message's
+  top-level `structured_output` field — so reviews keep parsing across CLI
+  output-format versions. The current shape is unaffected (the tool_use is tried first).
 - **System prompt unified to one channel.** Every runbook now declares a single-line
   `SYSTEM_PROMPT` role; the base `Runbook.system_prompt()` assembles it plus the user's
   `context.prompts` (`--prompt` / `--prompt-file`) through one shared helper

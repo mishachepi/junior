@@ -130,7 +130,8 @@ def _extract_output(messages: list[dict], output_schema: type[BaseModel]) -> Bas
     """Extract the validated output from the StructuredOutput tool_use.
 
     With --json-schema, claude returns data via a StructuredOutput tool call as
-    a dict in content[].input.
+    a dict in content[].input.  Newer versions of the CLI embed the validated
+    output directly in the result message's `structured_output` field instead.
     """
     for msg in reversed(messages):
         if msg.get("type") != "assistant":
@@ -138,6 +139,11 @@ def _extract_output(messages: list[dict], output_schema: type[BaseModel]) -> Bas
         for content in msg.get("message", {}).get("content", []):
             if content.get("type") == "tool_use" and content.get("name") == "StructuredOutput":
                 return output_schema.model_validate(content["input"])
+
+    # Newer CLI versions embed structured_output directly in the result message.
+    for msg in messages:
+        if msg.get("type") == "result" and isinstance(msg.get("structured_output"), dict):
+            return output_schema.model_validate(msg["structured_output"])
 
     # No structured tool call — claude ended on text (rate limit, refusal, or
     # ran out of turns). Match the other error paths: put the cause in the
