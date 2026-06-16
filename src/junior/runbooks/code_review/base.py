@@ -13,11 +13,9 @@ import structlog
 
 from junior.config import Settings
 from junior.runbooks.code_review.models import (
-    CollectedContext,
-    LLMReviewOutput,
-    Recommendation,
+    ReviewContext,
+    ReviewOutput,
     ReviewResult,
-    Severity,
     assemble_review_result,
 )
 from junior.runbook.base import Runbook, Usage
@@ -34,9 +32,9 @@ logger = structlog.get_logger()
 INLINE_DIFF_MAX_CHARS = 50_000
 
 
-class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
-    context_model = CollectedContext
-    result_model = LLMReviewOutput
+class CodeReviewRunbook(Runbook[ReviewContext, ReviewOutput]):
+    context_model = ReviewContext
+    result_model = ReviewOutput
     needs_git = True  # every code-review variant diffs a local git repo
     # Diff/collection settings every code-review variant honours.
     config_fields = ("source", "base_sha", "target_branch", "max_file_size", "max_diff_chars")
@@ -48,7 +46,7 @@ class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
 
     # --- shared domain logic (same for every platform) ---
 
-    def render(self, context: CollectedContext, settings: Settings, *, file_access: bool) -> str:
+    def render(self, context: ReviewContext, settings: Settings, *, file_access: bool) -> str:
         from junior.runbooks.code_review.render import build_user_message
 
         # SDK engines (pydantic/deepagents) always get the diff inlined.
@@ -72,20 +70,17 @@ class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
         head = merge_prompts(self.SYSTEM_PROMPT, list(settings.context.prompts))
         return build_review_prompt(head)
 
-    def is_blocking(self, result: LLMReviewOutput) -> bool:
-        critical = any(c.severity == Severity.CRITICAL for c in result.comments)
-        return critical or result.recommendation == Recommendation.REQUEST_CHANGES
+    def is_blocking(self, result: ReviewOutput) -> bool:
+        return result.has_blocking_issues
 
-    def is_empty(self, context: CollectedContext) -> bool:
+    def is_empty(self, context: ReviewContext) -> bool:
         return not context.full_diff
 
-    def summary(self, result: LLMReviewOutput) -> dict:
-        critical = sum(1 for c in result.comments if c.severity == Severity.CRITICAL)
-        high = sum(1 for c in result.comments if c.severity == Severity.HIGH)
+    def summary(self, result: ReviewOutput) -> dict:
         return {
             "findings": len(result.comments),
-            "critical": critical or None,
-            "high": high or None,
+            "critical": result.critical_count or None,
+            "high": result.high_count or None,
             "recommendation": result.recommendation.value,
         }
 
@@ -94,26 +89,21 @@ class CodeReviewRunbook(Runbook[CollectedContext, LLMReviewOutput]):
     def publish(
         self,
         settings: Settings,
-        result: LLMReviewOutput,
+        result: ReviewOutput,
         usage: Usage,
         *,
         errors: list[str],
     ) -> None:
         # Only runs with --publish. local_review renders the pretty Markdown
         # locally; github/gitlab post to the platform (see `_post_to_platform`).
-        review = assemble_review_result(
-            result,
-            tokens_used=usage.total_tokens,
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            review_errors=errors,
-        )
+        review = assemble_review_result(result, usage=usage, errors=errors)
         self._post_to_platform(settings, review)
 
     def publish_prepared(self, settings: Settings, markdown: str) -> None:
         """Post a pre-generated `.md` to the platform (for --publish-file)."""
         self._post_to_platform(
-            settings, ReviewResult(summary="pre-generated", pre_formatted=markdown)
+            settings,
+            ReviewResult(output=ReviewOutput(summary="pre-generated"), pre_formatted=markdown),
         )
 
     def validate(self, settings: Settings, *, publish_enabled: bool) -> list[str]:

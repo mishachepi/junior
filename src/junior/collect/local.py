@@ -6,9 +6,9 @@ from environment variables or CLI args only (no API calls).
 
 from junior.collect.core import collect_base
 from junior.config import Settings
-from junior.runbooks.code_review.models import CollectedContext
+from junior.runbooks.code_review.models import ReviewContext
 
 
-def collect(settings: Settings) -> CollectedContext:
+def collect(settings: Settings) -> ReviewContext:
     """Collect context locally without any platform API calls."""
     return collect_base(settings)

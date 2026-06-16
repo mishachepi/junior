@@ -2,7 +2,7 @@
 
 import pytest
 
-from junior.models import LLMReviewOutput
+from junior.runbooks.code_review.models import ReviewOutput
 
 
 def test_submit_tool_schema_and_capture():
@@ -16,13 +16,13 @@ def test_submit_tool_schema_and_capture():
 
     from junior.harnesses.deepagents import _make_submit_tool
 
-    tool, captured = _make_submit_tool(LLMReviewOutput)
+    tool, captured = _make_submit_tool(ReviewOutput)
 
     assert tool.name == "submit_review"
-    assert tool.args_schema is LLMReviewOutput
+    assert tool.args_schema is ReviewOutput
 
     tool.func(summary="looks good", recommendation="approve", comments=[])
 
     assert len(captured) == 1
-    assert isinstance(captured[0], LLMReviewOutput)
+    assert isinstance(captured[0], ReviewOutput)
     assert captured[0].recommendation == "approve"

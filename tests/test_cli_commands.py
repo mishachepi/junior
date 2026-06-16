@@ -12,11 +12,11 @@ from typer.testing import CliRunner
 
 from junior.cli import app
 from junior import __version__
-from junior.models import (
+from junior.runbooks.code_review.models import (
     ChangedFile,
-    CollectedContext,
     FileStatus,
     Recommendation,
+    ReviewContext,
 )
 
 
@@ -479,8 +479,8 @@ def _make_git_repo(path) -> None:
     (path / ".git").mkdir(exist_ok=True)
 
 
-def _fake_context() -> CollectedContext:
-    return CollectedContext(
+def _fake_context() -> ReviewContext:
+    return ReviewContext(
         mr_title="feat: add hello",
         source_branch="feature/hello",
         target_branch="main",
@@ -498,9 +498,9 @@ def _fake_context() -> CollectedContext:
 
 
 def _fake_llm_output():
-    from junior.models import LLMReviewOutput
+    from junior.runbooks.code_review.models import ReviewOutput
 
-    return LLMReviewOutput(
+    return ReviewOutput(
         summary="Looks clean.",
         recommendation=Recommendation.COMMENT,
         comments=[],
@@ -893,10 +893,15 @@ def test_run_blocking_review_returns_exit_code_1(monkeypatch, tmp_path):
     _make_git_repo(tmp_path)
     import junior.collect.local
     import junior.publish.local
-    from junior.models import LLMReviewOutput, ReviewComment, ReviewCategory, Severity
     from junior.runbook.base import LLMResult, Usage
+    from junior.runbooks.code_review.models import (
+        ReviewCategory,
+        ReviewComment,
+        ReviewOutput,
+        Severity,
+    )
 
-    blocking = LLMReviewOutput(
+    blocking = ReviewOutput(
         summary="Found a critical bug.",
         recommendation=Recommendation.REQUEST_CHANGES,
         comments=[
@@ -923,7 +928,7 @@ def test_run_no_changes_exits_cleanly(monkeypatch, tmp_path):
     import junior.collect.local
     import junior.publish.local
 
-    empty_ctx = CollectedContext(target_branch="main", full_diff="")
+    empty_ctx = ReviewContext(target_branch="main", full_diff="")
 
     def boom(**_kw):
         raise AssertionError("engine must not be called when diff is empty")
@@ -955,7 +960,7 @@ def test_dry_run_saves_context_without_review(monkeypatch, tmp_path):
 
     assert result.exit_code == 0, result.stdout + result.stderr
     assert out.exists()
-    saved = CollectedContext.model_validate_json(out.read_text())
+    saved = ReviewContext.model_validate_json(out.read_text())
     assert saved.mr_title == "feat: add hello"
     # the preview shows the plan + what the harness would receive
     assert "local_review" in result.stdout

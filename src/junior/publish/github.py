@@ -28,7 +28,7 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
 
     # Post inline comments as PR review (requires commit SHA)
     if settings.output.ci_commit_sha:
-        inline_comments = [c for c in result.comments if c.file_path and c.line_number]
+        inline_comments = [c for c in result.output.comments if c.file_path and c.line_number]
         if inline_comments:
             _post_review_comments(owner, repo, pr_number, token, inline_comments, settings)
     else:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from junior.config import Settings
-from junior.runbooks.code_review.models import CollectedContext, ReviewResult
+from junior.runbooks.code_review.models import ReviewContext, ReviewResult
 from junior.runbook.base import EnvVar
 from junior.runbook.registry import register_runbook
 from junior.runbooks.code_review.base import CodeReviewRunbook
@@ -22,7 +22,7 @@ class GitlabPrReview(CodeReviewRunbook):
         EnvVar("CI_COMMIT_SHA", False, "enables inline comments (auto in CI)"),
     )
 
-    def collect(self, settings: Settings) -> CollectedContext:
+    def collect(self, settings: Settings) -> ReviewContext:
         from junior.collect.gitlab import collect
 
         return collect(settings)

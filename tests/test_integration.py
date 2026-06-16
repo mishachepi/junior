@@ -9,13 +9,15 @@ from junior.config import (
     LLMSettings,
     Settings,
 )
-from junior.models import (
+from junior.runbook.base import Usage
+from junior.runbooks.code_review.models import (
     ChangedFile,
-    CollectedContext,
     FileStatus,
     Recommendation,
-    ReviewComment,
     ReviewCategory,
+    ReviewComment,
+    ReviewContext,
+    ReviewOutput,
     ReviewResult,
     Severity,
 )
@@ -26,8 +28,8 @@ from junior.models import (
 
 @pytest.fixture
 def sample_context():
-    """Minimal CollectedContext for integration testing."""
-    return CollectedContext(
+    """Minimal ReviewContext for integration testing."""
+    return ReviewContext(
         mr_title="feat: add greeting",
         mr_description="Adds a hello function",
         source_branch="feature/hello",
@@ -49,19 +51,21 @@ def sample_context():
 def sample_review_result():
     """Minimal ReviewResult from a mocked AI agent."""
     return ReviewResult(
-        summary="Code looks clean with one minor issue.",
-        recommendation=Recommendation.COMMENT,
-        comments=[
-            ReviewComment(
-                category=ReviewCategory.LOGIC,
-                severity=Severity.LOW,
-                message="Consider adding a docstring",
-                file_path="hello.py",
-                line_number=1,
-                suggestion="Add a docstring to the function.",
-            ),
-        ],
-        tokens_used=3000,
+        output=ReviewOutput(
+            summary="Code looks clean with one minor issue.",
+            recommendation=Recommendation.COMMENT,
+            comments=[
+                ReviewComment(
+                    category=ReviewCategory.LOGIC,
+                    severity=Severity.LOW,
+                    message="Consider adding a docstring",
+                    file_path="hello.py",
+                    line_number=1,
+                    suggestion="Add a docstring to the function.",
+                ),
+            ],
+        ),
+        usage=Usage(total_tokens=3000),
     )
 
 

@@ -12,19 +12,17 @@ from datetime import UTC, datetime
 import structlog
 
 from junior.bitbucket_api import headers as bitbucket_headers, pr_api_base
-from junior.collect.core import collect_base, enrich_with_metadata
+from junior.collect.core import collect_base, enrich_with_metadata, finalize_comments
 from junior.config import Settings
-from junior.runbooks.code_review.models import CollectedContext, MRComment
+from junior.runbooks.code_review.models import ReviewContext, MRComment
 
 logger = structlog.get_logger()
 
-# Cap on how many human comments we send to the LLM (newest first).
-MAX_COMMENTS = 50
 # Pagination cap for the activities feed (pages × 100 items).
 MAX_ACTIVITY_PAGES = 5
 
 
-def collect(settings: Settings) -> CollectedContext:
+def collect(settings: Settings) -> ReviewContext:
     """Collect context with Bitbucket DC PR metadata enrichment."""
     title, description, base_sha, comments = _fetch_bitbucket_metadata(settings)
     if base_sha and not settings.context.base_sha:
@@ -104,7 +102,7 @@ def _parse_bitbucket_comments(activities: list[dict]) -> list[MRComment]:
     """Flatten COMMENTED activities (incl. nested reply threads) into MRComments.
 
     Other activity types (APPROVED, MERGED, RESCOPED, ...) are filtered out.
-    Returns at most MAX_COMMENTS newest entries.
+    Returns at most MAX_COMMENTS newest entries (see `finalize_comments`).
     """
     parsed: list[MRComment] = []
     for activity in activities:
@@ -114,10 +112,7 @@ def _parse_bitbucket_comments(activities: list[dict]) -> list[MRComment]:
         anchor = activity.get("commentAnchor") or {}
         _collect_comment_thread(comment, anchor, parsed)
 
-    parsed.sort(key=lambda c: c.created_at)
-    if len(parsed) > MAX_COMMENTS:
-        parsed = parsed[-MAX_COMMENTS:]
-    return parsed
+    return finalize_comments(parsed)
 
 
 def _collect_comment_thread(comment: dict, anchor: dict, out: list[MRComment]) -> None:
