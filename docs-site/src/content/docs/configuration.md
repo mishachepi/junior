@@ -86,6 +86,8 @@ llm:
   anthropic_api_key: sk-ant-...                 # prefer env var — see warning below
   max_file_size: 100000                         # skip files larger than this (bytes)
   timeout: 600                                  # CLI harnesses: kill the subprocess after N seconds
+  claudecode:                                   # claudecode-only knobs (other harnesses ignore this)
+    permission_mode: bypassPermissions          # claude CLI --permission-mode (default bypassPermissions)
 output:
   output_file: review.md
   publish: false                                # true → post to the runbook's platform
@@ -223,6 +225,7 @@ A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). A
 
 - **`file_access`** — `claudecode`/`codex`/`pi` explore the repo with their own tools, so the runbook does **not** inline the full diff into the prompt. `pydantic`/`deepagents` get the diff inlined (they also have read-only file tools for extra exploration).
 - **Honored config fields** — every API harness reads `llm.model` and `llm.max_file_size`; only `pydantic` additionally honors `llm.max_tokens_per_agent` (response-token cap); the CLI harnesses (`claudecode`/`codex`/`pi`) honor `llm.timeout` (subprocess kill after N seconds, default 600 — lower it to fail fast on a stuck agent). `claudecode`/`codex` ignore `model` unless you set it explicitly (the CLI picks otherwise).
+- **claudecode-only knob** — `llm.claudecode.permission_mode` sets the `claude` CLI's `--permission-mode`. Allowed: `default`, `acceptEdits`, `plan`, `bypassPermissions` (default). Set in YAML (`llm.claudecode.permission_mode`), not an env var. See the [claudecode harness page](agent_backends/claudecode.md) for when to change it.
 - **No required env for the CLI harnesses** — `claudecode`/`codex` carry their own auth; `junior config env --harness pydantic` (or `deepagents`) lists the provider key. Setting both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` is fine — pass `--model anthropic:...` / `--model openai:...` to disambiguate.
 
 Per-harness deep dives: [Harnesses](agent_backends.md).

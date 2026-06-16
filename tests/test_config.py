@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from junior import config as config_module
 from junior.config import (
+    ClaudeCodeSettings,
     HarnessKind,
     ContextSettings,
     LogLevel,
@@ -163,6 +164,39 @@ class TestLLMSettings:
         # pi passes --model through verbatim (provider/id), so surface it as-is
         assert LLMSettings(harness=HarnessKind.PI, model="ollama/qwen3").display_model == "ollama/qwen3"
         assert LLMSettings(harness=HarnessKind.PI).display_model == ""
+
+
+# ---------------------------------------------------------------------------
+# ClaudeCodeSettings — claudecode-only knobs (llm.claudecode)
+# ---------------------------------------------------------------------------
+
+
+class TestClaudeCodeSettings:
+    def test_default_permission_mode(self):
+        assert ClaudeCodeSettings().permission_mode == "bypassPermissions"
+        # nested default is wired into LLMSettings
+        assert LLMSettings().claudecode.permission_mode == "bypassPermissions"
+
+    def test_valid_permission_mode_accepted(self):
+        assert ClaudeCodeSettings(permission_mode="acceptEdits").permission_mode == "acceptEdits"
+
+    def test_invalid_permission_mode_raises(self):
+        with pytest.raises(ValidationError, match="unknown permission_mode"):
+            ClaudeCodeSettings(permission_mode="yolo")
+
+    def test_nested_dict_via_llm_settings(self):
+        s = LLMSettings(claudecode={"permission_mode": "plan"})
+        assert s.claudecode.permission_mode == "plan"
+
+    def test_read_from_yaml_config(self, tmp_path, monkeypatch):
+        path = tmp_path / "config.yaml"
+        path.write_text(
+            yaml.safe_dump({"llm": {"claudecode": {"permission_mode": "acceptEdits"}}})
+        )
+        monkeypatch.setattr(config_module, "GLOBAL_CONFIG_CANDIDATES", (path,))
+        loaded = config_module.load_configs()
+        s = Settings(**loaded)
+        assert s.llm.claudecode.permission_mode == "acceptEdits"
 
 
 # ---------------------------------------------------------------------------

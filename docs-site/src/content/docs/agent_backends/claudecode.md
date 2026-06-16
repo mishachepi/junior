@@ -47,7 +47,7 @@ subprocess: claude -p   (cwd = settings.context.project_dir)
     │  --json-schema <output_schema JSON schema>
     │  --append-system-prompt <system_prompt>
     │  --tools "Read,Bash(git log/show/diff/blame),Grep,Glob"
-    │  --permission-mode bypassPermissions
+    │  --permission-mode <settings.llm.claudecode.permission_mode>  (default bypassPermissions)
     │  --no-session-persistence
     │  --bare (when settings.llm.anthropic_api_key is set)
     │  --model <settings.llm.model> (optional)
@@ -110,7 +110,26 @@ refusal, out of turns), it raises with the cause and the last text.
 `file_access = True` — Claude reads the repository itself, so the runbook needn't inline
 an oversized diff. The tools are read-only: `Read`, `Grep`, `Glob`, and
 `Bash(git log:*,git show:*,git diff:*,git blame:*)` — no write operations.
-`--permission-mode bypassPermissions` is required because the subprocess has no TTY.
+
+## Permission mode
+
+`--permission-mode` is set from `llm.claudecode.permission_mode` (YAML only — nested
+under the `llm` group):
+
+```yaml
+llm:
+  harness: claudecode
+  claudecode:
+    permission_mode: acceptEdits   # default | acceptEdits | plan | bypassPermissions
+```
+
+The default is **`bypassPermissions`**: the subprocess has no TTY, so the built-in
+tools can't surface an interactive approval prompt — bypassing lets the read-only
+tools above run unattended (junior is usually run in CI / a container, where that's
+acceptable). `bypassPermissions` is **unsafe on untrusted content outside a sandbox**
+— a malicious diff could try to steer the agent. When you run junior on untrusted
+input outside a container, tighten it (e.g. `plan` or `acceptEdits`). Any value the
+`claude` CLI rejects fails fast in config validation.
 
 ## Token Tracking
 

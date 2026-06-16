@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import os
 
+from pydantic_settings import BaseSettings
+
 from junior.cli.console import console, err_console, print_content
 from junior.config import (
     ContextSettings,
@@ -35,6 +37,7 @@ _HINTS = {
     "context_files": "extra files for the prompt (key: path)",
     "max_tokens_per_agent": "pydantic: cap response tokens (0 = none)",
     "timeout": "CLI harnesses (claudecode/codex/pi): kill the subprocess after N seconds",
+    "permission_mode": "claude CLI: default | acceptEdits | plan | bypassPermissions",
     "max_file_size": "skip files larger than this many bytes",
     "record": "run history / audit trail → .junior/output/{ts}.json (not the result itself)",
     "ci_server_url": "GitLab base URL",
@@ -134,7 +137,18 @@ def print_example_config(settings: Settings, *, config_source: str) -> None:
             continue
         lines.append("")
         lines.append(f"{group}:")
-        lines += [_line(field, getattr(obj, field), indent=2) for field in fields]
+        for field in fields:
+            value = getattr(obj, field)
+            # A nested settings sub-model (e.g. llm.claudecode) renders as its own
+            # indented block, so harness-specific knobs show as `claudecode.<field>`.
+            if isinstance(value, BaseSettings):
+                lines.append(f"  {field}:")
+                lines += [
+                    _line(sub, getattr(value, sub), indent=4)
+                    for sub in type(value).model_fields
+                ]
+            else:
+                lines.append(_line(field, value, indent=2))
     print_content("\n".join(lines))
 
 
