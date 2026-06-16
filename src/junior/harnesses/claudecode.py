@@ -84,6 +84,7 @@ class ClaudeCodeHarness(Harness):
             raise RuntimeError(f"claude CLI returned empty output: {(proc.stderr or '')[-500:]}")
 
         messages = _parse_messages(raw)
+        logger.debug("claude response parsed", messages=len(messages), raw=raw)
         result_msg = _find_result(messages)
         if result_msg.get("is_error"):
             raise RuntimeError(f"claude CLI error: {result_msg.get('result', 'unknown error')}")
@@ -138,7 +139,32 @@ def _extract_output(messages: list[dict], output_schema: type[BaseModel]) -> Bas
             if content.get("type") == "tool_use" and content.get("name") == "StructuredOutput":
                 return output_schema.model_validate(content["input"])
 
-    raise RuntimeError("No StructuredOutput found in claude response")
+    # No structured tool call — claude ended on text (rate limit, refusal, or
+    # ran out of turns). Match the other error paths: put the cause in the
+    # exception, so it shows without -v; the full response is in the
+    # "claude response parsed" debug log.
+    cause = "hit a rate limit; " if any(m.get("type") == "rate_limit_event" for m in messages) else ""
+    last_text = _last_assistant_text(messages)
+    detail = f" claude ended on text: {last_text[:300]}" if last_text else ""
+    raise RuntimeError(
+        f"No StructuredOutput in claude response ({cause}run with -v for the full output)."
+        f"{detail}"
+    )
+
+
+def _last_assistant_text(messages: list[dict]) -> str:
+    """Text of the last assistant message — what claude said instead of calling the tool."""
+    for msg in reversed(messages):
+        if msg.get("type") != "assistant":
+            continue
+        texts = [
+            c.get("text", "")
+            for c in msg.get("message", {}).get("content", [])
+            if c.get("type") == "text"
+        ]
+        if texts:
+            return " ".join(t for t in texts if t)
+    return ""
 
 
 def _extract_token_usage(result_msg: dict) -> tuple[int, int]:
