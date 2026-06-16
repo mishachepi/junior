@@ -46,7 +46,7 @@ def _fetch_bitbucket_metadata(
     import httpx
 
     out = settings.output
-    if out.bitbucket_url and not out.bitbucket_url.startswith("https://"):
+    if out.bitbucket_url and not out.bitbucket_url.lower().startswith("https://"):
         # Publishing hard-fails on non-HTTPS (_publish_requirements); collect
         # only warns so read-only runs against an intranet instance still work.
         logger.warning(

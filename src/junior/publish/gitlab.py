@@ -14,7 +14,7 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
     import gitlab
 
     out = settings.output
-    if out.gitlab_token and not out.ci_server_url.startswith("https://"):
+    if out.gitlab_token and not out.ci_server_url.lower().startswith("https://"):
         # Warn but keep going — local/intranet HTTP instances stay usable.
         logger.warning(
             "CI_SERVER_URL is not HTTPS — the private token is sent in cleartext",

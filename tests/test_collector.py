@@ -214,6 +214,17 @@ def test_collect_no_warning_on_https():
     assert not _warned_cleartext(logs)
 
 
+def test_collect_no_warning_on_uppercase_https_scheme():
+    from structlog.testing import capture_logs
+
+    from junior.collect.gitlab import _fetch_gitlab_metadata
+
+    # URI schemes are case-insensitive (RFC 3986) — HTTPS is still encrypted.
+    with capture_logs() as logs:
+        _fetch_gitlab_metadata(_gitlab_settings("HTTPS://gitlab.com", "secret"))
+    assert not _warned_cleartext(logs)
+
+
 def test_collect_no_warning_when_token_empty():
     from structlog.testing import capture_logs
 
