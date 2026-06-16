@@ -90,13 +90,16 @@ class CodexHarness(Harness):
 
         logger.debug("invoking codex CLI", schema=output_schema.__name__, prompt_size=len(prompt))
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as schema_f:
-            json.dump(_build_output_schema(output_schema), schema_f)
-            schema_path = schema_f.name
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as output_f:
-            output_path = output_f.name
-
+        schema_path = output_path = None
         try:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as schema_f:
+                # Capture the path before json.dump so a failing schema build
+                # (e.g. missing `openai`) still gets cleaned up in `finally`.
+                schema_path = schema_f.name
+                json.dump(_build_output_schema(output_schema), schema_f)
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as output_f:
+                output_path = output_f.name
+
             cmd = [
                 "codex", "exec",
                 "--output-schema", schema_path,
@@ -142,8 +145,10 @@ class CodexHarness(Harness):
             total = _parse_token_usage(result.stderr)
             return LLMResult(output=output, usage=Usage(total_tokens=total))
         finally:
-            os.unlink(schema_path)
-            os.unlink(output_path)
+            if schema_path:
+                os.unlink(schema_path)
+            if output_path:
+                os.unlink(output_path)
 
 
 HARNESS = CodexHarness()

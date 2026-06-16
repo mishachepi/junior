@@ -4,7 +4,6 @@ Uses shared runbook (git diff + project detection),
 then fetches PR description, labels, and comments (issue + inline review) from GitHub REST API.
 """
 
-import httpx
 import structlog
 
 from junior.collect.core import collect_base, enrich_with_metadata
@@ -29,6 +28,8 @@ def _fetch_github_metadata(
     settings: Settings,
 ) -> tuple[str, list[str], list[MRComment]]:
     """Fetch PR description, labels, and discussion comments from GitHub API."""
+    import httpx
+
     try:
         owner, repo = settings.output.github_repository.split("/", 1)
         pr_number = settings.output.github_event_number

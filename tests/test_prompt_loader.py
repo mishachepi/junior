@@ -73,3 +73,36 @@ def test_parse_prompt_file_without_frontmatter():
     assert prompt.name == f.name.split("/")[-1].replace(".md", "")
     assert prompt.body == "Just a plain prompt body"
     assert prompt.description == ""
+
+
+def test_parse_prompt_file_horizontal_rule_in_body_is_not_frontmatter(tmp_path):
+    # A `---` used as a horizontal rule (or YAML example) mid-body must not be
+    # mistaken for frontmatter — the whole text stays in body.
+    f = tmp_path / "rule.md"
+    f.write_text("Review this PR.\n\n---\n\nExtra section below the rule.\n")
+    prompt = parse_prompt_file(f)
+
+    assert prompt.name == "rule"
+    assert prompt.description == ""
+    assert prompt.body == "Review this PR.\n\n---\n\nExtra section below the rule."
+
+
+def test_parse_prompt_file_yaml_frontmatter(tmp_path):
+    f = tmp_path / "fm.md"
+    f.write_text("---\nname: my_prompt\ndescription: Some desc\n---\nBody text here\n")
+    prompt = parse_prompt_file(f)
+
+    assert prompt.name == "my_prompt"
+    assert prompt.description == "Some desc"
+    assert prompt.body == "Body text here"
+
+
+def test_parse_prompt_file_delimiter_not_at_start(tmp_path):
+    # `---` only counts as frontmatter when it opens the file (Jekyll convention).
+    f = tmp_path / "late.md"
+    f.write_text("Intro line\n---\nname: ignored\n---\nrest\n")
+    prompt = parse_prompt_file(f)
+
+    assert prompt.name == "late"
+    assert prompt.description == ""
+    assert prompt.body == "Intro line\n---\nname: ignored\n---\nrest"

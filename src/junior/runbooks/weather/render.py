@@ -20,7 +20,7 @@ def build_user_message(context: WeatherContext, extra_context: dict[str, str]) -
     ]
     for h in context.hourly:
         feels = f" (feels {h.feels_like_c:.0f}°)" if h.feels_like_c is not None else ""
-        prob = f", {h.precipitation_prob}% precip" if h.precipitation_prob else ""
+        prob = f", {h.precipitation_prob}% precip" if h.precipitation_prob is not None else ""
         rain = f", {h.precipitation_mm:.1f}mm" if h.precipitation_mm else ""
         lines.append(
             f"  {h.time}  {h.temp_c:>4.0f}°C{feels}  {h.description}"
