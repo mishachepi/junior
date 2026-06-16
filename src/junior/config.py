@@ -198,8 +198,12 @@ class ClaudeCodeSettings(BaseSettings):
     @field_validator("permission_mode", mode="before")
     @classmethod
     def validate_permission_mode(cls, v: Any) -> Any:
-        """Mirror `harness_by_name`: a human error instead of a bare enum dump."""
-        if isinstance(v, str) and v and v not in _CLAUDECODE_PERMISSION_MODES:
+        """Mirror `harness_by_name`: a human error instead of a bare enum dump.
+
+        Note `""` is rejected too (a config typo should fail as a config error,
+        not slip through to `claude --permission-mode ""` failing at runtime).
+        """
+        if isinstance(v, str) and v not in _CLAUDECODE_PERMISSION_MODES:
             known = ", ".join(_CLAUDECODE_PERMISSION_MODES)
             raise ValueError(f"unknown permission_mode '{v}'. Known: {known}")
         return v

@@ -184,6 +184,12 @@ class TestClaudeCodeSettings:
         with pytest.raises(ValidationError, match="unknown permission_mode"):
             ClaudeCodeSettings(permission_mode="yolo")
 
+    def test_empty_permission_mode_rejected(self):
+        # A config typo (`permission_mode: ""`) must fail as a config error here,
+        # not slip through to `claude --permission-mode ""` failing at runtime.
+        with pytest.raises(ValidationError, match="unknown permission_mode"):
+            ClaudeCodeSettings(permission_mode="")
+
     def test_nested_dict_via_llm_settings(self):
         s = LLMSettings(claudecode={"permission_mode": "plan"})
         assert s.claudecode.permission_mode == "plan"
@@ -197,6 +203,26 @@ class TestClaudeCodeSettings:
         loaded = config_module.load_configs()
         s = Settings(**loaded)
         assert s.llm.claudecode.permission_mode == "acceptEdits"
+
+    def test_construction_survives_claudecode_env_var(self, monkeypatch):
+        # The Claude Code runtime sets `CLAUDECODE=1`; the field name collides with
+        # it. Construction must not blow up and must keep the default.
+        monkeypatch.setenv("CLAUDECODE", "1")
+        assert LLMSettings().claudecode.permission_mode == "bypassPermissions"
+        assert Settings().llm.claudecode.permission_mode == "bypassPermissions"
+
+    def test_yaml_config_survives_claudecode_env_collision(self, tmp_path, monkeypatch):
+        # `CLAUDECODE=1` must not make `_drop_env_shadowed` discard the nested
+        # `llm.claudecode` block from the file config.
+        monkeypatch.setenv("CLAUDECODE", "1")
+        path = tmp_path / "config.yaml"
+        path.write_text(
+            yaml.safe_dump({"llm": {"claudecode": {"permission_mode": "plan"}}})
+        )
+        monkeypatch.setattr(config_module, "GLOBAL_CONFIG_CANDIDATES", (path,))
+        loaded = config_module.load_configs()
+        assert loaded["llm"]["claudecode"] == {"permission_mode": "plan"}
+        assert Settings(**loaded).llm.claudecode.permission_mode == "plan"
 
 
 # ---------------------------------------------------------------------------
