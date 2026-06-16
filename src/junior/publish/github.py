@@ -1,7 +1,8 @@
 """GitHub API integration: post review results to PR.
 
-Uses the GitHub REST API via httpx — a hard dependency (declared in
-pyproject); no fallback path.
+Uses the GitHub REST API via httpx — the optional `github` extra, imported
+lazily inside the posting methods to keep the core install / registry scans
+cheap (matching the bitbucket backend).
 """
 
 import structlog
