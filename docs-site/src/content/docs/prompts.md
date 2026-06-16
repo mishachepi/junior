@@ -22,7 +22,7 @@ environment variables or tokens.
 
   role  (SYSTEM_PROMPT)               ┐
   built-in review rules               ├─────►  SYSTEM PROMPT    how to do the job
-  AGENT.md / AGENTS.md / CLAUDE.md    ┘            ▲
+                                      ┘            ▲
                                          you add: --prompt / --prompt-file
 
   e.g.  git diff  +  changed files    ┐
@@ -53,15 +53,16 @@ recommendations to the model, not hard rules):
    the config, or env `PROMPTS` — appended right after the role.
 3. **Review rules** — the built-in `BASE_RULES`: focus on the diff, the severity scale,
    when to use `request_changes`.
-4. **Project instructions** — the first of `AGENT.md` / `AGENTS.md` / `CLAUDE.md` found at
-   the repo root, inlined verbatim (up to 30 000 chars, then truncated with a warning).
+
+That's all. The runbook does **not** read `AGENT.md` / `AGENTS.md` / `CLAUDE.md` into the
+system prompt — those files live in the reviewed branch's working tree, which the diff's
+author controls, so inlining them would let a PR rewrite the reviewer's instructions. A
+harness that wants project memory reads it itself from its own working directory
+(`claudecode` → `CLAUDE.md`, `codex` → `AGENTS.md`); the SDK harnesses
+(`pydantic`/`deepagents`/`pi`) don't. See [Security](prompt_injection.md).
 
 > A YAML or [custom runbook](adding_runbooks.md)'s system prompt is just its own
-> `SYSTEM_PROMPT` plus your `context.prompts` — no review rules, no project file. You own it.
-
-> [!NOTE]
-> Project instructions are read from the **working tree**, not the target branch — a
-> malicious PR can change them. See [Security](prompt_injection.md).
+> `SYSTEM_PROMPT` plus your `context.prompts` — no review rules. You own it.
 
 ## What's in the User Message
 
@@ -76,7 +77,10 @@ The **collect** step builds it. For code review, in order:
    instructions written inside them ([Security](prompt_injection.md)).
 5. **Changed files** — the list with status (added / modified / deleted).
 6. **The diff** — the full unified diff, inlined while ≤ 50 000 chars. Above that,
-   `file_access` harnesses read the changed files with their own tools instead.
+   `file_access` harnesses (claudecode/codex) read the changed files with their own tools
+   instead; the SDK harnesses still get it inlined. Either way the inlined diff is
+   hard-capped at `context.max_diff_chars` (default 200 000, `0` = no cap) and truncated
+   with a marker beyond that — a cost/DoS guard that applies to **every** harness.
 
 **Not** sent: whole file contents (a harness may read them itself), unchanged files, git
 history beyond the diff, environment variables or tokens.
@@ -94,8 +98,8 @@ Three sources, and they **stack** (CLI flags *append* to config):
 | File | `--prompt-file ./rules/security.md` (repeatable) — sugar for `--prompt file://<abs>` |
 | Config | `context.prompts:` — a list; each entry is inline text or a `file://…` URI |
 
-Leaving it empty is fine: the model still gets the role, the rules, the diff, the
-metadata, and your project instructions.
+Leaving it empty is fine: the model still gets the role, the rules, the diff, and the
+metadata.
 
 **`file://` in a config file:** a *relative* URI (`file://./prompts/x.md`) resolves against
 **the config file's own directory** — so presets in `.junior/*.yaml` can each reference
@@ -117,7 +121,7 @@ context:
 
 ```bash
 junior run --runbook local_review --prompt "And the new caching layer"
-# System Prompt = role + security.md + the config line + this CLI line + rules + CLAUDE.md
+# System Prompt = role + security.md + the config line + this CLI line + rules
 ```
 
 The named facts you'd pass with `--context` / `--context-file` have config equivalents too
