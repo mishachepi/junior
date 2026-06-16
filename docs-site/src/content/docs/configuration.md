@@ -80,6 +80,7 @@ context:
     - "Also flag any new TODO comments"         # inline text is fine too
   context_files:
     spec: SPEC.md
+  max_diff_chars: 200000                        # hard cap on inlined diff chars (0 = no limit)
 llm:
   harness: pydantic                             # the harness: claudecode (default), pydantic, codex, deepagents
   model: anthropic:claude-opus-4-6
@@ -240,7 +241,7 @@ A **runbook** runs collect → render → LLM → publish, and the platform (loc
 | `weather_advice` (example) | live weather (no git) | ❌ | prints a Rich terminal panel | — | — |
 
 - **`needs_git`** — gates the preflight `.git` check. Code-review runbooks require a repo; `weather_advice` (and most local runbooks) run in any directory.
-- **Honored config fields** — the code-review runbooks read `context.source`, `context.base_sha`, `context.target_branch`, and `llm.max_file_size`; `gitlab_pr_review` additionally reads `output.ci_server_url`, and `bitbucket_pr_review` reads `output.bitbucket_url`. `weather_advice` declares none.
+- **Honored config fields** — the code-review runbooks read `context.source`, `context.base_sha`, `context.target_branch`, `context.max_diff_chars` (hard cap on the inlined diff, default 200 000, `0` = no limit — applies to every harness), and `llm.max_file_size`; `gitlab_pr_review` additionally reads `output.ci_server_url`, and `bitbucket_pr_review` reads `output.bitbucket_url`. `weather_advice` declares none.
 - **Required env applies only when `--publish` is set** — without it, every runbook emits its raw output to stdout/`-o` and needs no token. Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner; `junior config env --runbook X` lists exactly what your combination needs.
 - Beyond these you can run an external runbook by import path (`--runbook pkg.module:ClassName`) or a repo-local one from `.junior/runbooks/` (opt-in `local_runbooks`). See [Adding a runbook](adding_runbooks.md).
 

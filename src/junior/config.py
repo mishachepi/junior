@@ -136,6 +136,10 @@ class ContextSettings(BaseSettings):
     )
     source: SourceMode = SourceMode.AUTO
     base_sha: str | None = None
+    # Hard cap on the inlined diff size (chars) sent to the LLM, across every
+    # harness — a runaway MR is truncated with a marker instead of billing for
+    # millions of tokens. 0 = no limit.
+    max_diff_chars: int = 200_000
     target_branch: str = Field(
         default="main",
         validation_alias=AliasChoices(

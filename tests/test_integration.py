@@ -191,6 +191,31 @@ class TestFullRunbook:
         sdk_msg = LocalReview().render(big, Settings(), file_access=False)
         assert "### Diff" in sdk_msg
 
+    def test_render_caps_inlined_diff_at_max_diff_chars(self, sample_context):
+        """`max_diff_chars` hard-caps the inlined diff for every harness — a
+        runaway MR is truncated with a marker instead of billing for it."""
+        from junior.config import ContextSettings
+        from junior.runbooks.code_review.local import LocalReview
+
+        cap = 1_000
+        big = sample_context.model_copy(update={"full_diff": "+x\n" * 5_000})
+        settings = Settings(context=ContextSettings(max_diff_chars=cap))
+
+        # SDK engine (no file access) always inlines — the cap must still apply.
+        msg = LocalReview().render(big, settings, file_access=False)
+        assert "[...truncated by junior" in msg
+        diff_body = msg.split("```diff\n", 1)[1].split("\n```", 1)[0]
+        assert len(diff_body) <= cap + len(
+            f"\n\n[...truncated by junior — diff exceeds {cap} chars]"
+        )
+
+        # 0 = no cap: the full diff is inlined verbatim.
+        uncapped = LocalReview().render(
+            big, Settings(context=ContextSettings(max_diff_chars=0)), file_access=False
+        )
+        assert "[...truncated by junior" not in uncapped
+        assert big.full_diff in uncapped
+
 
 class TestPreflight:
     """Generic (runbook-agnostic) validation. Publish checks live in runbooks."""

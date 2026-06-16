@@ -7,14 +7,33 @@ from junior.runbooks.code_review.models import CollectedContext
 logger = structlog.get_logger()
 
 
-def build_user_message(context: CollectedContext, *, include_diff: bool = True) -> str:
+def build_user_message(
+    context: CollectedContext, *, include_diff: bool = True, max_diff_chars: int = 0
+) -> str:
     """Build user message with full MR context for AI agents.
 
     Used by all backends (pydantic, deepagents, codex).
     When include_diff=False (codex), omits the full diff and adds
     file-tool instructions instead — codex reads files via sandbox.
+    When inlined, the diff is hard-capped at `max_diff_chars` (0 = no cap)
+    so a runaway MR can't blow the token budget.
     """
     parts: list[str] = []
+
+    # Hard cap on the inlined diff (cost/DoS guard) — applied before inlining,
+    # the single place the diff is truncated. Distinct from the include_diff
+    # decision (whether to inline at all), already made by the caller.
+    diff_text = context.full_diff
+    if include_diff and max_diff_chars and len(diff_text) > max_diff_chars:
+        logger.warning(
+            "diff truncated before inlining",
+            original_chars=len(diff_text),
+            truncated_chars=max_diff_chars,
+        )
+        diff_text = (
+            diff_text[:max_diff_chars]
+            + f"\n\n[...truncated by junior — diff exceeds {max_diff_chars} chars]"
+        )
 
     # Track raw payload sizes per category (excludes markdown wrappers).
     extra_context_chars = sum(len(v) for v in context.extra_context.values())
@@ -27,7 +46,7 @@ def build_user_message(context: CollectedContext, *, include_diff: bool = True) 
         + len(context.target_branch)
         + sum(len(lbl) for lbl in context.labels)
     )
-    diff_chars = len(context.full_diff) if include_diff else 0
+    diff_chars = len(diff_text) if include_diff else 0
 
     if context.mr_title:
         parts.append(f"## Merge Request: {context.mr_title}")
@@ -100,7 +119,7 @@ def build_user_message(context: CollectedContext, *, include_diff: bool = True) 
     if include_diff:
         parts.append("### Diff")
         parts.append("```diff")
-        parts.append(context.full_diff)
+        parts.append(diff_text)
         parts.append("```")
     else:
         parts.append(f"**Total diff size:** {len(context.full_diff)} chars across {len(context.changed_files)} files")
