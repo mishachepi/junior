@@ -1,0 +1,10 @@
+# Dogfooding: Junior reviews its own diff.
+#   junior dry-run          → preview exactly what the AI would see (no call)
+#   junior run              → structured JSON verdict to stdout
+#   junior run --publish    → render the review as Markdown (redirect with > to save)
+runbook: local_review
+harness: claudecode
+
+context:
+  prompts:
+    - file://./.junior/prompts/review.md

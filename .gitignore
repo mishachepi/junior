@@ -211,15 +211,17 @@ __marimo__/
 junior.db
 logs/
 temp/
-.junior/
 tmp/
 
 /.claude/settings.local.json
 site/
 
-# Local Junior run artifacts
-/.junior.yaml
+# Local Junior run artifacts. The .junior/ tree holds run records & local
+# runbooks; keep the dogfooding config + review prompts tracked, ignore the rest.
 /.junior.yml
 /ctx.json
 /context.json
-.junior/
+.junior/*
+!.junior/prompts/
+.junior/prompts/*
+!.junior/prompts/*.md
