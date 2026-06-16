@@ -31,7 +31,7 @@ junior run --runbook bitbucket_pr_review --publish # Bitbucket DC PR
 
 ## Why did the review find nothing?
 
-- Junior ships no *task* prompts — you pass them via `--prompt`, `--prompt-file`, or config. With none, the LLM sees the diff, the built-in reviewer role + base rules, and `AGENT.md`/`CLAUDE.md` only (see [the default review prompt](#whats-in-the-default-review-prompt)).
+- Junior ships no *task* prompts — you pass them via `--prompt`, `--prompt-file`, or config. With none, the LLM sees the diff plus the built-in reviewer role and base rules (see [the default review prompt](#whats-in-the-default-review-prompt)).
 - Use `junior dry-run` to verify the diff isn't empty.
 - Be specific: `--prompt "Find security vulnerabilities"` beats vague asks.
 - Smaller models miss more — try a larger model with `--model`.
@@ -62,7 +62,7 @@ In GitLab CI these are auto-provided. In GitHub Actions, `GITHUB_EVENT_NUMBER` m
 The system prompt is just whatever a runbook's `system_prompt()` returns — it can be
 absolutely anything. What follows is only the **built-in code-review default**; it's a
 set of recommendations to the model, not a framework rule. Even with no `--prompt`, the
-code-review runbooks build their system prompt from three parts:
+code-review runbooks build their system prompt from two parts:
 
 1. **Role** — the runbook's one-line `SYSTEM_PROMPT` (a senior-code-reviewer line in
    `code_review/base.py`): review the diff in the context of the surrounding codebase,
@@ -70,14 +70,17 @@ code-review runbooks build their system prompt from three parts:
 2. **`BASE_RULES`** — review rules (report only confident issues, focus on the changed
    code, when to `request_changes` vs `approve`) and the **severity definitions**
    (critical / high / medium / low). Lives in `code_review/instructions.py`.
-3. **Project instructions** — the first of `AGENT.md` → `AGENTS.md` → `CLAUDE.md` found
-   at the repo root, inlined verbatim (truncated past 30k chars).
+
+The runbook does **not** read `AGENT.md` / `AGENTS.md` / `CLAUDE.md` into the prompt —
+those live in the reviewed branch's working tree (the diff's author controls them). A
+harness that wants project memory reads it itself from its own working directory
+(`claudecode` → `CLAUDE.md`, `codex` → `AGENTS.md`); see [Security](prompt_injection.md).
 
 **Your prompts are added, not substituted.** `--prompt` / `--prompt-file` / `context.prompts`
 are inserted between the role and the rules, so the assembled prompt is:
 
 ```
-SYSTEM_PROMPT (role)  →  your prompts  →  BASE_RULES  →  project instructions
+SYSTEM_PROMPT (role)  →  your prompts  →  BASE_RULES
 ```
 
 For the built-in code-review runbooks, the role and `BASE_RULES` are baked in (change them

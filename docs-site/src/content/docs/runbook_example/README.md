@@ -120,15 +120,17 @@ one system prompt by concatenating these parts, blank-line separated
 
 1. the runbook's `SYSTEM_PROMPT` role, plus the user's prompt bodies
    (`--prompt` / `--prompt-file`) — here `security.md`, `logic.md`, `design.md`;
-2. the shared `BASE_RULES`;
-3. project instructions, if present — the first of `AGENT.md` / `AGENTS.md` /
-   `CLAUDE.md` under a `## Project-Specific Instructions` header.
+2. the shared `BASE_RULES`.
+
+The runbook does not inline `AGENT.md` / `AGENTS.md` / `CLAUDE.md` — a harness that
+wants project memory reads it itself from its working directory (`claudecode` →
+`CLAUDE.md`, `codex` → `AGENTS.md`).
 
 There is no per-prompt fan-out: every body lands in the **same** system prompt,
 and the pydantic harness makes **one** structured call.
 
 ```
-[ SYSTEM_PROMPT + security + logic + design ] + BASE_RULES + [project instructions]
+[ SYSTEM_PROMPT + security + logic + design ] + BASE_RULES
                               │
               one system prompt  ✕  one user message (Phase 2)
                               │
