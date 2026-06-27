@@ -398,10 +398,10 @@ class Settings(BaseSettings):
     # implicit default. Empty → `junior run`/`dry-run` exit 2 with a hint.
     runbook: str = ""
     log_level: LogLevel = LogLevel.INFO
-    # Opt-in: load repo-local runbooks from <project>/.junior/runbooks/ (each a
-    # folder or .py exposing a @register_runbook class). OFF by default because
-    # it executes code shipped in the repository — see docs-site/src/content/docs/prompt_injection.md.
-    local_runbooks: bool = False
+    # Load repo-local runbooks from <project>/.junior/runbooks/ (each a folder or
+    # .py exposing a @register_runbook class). On by default; set to false to skip
+    # discovering them (they execute code shipped in the repository).
+    local_runbooks: bool = True
 
     @field_validator("log_level", mode="before")
     @classmethod

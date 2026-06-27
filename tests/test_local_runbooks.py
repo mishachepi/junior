@@ -66,21 +66,25 @@ def test_load_local_runbook_single_file(tmp_path):
     assert "lp_single" in loaded
 
 
-def test_local_runbooks_require_opt_in(tmp_path):
-    _make_local(tmp_path, "lp_gate")
+def test_local_runbooks_loaded_by_default(tmp_path):
+    _make_local(tmp_path, "lp_default")
 
-    # OFF: the local runbook is invisible → unknown runbook → non-zero exit.
-    off = tmp_path / "off.yaml"
-    off.write_text("runbook: lp_gate\n")
-    r_off = runner.invoke(app, ["--config", str(off), "dry-run", "--project-dir", str(tmp_path)])
-    assert r_off.exit_code != 0
+    # Default: local runbooks load with no flag — dry-run works (no .git → needs_git=False).
+    cfg = tmp_path / "on.yaml"
+    cfg.write_text("runbook: lp_default\n")
+    r = runner.invoke(app, ["--config", str(cfg), "dry-run", "--project-dir", str(tmp_path)])
+    assert r.exit_code == 0, r.stdout + r.stderr
+    assert "lp_default" in r.stdout
 
-    # ON: it loads and dry-run works — note no .git in tmp_path (needs_git=False).
-    on = tmp_path / "on.yaml"
-    on.write_text("local_runbooks: true\nrunbook: lp_gate\n")
-    r_on = runner.invoke(app, ["--config", str(on), "dry-run", "--project-dir", str(tmp_path)])
-    assert r_on.exit_code == 0, r_on.stdout + r_on.stderr
-    assert "lp_gate" in r_on.stdout
+
+def test_local_runbooks_skipped_when_false(tmp_path):
+    _make_local(tmp_path, "lp_skip")  # distinct name so the registry isn't pre-populated
+
+    # local_runbooks: false skips discovery → unknown runbook → non-zero exit.
+    cfg = tmp_path / "off.yaml"
+    cfg.write_text("local_runbooks: false\nrunbook: lp_skip\n")
+    r = runner.invoke(app, ["--config", str(cfg), "dry-run", "--project-dir", str(tmp_path)])
+    assert r.exit_code != 0
 
 
 def test_needs_git_flag():

@@ -27,7 +27,7 @@ Junior settings split into three mutually-independent groups, plus a couple of t
 
 In a config file the three groups are nested explicitly under `context:` / `llm:` / `output:`, with `runbook:`, `log_level:` and `local_runbooks:` at the top level. In env vars they are flat — the *names* are the field names uppercased (`HARNESS`, `MODEL`, `SOURCE`, `PUBLISH`, `RUNBOOK`, `LOCAL_RUNBOOKS`, …) plus industry-standard aliases (`GITLAB_TOKEN`, `CI_*`, `GITHUB_*`, `ANTHROPIC_API_KEY`) and not prefixed with the group.
 
-> **`local_runbooks`** (top-level, default `false`). Opt-in: load runbooks from `<project>/.junior/runbooks/` (see [adding runbooks](adding_runbooks.md#4-repo-local-in-juniorrunbooks)). It executes Python shipped in the repo, so enable it only in repos you trust.
+> **`local_runbooks`** (top-level, default `true`). Load runbooks from `<project>/.junior/runbooks/` (see [adding runbooks](adding_runbooks.md#4-repo-local-in-juniorrunbooks)). It executes Python shipped in the repo; set `false` to skip it for repos you don't trust.
 
 > [!NOTE]
 > **Deprecated alias:** `--backend` / env `BACKEND` and the config key `backend` are accepted as a deprecated alias for `harness` (kept for one version). Prefer `harness` / `HARNESS` / `--harness`.
@@ -252,7 +252,7 @@ A **runbook** runs collect → render → LLM → publish, and the platform (loc
 - **`needs_git`** — gates the preflight `.git` check. Code-review runbooks require a repo; `weather_advice` (and most local runbooks) run in any directory.
 - **Honored config fields** — the code-review runbooks read `context.source`, `context.base_sha`, `context.target_branch`, `context.max_diff_chars` (hard cap on the inlined diff, default 200 000, `0` = no limit — applies to every harness), and `llm.max_file_size`; `gitlab_pr_review` additionally reads `output.ci_server_url`, and `bitbucket_pr_review` reads `output.bitbucket_url`. `weather_advice` declares none.
 - **Required env applies only when `--publish` is set** — without it, every runbook emits its raw output to stdout/`-o` and needs no token. Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner; `junior config env --runbook X` lists exactly what your combination needs.
-- Beyond these you can run an external runbook by import path (`--runbook pkg.module:ClassName`) or a repo-local one from `.junior/runbooks/` (opt-in `local_runbooks`). See [Adding a runbook](adding_runbooks.md).
+- Beyond these you can run an external runbook by import path (`--runbook pkg.module:ClassName`) or a repo-local one from `.junior/runbooks/` (`local_runbooks`). See [Adding a runbook](adding_runbooks.md).
 
 > [!NOTE]
 > Setting both `GITLAB_TOKEN` and `GITHUB_TOKEN` is no longer an error — the runbook you select decides which one is used.

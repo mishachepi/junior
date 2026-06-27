@@ -33,10 +33,7 @@ Your scripts also get `JUNIOR_PROJECT_DIR` and one `JUNIOR_CONTEXT_<KEY>` per
 mkdir -p .junior/runbooks
 cp -r path/to/this/weather .junior/runbooks/weather
 
-# 2. Opt in (it executes the scripts above, so it's off by default):
-echo "local_runbooks: true" >> .junior.yaml
-
-# 3. Run it
+# 2. Run it (Junior executes the scripts above — set local_runbooks: false to skip)
 junior config list                                  # weather-advice now appears
 junior dry-run --runbook weather-advice            # preview: runs collect, no AI call
 junior run --runbook weather-advice                # raw result JSON → stdout

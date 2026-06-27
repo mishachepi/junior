@@ -142,23 +142,22 @@ Each must expose a `@register_runbook` class (exactly like a built-in). The runb
 is added to `sys.path`, so a folder runbook can split its `collect` / `render` / `publish`
 across sibling modules and lazy-import them.
 
-This is **opt-in** — it executes code shipped in the repo, so it's off by default:
+Junior discovers these automatically:
 
 ```yaml
 # .junior.yaml
-local_runbooks: true
 runbook: weather
 ```
 
 ```bash
 junior run            # loads .junior/runbooks/, runs `weather`
-junior config list    # opt-in local runbooks appear here too
+junior config list    # local runbooks appear here too
 ```
 
 > [!WARNING]
-> `local_runbooks: true` runs Python from the repository. Only enable it in repos you
-> trust — the same trust model as a `Makefile` or a git hook. See
-> [prompt_injection.md](prompt_injection.md).
+> Loading `.junior/runbooks/` runs Python from the repository — the same trust model as a
+> `Makefile` or a git hook. Set `local_runbooks: false` to skip it for repos you don't
+> trust. See [prompt_injection.md](prompt_injection.md).
 
 > [!TIP]
 > Set `needs_git = False` on a runbook that doesn't diff a git repo (the default for the
@@ -194,7 +193,7 @@ needs_git: false
 
 Junior turns `schema.json` into the harness's output schema, runs `collect` → harness →
 `publish`, and exposes `JUNIOR_PROJECT_DIR` + `JUNIOR_CONTEXT_<KEY>` (from `--context
-KEY=VAL`) to your scripts. Same opt-in (`local_runbooks: true`) and trust model.
+KEY=VAL`) to your scripts. Same trust model (`local_runbooks`).
 
 > A manifest needs at least a `system_prompt` or a `collect`; everything else has a
 > default — no `schema` → `{"result": "<string>"}`, no `collect` → the user message is
@@ -206,8 +205,7 @@ KEY=VAL`) to your scripts. Same opt-in (`local_runbooks: true`) and trust model.
 recipe live on [Runbooks in YAML](script_runbooks.md).** A complete, copy-paste manifest
 runbook (weather → what to wear, scripts in `python3`, no API key) is in
 [`examples/runbooks/weather/`](examples/runbooks/weather/) — drop it into
-`.junior/runbooks/weather/`, set `local_runbooks: true`, and run
-`junior run --runbook weather-advice`.
+`.junior/runbooks/weather/` and run `junior run --runbook weather-advice`.
 
 ## The Built-in Code-Review Family
 
@@ -252,5 +250,5 @@ reference runbooks by hand.
 
 - [ ] `Runbook[Ctx, Result]` subclass with `name`, `context_model`, `result_model`
 - [ ] `collect()`, `render()`, `publish()` implemented (heavy imports kept lazy)
-- [ ] Registered one of four ways: `@register_runbook` (built-in), `junior.runbooks` entry point (plugin), `--runbook module:ClassName` (direct path), or repo-local `.junior/runbooks/` (opt-in `local_runbooks`)
+- [ ] Registered one of four ways: `@register_runbook` (built-in), `junior.runbooks` entry point (plugin), `--runbook module:ClassName` (direct path), or repo-local `.junior/runbooks/` (`local_runbooks`)
 - [ ] Tested: `junior run --runbook <name>`

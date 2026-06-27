@@ -1,10 +1,7 @@
 # Example manifest runbook — defined entirely by scripts, no Python class.
 #
-# Copy this folder to your repo as  .junior/runbooks/weather/  then enable
-# repo-local runbooks (it executes the scripts below, so it's opt-in):
-#
-#   # .junior.yaml
-#   local_runbooks: true
+# Copy this folder to your repo as  .junior/runbooks/weather/  and run it
+# (Junior executes the scripts below — set local_runbooks: false to skip):
 #
 #   junior run --runbook weather-advice                     # your IP's weather
 #   junior run --runbook weather-advice --context location="Tokyo"

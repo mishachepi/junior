@@ -167,7 +167,7 @@ The registry (`src/junior/runbook/registry.py`) merges runbooks from four source
 1. **Built-in** — every subpackage of `junior.runbooks` is auto-discovered via a `pkgutil` scan (no hardcoded list); importing it runs its registration.
 2. **External plugin** — a pip-installed package declaring a `junior.runbooks` entry point (`name = "pkg.module:ClassName"`).
 3. **Direct path** — `--runbook "pkg.module:ClassName"` loads a `Runbook` subclass directly.
-4. **Repo-local** — with `local_runbooks: true` (opt-in; executes repo code), `registry.load_local_runbooks()` loads `<project>/.junior/runbooks/*.py` (`@register_runbook` classes) and YAML manifests (driving a `ScriptRunbook`).
+4. **Repo-local** — `registry.load_local_runbooks()` loads `<project>/.junior/runbooks/*.py` (`@register_runbook` classes) and YAML manifests (driving a `ScriptRunbook`); it executes repo code, so `local_runbooks: false` skips it.
 
 See [Adding a runbook](adding_runbooks.md) or [a harness](adding_harnesses.md) and the [runbook framework deep-dive](architecture/runbooks.md).
 

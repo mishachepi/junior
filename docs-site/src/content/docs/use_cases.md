@@ -71,7 +71,6 @@ collect: git log --since=yesterday --oneline
 ```
 
 ```bash
-echo "local_runbooks: true" >> .junior.yaml   # enable repo-local runbooks (once)
 junior run --runbook standup                 # validated JSON on stdout
 ```
 

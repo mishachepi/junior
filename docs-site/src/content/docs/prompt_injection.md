@@ -110,14 +110,11 @@ review. Two independent bounds apply:
 | | |
 |---|---|
 | **Severity** | High (by design) |
-| **Status** | Mitigated (opt-in) |
+| **Status** | Trust-gated |
 
-`local_runbooks: true` makes Junior import and run Python from
-`<project>/.junior/runbooks/`. Reviewing an untrusted repo with this enabled runs that
-repo's code on your machine — the same trust model as running its `Makefile`, test suite,
-or git hooks.
+Junior imports and runs Python from `<project>/.junior/runbooks/`. Reviewing an untrusted
+repo runs that repo's code on your machine — the same trust model as running its
+`Makefile`, test suite, or git hooks.
 
-**Mitigation:** it is **off by default**. Junior never loads `.junior/runbooks/` unless you
-explicitly set `local_runbooks: true` (config) — so a malicious repo cannot opt itself in.
-Only enable it for repositories you already trust, and prefer setting it in your *global*
-config or per-invocation rather than committing it into a shared repo.
+**Mitigation:** set `local_runbooks: false` to stop Junior loading `.junior/runbooks/`
+entirely — do that for any repository you don't already trust.

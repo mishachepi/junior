@@ -344,10 +344,10 @@ sources:
 
 3. **Direct path** — `--runbook "pkg.module:ClassName"` loads a `Runbook`
    subclass directly, an escape hatch for quick experiments.
-4. **Repo-local** (opt-in `local_runbooks: true`) — `load_local_runbooks()` loads
+4. **Repo-local** (`local_runbooks`) — `load_local_runbooks()` loads
    `<project>/.junior/runbooks/*.py` (`@register_runbook` classes) and YAML
-   manifests driving a `ScriptRunbook` (any language). Executes repo code, so
-   it's off by default. See [Adding runbooks](../adding_runbooks.md#4-repo-local-in-juniorrunbooks).
+   manifests driving a `ScriptRunbook` (any language). Executes repo code; set
+   `local_runbooks: false` to skip it. See [Adding runbooks](../adding_runbooks.md#4-repo-local-in-juniorrunbooks).
 
 ## Module layout
 

@@ -30,7 +30,7 @@ _HINTS = {
     "publish": "run the runbook's publish; else raw output to stdout/-o",
     "output_file": "write the review to a file (empty = stdout)",
     "log_level": "DEBUG | INFO | WARNING | ERROR",
-    "local_runbooks": "load .junior/runbooks/ (runs repo code — opt-in)",
+    "local_runbooks": "load .junior/runbooks/ (runs repo code); false to skip",
     "source": "auto | staged | commit | branch",
     "base_sha": "pin a base commit to diff against",
     "prompts": "task instructions — inline text or file://./path.md",

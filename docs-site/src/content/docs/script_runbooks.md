@@ -23,12 +23,7 @@ system_prompt: |
   Be concrete; keep code identifiers verbatim.
 ```
 
-Enable repo-local runbooks and run it:
-
-```yaml
-# .junior.yaml
-local_runbooks: true
-```
+Run it:
 
 ```bash
 git log --oneline -20 | junior run --runbook summarize
@@ -92,9 +87,9 @@ The layout next to the manifest is up to you:
 ```
 
 > [!WARNING]
-> `local_runbooks: true` executes commands shipped in the repository — same trust model
-> as a `Makefile` or a git hook. Only enable it in repos you trust. See
-> [prompt_injection.md](prompt_injection.md).
+> Repo-local runbooks execute commands shipped in the repository — same trust model
+> as a `Makefile` or a git hook. Set `local_runbooks: false` for repos you don't trust.
+> See [prompt_injection.md](prompt_injection.md).
 
 ## Chaining Juniors into a pipeline
 

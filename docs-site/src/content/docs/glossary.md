@@ -19,7 +19,7 @@ and **result schema** and implements the domain logic. Defined as an ABC,
 A runbook is selected explicitly (`--runbook NAME`, config `runbook:`, or env
 `RUNBOOK`; required — there is no implicit default). It can come from any of four sources: a
 built-in, a pip-installed plugin, a `module:ClassName` import path, or a
-repo-local file in `.junior/runbooks/` (opt-in — Python or a plain
+repo-local file in `.junior/runbooks/` (Python or a plain
 [YAML manifest](script_runbooks.md)); see
 [Adding a runbook](adding_runbooks.md).
 
