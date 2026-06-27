@@ -287,6 +287,100 @@ central `resolved_collector` / `resolved_publisher` dispatch. `pre_formatted` (t
 `LLMResult` envelope that composes the LLM `output` with the `usage` token counts
 and `errors` (no flat duplication), adding only the domain `pre_formatted`.
 
+### Result schemas of the built-ins
+
+The output schema (`result_model`) is just a parameter — serialized to the harness
+with `model_json_schema()` (the exact JSON below is what goes out as `--json-schema`
+/ `output_type`) and validated on the way back — so the built-ins return completely
+different shapes. The four code-review runbooks share `ReviewOutput`
+(`junior.runbooks.code_review.models`); only `summary` is required:
+
+```json
+{
+  "$defs": {
+    "Recommendation": {
+      "enum": ["approve", "request_changes", "comment"],
+      "title": "Recommendation", "type": "string"
+    },
+    "ReviewCategory": {
+      "description": "Category of a review finding.",
+      "enum": ["logic", "security", "bug", "naming", "optimization", "dry_violation", "kiss_violation"],
+      "title": "ReviewCategory", "type": "string"
+    },
+    "Severity": {
+      "enum": ["low", "medium", "high", "critical"],
+      "title": "Severity", "type": "string"
+    },
+    "ReviewComment": {
+      "description": "A single review comment from the AI agent.",
+      "type": "object",
+      "required": ["category", "severity", "message"],
+      "properties": {
+        "category": {"$ref": "#/$defs/ReviewCategory"},
+        "severity": {"$ref": "#/$defs/Severity"},
+        "message": {"title": "Message", "type": "string"},
+        "file_path": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "File Path"},
+        "line_number": {"anyOf": [{"type": "integer"}, {"type": "null"}], "default": null, "title": "Line Number"},
+        "suggestion": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "Suggestion"}
+      },
+      "title": "ReviewComment"
+    }
+  },
+  "type": "object",
+  "required": ["summary"],
+  "properties": {
+    "summary": {"title": "Summary", "type": "string"},
+    "recommendation": {"$ref": "#/$defs/Recommendation", "default": "comment"},
+    "comments": {"items": {"$ref": "#/$defs/ReviewComment"}, "title": "Comments", "type": "array"}
+  },
+  "title": "ReviewOutput"
+}
+```
+
+`is_blocking()` reads the result directly: any `severity == "critical"` **or**
+`recommendation == "request_changes"`. An instance the model might return:
+
+```json
+{
+  "summary": "One critical SQL-injection regression; otherwise clean.",
+  "recommendation": "request_changes",
+  "comments": [
+    {"category": "security", "severity": "critical",
+     "message": "find_user() interpolates user_id into the SQL string",
+     "file_path": "db.py", "line_number": 42,
+     "suggestion": "Use a parameterized query."}
+  ]
+}
+```
+
+The built-in `weather_advice` returns something entirely unrelated — same
+framework, different `result_model` (`junior.runbooks.weather.runbook`):
+
+```json
+{
+  "$defs": {
+    "OutfitItem": {
+      "type": "object",
+      "required": ["item", "reason"],
+      "properties": {
+        "item": {"title": "Item", "type": "string"},
+        "reason": {"title": "Reason", "type": "string"}
+      },
+      "title": "OutfitItem"
+    }
+  },
+  "type": "object",
+  "required": ["summary"],
+  "properties": {
+    "summary": {"description": "one-line headline of the conditions and the plan", "title": "Summary", "type": "string"},
+    "outfit": {"description": "concrete items to wear, each with a one-line reason", "items": {"$ref": "#/$defs/OutfitItem"}, "title": "Outfit", "type": "array"},
+    "risks": {"description": "things to watch for (rain, UV, cold snap, wind, ice); empty if none", "items": {"type": "string"}, "title": "Risks", "type": "array"},
+    "tips": {"description": "optional extras (umbrella, sunscreen, swap shoes later)", "items": {"type": "string"}, "title": "Tips", "type": "array"}
+  },
+  "title": "WeatherAdviceOutput"
+}
+```
+
 ## Adding a runbook (Jira example)
 
 ```python

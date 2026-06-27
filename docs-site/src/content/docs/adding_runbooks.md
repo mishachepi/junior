@@ -30,7 +30,7 @@ libraries that a runbook's `collect()` / `publish()` call directly.
 To add a runbook, subclass `Runbook[CtxModel, ResultModel]`.
 
 > [!TIP]
-> For a complete, working **non-code-review** example, read `src/junior/runbooks/weather/` (`weather_advice`): it collects live weather instead of a git diff and asks the harness what to wear — no git, no platform, no API key. Having no platform, it repurposes `--publish` as a presentation toggle (`--publish` → pretty Rich panel; default → the raw result as JSON). Run it with `junior run --runbook weather_advice`. It's the smallest end-to-end runbook in the repo and a good copy-paste starting point.
+> For a complete, working **non-code-review** example, read `src/junior/runbooks/weather/` (`weather_advice`): it collects live weather instead of a git diff and asks the harness what to wear — no git, no platform, no API key. Having no platform, it repurposes `--publish` as a presentation toggle (`--publish` → pretty Rich panel; default → the raw result as JSON). Run it with `junior run --runbook weather_advice`. It's the smallest end-to-end runbook in the repo and a good copy-paste starting point. Its [`WeatherAdviceOutput` schema](architecture/runbooks.md#result-schemas-of-the-built-ins) is a completely different shape from `ReviewOutput` — proof the output schema is just a parameter.
 
 ```python
 from junior.config import Settings
@@ -212,8 +212,8 @@ runbook (weather → what to wear, scripts in `python3`, no API key) is in
 Junior ships the code-review domain as a family of runbooks that share the base class
 `CodeReviewRunbook` (`src/junior/runbooks/code_review/base.py`). They all review a git
 diff with the same context schema (`ReviewContext`), render, prompt, and result schema
-(`ReviewOutput`) — only *where the diff comes from* (collect) and *where the review
-goes* (publish) differ:
+([`ReviewOutput`](architecture/runbooks.md#result-schemas-of-the-built-ins)) — only
+*where the diff comes from* (collect) and *where the review goes* (publish) differ:
 
 | Runbook name | Source | Publishes to |
 |---------------|--------|--------------|

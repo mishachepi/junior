@@ -19,7 +19,8 @@ Manifest (e.g. `.junior/runbooks/weather/weather.yaml`):
     description: what to wear today
     system_prompt: prompt.md           # path or inline text
     schema: weather.schema.json        # path (rel. to manifest) or inline mapping;
-                                       # omit → DEFAULT_SCHEMA ({"result": "..."} )
+                                       # omit → auto-load `schema.json` from the
+                                       # folder, else DEFAULT_SCHEMA ({"result": "..."})
     collect: ./collect.sh              # stdout = user message; omit → read STDIN
     publish: ./publish.sh              # stdin  = AI output JSON
     needs_git: false
@@ -223,7 +224,16 @@ def runbook_from_manifest(manifest_path: Path) -> type[Runbook]:
             f"manifest '{manifest_path}' defines neither `system_prompt` nor `collect`"
         )
 
-    schema = _load_schema(data["schema"], base_dir) if "schema" in data else DEFAULT_SCHEMA
+    # Schema precedence: explicit `schema:` (path or inline) → a conventional
+    # `schema.json` beside the manifest (auto-loaded, no manifest key needed) →
+    # DEFAULT_SCHEMA. So an external runbook can just drop a `schema.json` in its
+    # folder and Junior picks it up.
+    if "schema" in data:
+        schema = _load_schema(data["schema"], base_dir)
+    elif (base_dir / "schema.json").is_file():
+        schema = _load_schema("schema.json", base_dir)
+    else:
+        schema = DEFAULT_SCHEMA
     result_model = json_schema_to_model(f"{name}_output", schema)
     cls = type(
         f"Script_{name}",

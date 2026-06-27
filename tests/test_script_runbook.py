@@ -92,6 +92,46 @@ def test_manifest_without_schema_gets_default_result_model(tmp_path):
         cls.result_model()
 
 
+def test_manifest_auto_loads_schema_json_from_folder(tmp_path):
+    """No `schema:` key, but a `schema.json` beside the manifest → auto-loaded."""
+    import json
+
+    d = tmp_path / ".junior" / "runbooks" / "tickets"
+    d.mkdir(parents=True)
+    (d / "tickets.yaml").write_text(yaml.safe_dump(
+        {"name": "tickets", "system_prompt": "Assess."}
+    ))
+    (d / "schema.json").write_text(json.dumps({
+        "type": "object",
+        "required": ["severity"],
+        "properties": {
+            "severity": {"type": "string"},
+            "notes": {"type": "array", "items": {"type": "string"}},
+        },
+    }))
+    cls = runbook_from_manifest(d / "tickets.yaml")
+    assert set(cls.result_model.model_fields) == {"severity", "notes"}
+
+
+def test_explicit_schema_key_wins_over_schema_json(tmp_path):
+    """An explicit `schema:` in the manifest overrides the conventional file."""
+    import json
+
+    d = tmp_path / ".junior" / "runbooks" / "pick"
+    d.mkdir(parents=True)
+    (d / "pick.yaml").write_text(yaml.safe_dump(
+        {"name": "pick", "system_prompt": "x", "schema": "custom.json"}
+    ))
+    (d / "custom.json").write_text(json.dumps(
+        {"type": "object", "properties": {"chosen": {"type": "string"}}}
+    ))
+    (d / "schema.json").write_text(json.dumps(
+        {"type": "object", "properties": {"ignored": {"type": "string"}}}
+    ))
+    cls = runbook_from_manifest(d / "pick.yaml")
+    assert set(cls.result_model.model_fields) == {"chosen"}
+
+
 def test_collect_omitted_reads_stdin(tmp_path, monkeypatch):
     import io
 

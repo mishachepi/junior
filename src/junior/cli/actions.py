@@ -158,10 +158,7 @@ def preview_run(runbook, settings: Settings, context, *, publish_enabled: bool) 
 
     console.print(Rule("Output schema"))
     console.print(f"[bold]{result_model.__name__}[/]")
-    for fname, field in result_model.model_fields.items():
-        optional = "" if field.is_required() else "  [dim](optional)[/]"
-        # escape the type — e.g. `list[str]` must not be read as Rich markup.
-        console.print(f"  [cyan]{escape(fname)}[/]: {escape(_type_name(field.annotation))}{optional}")
+    _print_schema_fields(result_model, console, escape, indent=1, seen={result_model})
 
     # --- Plan (summary, last — after everything that feeds the harness) ---
     plan = Table(show_header=False, box=None, pad_edge=False)
@@ -220,16 +217,66 @@ def _print_context_summary(context) -> None:
 
 
 def _type_name(annotation) -> str:
-    """Readable name for a pydantic field annotation (e.g. `list[OutfitItem]`)."""
+    """Readable name for a pydantic field annotation (e.g. `list[OutfitItem]`,
+    `str | None`)."""
+    import types
     import typing
 
     origin = typing.get_origin(annotation)
     if origin is None:
         name = getattr(annotation, "__name__", str(annotation).replace("typing.", ""))
         return "None" if name == "NoneType" else name
-    args = ", ".join(_type_name(a) for a in typing.get_args(annotation))
+    args = [_type_name(a) for a in typing.get_args(annotation)]
+    # Unions (`str | None`, `Optional[X]`, `Union[...]`) read best as `a | b`.
+    if origin in (types.UnionType, typing.Union):
+        return " | ".join(args)
     oname = getattr(origin, "__name__", str(origin).replace("typing.", ""))
-    return f"{oname}[{args}]" if args else oname
+    return f"{oname}[{', '.join(args)}]" if args else oname
+
+
+def _schema_subtypes(annotation) -> list:
+    """BaseModel / Enum classes referenced by an annotation, unwrapping
+    `Optional`, `list`, `dict`, … — in order of appearance."""
+    import typing
+    from enum import Enum
+
+    from pydantic import BaseModel
+
+    found: list = []
+
+    def walk(a):
+        if isinstance(a, type) and issubclass(a, (BaseModel, Enum)):
+            found.append(a)
+            return
+        for arg in typing.get_args(a):
+            walk(arg)
+
+    walk(annotation)
+    return found
+
+
+def _print_schema_fields(model, console, escape, *, indent: int, seen: set) -> None:
+    """Print a pydantic model's fields, recursively expanding nested models and
+    enum value sets, so `dry-run` shows the full output schema — not just the top
+    level. `seen` guards against re-printing (and self-referential) models."""
+    from enum import Enum
+
+    from pydantic import BaseModel
+
+    pad = "  " * indent
+    for fname, field in model.model_fields.items():
+        optional = "" if field.is_required() else "  [dim](optional)[/]"
+        desc = f"  [dim]— {escape(field.description)}[/]" if field.description else ""
+        # escape the type — e.g. `list[str]` must not be read as Rich markup.
+        console.print(f"{pad}[cyan]{escape(fname)}[/]: {escape(_type_name(field.annotation))}{optional}{desc}")
+        for sub in _schema_subtypes(field.annotation):
+            if issubclass(sub, Enum):
+                vals = " | ".join(str(e.value) for e in sub)
+                console.print(f"{pad}  [dim]{escape(sub.__name__)} = {escape(vals)}[/]")
+            elif issubclass(sub, BaseModel) and sub not in seen:
+                seen.add(sub)
+                console.print(f"{pad}  [dim]{escape(sub.__name__)}[/]")
+                _print_schema_fields(sub, console, escape, indent=indent + 2, seen=seen)
 
 
 def _short_value(value) -> str:
