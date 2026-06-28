@@ -47,8 +47,8 @@ description: analyze a play run, draft a Jira comment
 system_prompt: prompt.md           # path (relative to the manifest) or inline text
 
 schema:                            # JSON-Schema for the AI result — path or inline.
-  type: object                     # Omit it → {"result": "<string>"}
-  required: [status, jira_comment]
+  type: object                     # Omit it → a `schema.json` next to the manifest is
+  required: [status, jira_comment] # auto-loaded; with neither → {"result": "<string>"}.
   properties:
     status: {type: string, enum: [ok, degraded, failed]}
     jira_comment: {type: string}
@@ -76,14 +76,31 @@ Key facts about the commands:
   - `JUNIOR_CONTEXT_<KEY>` — one per `--context KEY=VAL` flag.
 - A non-zero exit from either command aborts the run with the command's stderr.
 
-The layout next to the manifest is up to you:
+The layout next to the manifest is up to you, but a **`schema.json` beside the
+manifest is auto-loaded** — keep the output contract in its own file and drop the
+`schema:` key entirely (precedence: explicit `schema:` → `schema.json` → the
+`{"result": "<string>"}` default):
 
 ```
 .junior/runbooks/ansible-report/
-  ansible-report.yaml   # the manifest
+  ansible-report.yaml   # the manifest (no `schema:` key needed)
+  schema.json           # JSON-Schema of the AI result — auto-loaded
   prompt.md             # the instruction
   run-play.sh           # runs ansible-playbook, prints the (tail of the) log
   post-jira.sh          # reads result JSON on stdin, POSTs the comment to Jira
+```
+
+A standalone `schema.json` is plain JSON-Schema:
+
+```json
+{
+  "type": "object",
+  "required": ["status", "jira_comment"],
+  "properties": {
+    "status": {"type": "string", "enum": ["ok", "degraded", "failed"]},
+    "jira_comment": {"type": "string"}
+  }
+}
 ```
 
 > [!WARNING]

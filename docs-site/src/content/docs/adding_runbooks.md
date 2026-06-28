@@ -175,7 +175,7 @@ phases are then ordinary commands (sh, Python, anything). Drop a `<name>.yaml` (
 # .junior/runbooks/joke/joke.yaml
 name: joke
 description: tell a joke about a topic
-schema: schema.json        # JSON-Schema for the AI result; omit → {"result": "<string>"}
+schema: schema.json        # optional — a `schema.json` in the folder is auto-loaded anyway
 system_prompt: prompt.md   # path or inline text
 collect: sh ./collect.sh   # STDOUT becomes the user message; omit → read Junior's STDIN
 publish: sh ./publish.sh   # receives the AI's validated JSON on STDIN
@@ -196,7 +196,8 @@ Junior turns `schema.json` into the harness's output schema, runs `collect` → 
 KEY=VAL`) to your scripts. Same trust model (`local_runbooks`).
 
 > A manifest needs at least a `system_prompt` or a `collect`; everything else has a
-> default — no `schema` → `{"result": "<string>"}`, no `collect` → the user message is
+> default — no `schema` key → a `schema.json` in the folder is auto-loaded, else
+> `{"result": "<string>"}`; no `collect` → the user message is
 > read from Junior's stdin (that's how `junior run | junior run` chains work), no
 > `publish` → the result JSON is printed. The machinery lives in
 > `src/junior/runbooks/script/`.
