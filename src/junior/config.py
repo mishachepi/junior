@@ -89,6 +89,7 @@ class HarnessKind(_ModulePathEnum):
     CLAUDECODE = "junior.harnesses.claudecode"
     DEEPAGENTS = "junior.harnesses.deepagents"
     PI = "junior.harnesses.pi"
+    GEMINI = "junior.harnesses.gemini"
 
 
 class SourceMode(_CaseInsensitiveStrEnum):
@@ -253,8 +254,8 @@ class LLMSettings(BaseSettings):
     max_tokens_per_agent: int = 0
     # collection + pydantic file tools: skip files larger than this (bytes).
     max_file_size: int = 100_000
-    # CLI harnesses (claudecode/codex/pi): kill the subprocess after this many
-    # seconds. Lower it to fail fast on a stuck/runaway agent.
+    # CLI harnesses (claudecode/codex/pi/gemini): kill the subprocess after this
+    # many seconds. Lower it to fail fast on a stuck/runaway agent.
     timeout: int = 600
     # claudecode-only knobs (nested under `llm.claudecode`); other harnesses ignore it.
     claudecode: ClaudeCodeSettings = Field(default_factory=ClaudeCodeSettings)
@@ -281,10 +282,14 @@ class LLMSettings(BaseSettings):
             return ""
         v = str(v).strip()
         if ":" in v:
-            provider = v.partition(":")[0].strip().lower()
-            if provider not in _SUPPORTED_PROVIDERS:
+            head = v.partition(":")[0].strip().lower()
+            # A "provider:model" prefix names one of our SDK providers. CLI
+            # engines like pi/gemini use "provider/id:tag", where the ':' is a
+            # model version tag, not our separator — the '/' marks that path
+            # form, so its head must not be validated as a provider.
+            if "/" not in head and head not in _SUPPORTED_PROVIDERS:
                 raise ValueError(
-                    f"unknown provider '{provider}' in --model. "
+                    f"unknown provider '{head}' in --model. "
                     f"Supported: {', '.join(_SUPPORTED_PROVIDERS)}"
                 )
         return v
@@ -324,13 +329,13 @@ class LLMSettings(BaseSettings):
         """Model name safe to surface in logs/UI for the active harness.
 
         - pydantic/deepagents: SDK actually receives resolved_model.
-        - claudecode: only show when model is explicitly set (the CLI defaults otherwise).
+        - claudecode/gemini: only show when model is explicitly set (the CLI defaults otherwise).
         - pi: passes the raw `--model provider/id` through; show it when set.
         - codex: the CLI picks its own model — don't claim one.
         """
         if self.harness in (HarnessKind.PYDANTIC, HarnessKind.DEEPAGENTS):
             return self.resolved_model
-        if self.harness == HarnessKind.CLAUDECODE:
+        if self.harness in (HarnessKind.CLAUDECODE, HarnessKind.GEMINI):
             return self.resolved_model if self.model else ""
         if self.harness == HarnessKind.PI:
             return self.model  # raw, e.g. "ollama/qwen3" — not provider:model
@@ -484,7 +489,7 @@ class Settings(BaseSettings):
     def _validate_review(self) -> list[str]:
         harness = self.llm.harness
         # CLI-driven harnesses manage their own auth/model.
-        if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI):
+        if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI, HarnessKind.GEMINI):
             return []
 
         errors: list[str] = []

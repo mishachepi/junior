@@ -119,7 +119,7 @@ class Harness(ABC):
         instance of output_schema."""
 ```
 
-The five harnesses (`junior.harnesses.{claudecode,codex,pydantic,deepagents,pi}`) each
+The six harnesses (`junior.harnesses.{claudecode,codex,pydantic,deepagents,pi,gemini}`) each
 implement `complete` and expose a module-level `HARNESS` instance. The schema is
 passed in, never hard-coded, and each harness wires it through its own mechanism:
 

@@ -2,6 +2,19 @@
 
 ## 0.2.4 — 2026-06-29
 
+- **New harness: `gemini`** — drives Google's `gemini` CLI
+  (`HARNESS=gemini` / `--harness gemini`). A single
+  `gemini --output-format json` subprocess, **read-only by construction**
+  (`--approval-mode plan` + `--skip-trust`): the CLI may read the repo with its
+  built-in tools but never edits or runs anything. Like `pi`, it has no native
+  output-schema flag, so the JSON Schema is embedded in the prompt and the
+  reply is validated on our side. Core install (no extra); auth via
+  `GEMINI_API_KEY` or the CLI's own login. `file_access = True`.
+- **Fix: `--model provider/id:tag` no longer rejected.** The model validator
+  split on the first `:`, so a valid `pi`/`gemini`-style path like
+  `ollama/qwen2.5-coder:7b` (our own documented example) failed as an "unknown
+  provider". A `:` is now treated as our `provider:model` separator only when no
+  `/` precedes it; `bogus:model` is still rejected.
 - **Prompts can be scoped per runbook: `runbooks.<name>.prompts`.** A config-file
   prompt used to apply to *every* runbook — a repo's code-review rules leaked into
   an unrelated `--runbook changelog` run, steering the model off-task and paying

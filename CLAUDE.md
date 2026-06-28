@@ -3,7 +3,7 @@
 A **runbook framework** for AI "juniors" — deterministic collect → one schema-validated LLM call → deterministic publish. Code review (GitLab / GitHub / Bitbucket DC) is the built-in flagship, not the boundary. Two concepts explain the whole codebase:
 
 - **Runbook** (`Runbook[Ctx, Result]` ABC) — a module owning one vertical: collect → render → harness → publish, plus its context/result schemas. The platform (local / GitHub / GitLab / Bitbucket DC) is part of the runbook, not a separate selector.
-- **Harness** (`Harness` ABC) — the schema-agnostic LLM driver: `complete(*, system_prompt, user_message, output_schema, settings) -> LLMResult`. Five built-ins: `claudecode` (default), `codex`, `pydantic`, `deepagents`, `pi` (local models).
+- **Harness** (`Harness` ABC) — the schema-agnostic LLM driver: `complete(*, system_prompt, user_message, output_schema, settings) -> LLMResult`. Six built-ins: `claudecode` (default), `codex`, `pydantic`, `deepagents`, `pi` (local models), `gemini` (read-only Gemini CLI).
 
 Both ABCs live in `src/junior/runbook/base.py`. The big picture is documented — read it instead of re-deriving: [architecture](docs-site/src/content/docs/architecture.md), [glossary](docs-site/src/content/docs/glossary.md), [philosophy](docs-site/src/content/docs/philosophy.md).
 
@@ -22,7 +22,7 @@ src/junior/
   config.py       ← Settings = ContextSettings + LLMSettings + OutputSettings (+ top-level runbook/log_level); frozen
   init_config.py  ← the `junior init` wizard
   runbook/        ← framework core (domain-agnostic): base.py (both ABCs), registry.py (discovery), runner.py
-  harnesses/      ← LLM drivers, one file each, exposing HARNESS: claudecode, codex, pydantic, deepagents, pi
+  harnesses/      ← LLM drivers, one file each, exposing HARNESS: claudecode, codex, pydantic, deepagents, pi, gemini
   runbooks/       ← built-ins (auto-discovered): code_review/{local,github,gitlab,bitbucket}, weather (example), script (YAML manifests)
   collect/        ← context-collection helper libs the runbooks call: local/gitlab/github/bitbucket + core/
   publish/        ← result-posting helper libs: local/gitlab/github/bitbucket + core/ (formatter)

@@ -150,13 +150,13 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 
 | Variable | CLI flag | Default | Description |
 |----------|----------|---------|-------------|
-| `HARNESS` | `--harness` | `claudecode` | Harness: `claudecode`, `pydantic`, `codex`, `deepagents`, `pi` |
+| `HARNESS` | `--harness` | `claudecode` | Harness: `claudecode`, `pydantic`, `codex`, `deepagents`, `pi`, `gemini` |
 | `MODEL` | `--model` | per provider | Accepts `provider:model` (e.g. `anthropic:claude-opus-4-6`) or bare `model` |
 | `OPENAI_API_KEY` | — | — | OpenAI API key |
 | `ANTHROPIC_API_KEY` | — | — | Anthropic API key |
 | `MAX_TOKENS_PER_AGENT` | — | `0` | Response token cap, 0 = no limit (`pydantic` harness only) |
 | `MAX_FILE_SIZE` | — | `100000` | Skip file content above this size, bytes (collection + `pydantic`) |
-| `TIMEOUT` | — | `600` | Kill the CLI-harness subprocess (`claudecode`/`codex`/`pi`) after N seconds |
+| `TIMEOUT` | — | `600` | Kill the CLI-harness subprocess (`claudecode`/`codex`/`pi`/`gemini`) after N seconds |
 
 > [!NOTE]
 > `BACKEND` / `--backend` and the config key `backend` remain accepted as a deprecated alias for `HARNESS` / `--harness` / `harness` (kept for one version).
@@ -221,7 +221,7 @@ ANTHROPIC_API_KEY=sk-ant-xxx junior run --harness pydantic     # default model f
 
 ### Harness reference
 
-A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). All five implement the same `complete()` call; they differ in how they reach a model and whether they read repo files themselves. Install only the one you run (`junior config list harnesses` shows install state + readiness; `junior config env` shows the vars below).
+A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). All six implement the same `complete()` call; they differ in how they reach a model and whether they read repo files themselves. Install only the one you run (`junior config list harnesses` shows install state + readiness; `junior config env` shows the vars below).
 
 | Harness | Install | Reads files itself (`file_access`) | API key | Authenticates via |
 |---------|---------|-----------------------------------|---------|-------------------|
@@ -230,10 +230,12 @@ A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). A
 | `pydantic` | `junior[pydantic]` | ❌ no — diff is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key (matches your `--model` provider) |
 | `deepagents` ⚠️ **deprecated** | `junior[deepagents]` | ❌ no — context is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key. Unreliable — use `pydantic` instead |
 | `pi` | core — no extra | ✅ yes | per provider — or **none** for local models (`~/.pi/agent/models.json`) | the `pi` CLI; env key, `~/.pi/agent/auth.json`, or a local model |
+| `gemini` | core — no extra | ✅ yes (read-only `plan` mode) | optional — `GEMINI_API_KEY`, or the CLI's own auth | the `gemini` CLI; set `GEMINI_API_KEY` or log in once |
 
-- **`file_access`** — `claudecode`/`codex`/`pi` explore the repo with their own tools, so the runbook does **not** inline the full diff into the prompt. `pydantic`/`deepagents` get the diff inlined (they also have read-only file tools for extra exploration).
-- **Honored config fields** — every API harness reads `llm.model` and `llm.max_file_size`; only `pydantic` additionally honors `llm.max_tokens_per_agent` (response-token cap); the CLI harnesses (`claudecode`/`codex`/`pi`) honor `llm.timeout` (subprocess kill after N seconds, default 600 — lower it to fail fast on a stuck agent). `claudecode`/`codex` ignore `model` unless you set it explicitly (the CLI picks otherwise).
+- **`file_access`** — `claudecode`/`codex`/`pi`/`gemini` explore the repo with their own tools, so the runbook does **not** inline the full diff into the prompt. `pydantic`/`deepagents` get the diff inlined (they also have read-only file tools for extra exploration).
+- **Honored config fields** — every API harness reads `llm.model` and `llm.max_file_size`; only `pydantic` additionally honors `llm.max_tokens_per_agent` (response-token cap); the CLI harnesses (`claudecode`/`codex`/`pi`/`gemini`) honor `llm.timeout` (subprocess kill after N seconds, default 600 — lower it to fail fast on a stuck agent). `claudecode`/`codex`/`gemini` ignore `model` unless you set it explicitly (the CLI picks otherwise).
 - **claudecode-only knob** — `llm.claudecode.permission_mode` sets the `claude` CLI's `--permission-mode`. Allowed: `default`, `acceptEdits`, `plan`, `bypassPermissions` (default). Set in YAML (`llm.claudecode.permission_mode`), not an env var. See the [claudecode harness page](agent_backends/claudecode.md) for when to change it.
+- **gemini is read-only** — the `gemini` harness always runs `--approval-mode plan`: it may read the repo with its tools but never edits or runs anything (a review must not mutate the worktree). No knob to loosen it.
 - **No required env for the CLI harnesses** — `claudecode`/`codex` carry their own auth; `junior config env --harness pydantic` (or `deepagents`) lists the provider key. Setting both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` is fine — pass `--model anthropic:...` / `--model openai:...` to disambiguate.
 
 Per-harness deep dives: [Harnesses](agent_backends.md).

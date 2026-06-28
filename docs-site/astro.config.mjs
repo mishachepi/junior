@@ -108,6 +108,7 @@ export default defineConfig({
                 { label: "Pydantic AI", link: "/agent_backends/pydantic/" },
                 { label: "DeepAgents", link: "/agent_backends/deepagents/" },
                 { label: "Pi", link: "/agent_backends/pi/" },
+                { label: "Gemini", link: "/agent_backends/gemini/" },
               ],
             },
             {

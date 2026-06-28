@@ -224,6 +224,7 @@ HARNESS_META: dict[HarnessKind, tuple[str, str, str]] = {
         "deepagents",
     ),
     HarnessKind.PI: ("pi CLI subprocess — incl. local models (models.json)", "", ""),
+    HarnessKind.GEMINI: ("gemini CLI subprocess (Google; GEMINI_API_KEY or its own auth)", "", ""),
 }
 
 
