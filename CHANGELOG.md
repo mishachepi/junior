@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.4 — 2026-06-29
+
+- **Repo-local runbooks now load by default (`local_runbooks: true`).** Junior
+  discovers `<project>/.junior/runbooks/` out of the box, so a repo that ships its
+  own runbooks just works after `junior run`. This executes code shipped in the
+  repository (same trust model as its `Makefile`, test suite, or git hooks) — set
+  `local_runbooks: false` for any repo you don't already trust. The prompt-injection
+  note is updated accordingly (status: *Trust-gated*).
+- **Script runbooks auto-load a `schema.json` beside the manifest.** The `schema:`
+  key is now optional: precedence is explicit `schema:` (path or inline) → a
+  conventional `schema.json` in the runbook folder → the `{"result": "<string>"}`
+  default. Drop the output contract in its own file and omit the manifest key.
+- **`dry-run` expands the full output schema.** The *Output schema* section now
+  recurses into nested pydantic models and enum value sets (and renders unions as
+  `a | b`) instead of only listing top-level fields — so a script runbook's nested
+  `schema.json` is shown in full before the run.
+
 ## 0.2.3 — 2026-06-17
 
 - **Refactor: code-review models composed over the framework envelope + renamed.**
