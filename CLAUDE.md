@@ -82,3 +82,9 @@ All user docs live in `docs-site/src/content/docs/` (single source of truth, pub
 | Any user-visible change | check `faq.md` for relevance |
 
 Docs authoring: every page needs a frontmatter `title`; cross-link with relative `*.md` paths; GitHub callouts (`> [!NOTE]`) and ` ```mermaid ` blocks work; a remark plugin strips the body `# H1` and rewrites links. Details: `docs-site/README.md`.
+
+## Development workflow
+
+- One change = one branch = one squashed commit; don't batch unrelated changes.
+- Update `CHANGELOG.md` (top `Unreleased` section) for every user-visible change.
+- Keep `uv run pytest -q` and `uv run ruff check src/ tests/` green before merging.
