@@ -31,6 +31,61 @@ def test_json_schema_to_model_builds_fields():
         model()
 
 
+def test_json_schema_descriptions_survive_conversion():
+    """Field descriptions are the author's instructions to the LLM — they must
+    reach the harness-facing schema, not be dropped in conversion."""
+    schema = {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+            "text": {"type": "string", "description": "one-line entry, imperative"},
+            "notes": {"type": "array", "items": {"type": "string"},
+                      "description": "optional footnotes"},
+        },
+    }
+    model = json_schema_to_model("D", schema)
+    assert model.model_fields["text"].description == "one-line entry, imperative"
+    assert model.model_fields["notes"].description == "optional footnotes"
+    # …and they survive the round-trip back to JSON Schema (what the LLM sees)
+    out = model.model_json_schema()
+    assert out["properties"]["text"]["description"] == "one-line entry, imperative"
+
+
+def test_json_schema_enum_is_enforced():
+    """An `enum` becomes a closed Literal — a stray value fails validation
+    instead of slipping through as a free string."""
+    schema = {
+        "type": "object",
+        "required": ["category"],
+        "properties": {
+            "category": {"type": "string", "enum": ["Added", "Changed", "Fixed"]},
+        },
+    }
+    model = json_schema_to_model("E", schema)
+    assert model(category="Added").category == "Added"
+    with pytest.raises(Exception):
+        model(category="Invented")
+    # the value set reaches the harness-facing schema too
+    out = model.model_json_schema()
+    dumped = str(out)
+    assert "Added" in dumped and "Changed" in dumped and "Fixed" in dumped
+
+
+def test_unknown_manifest_keys_warn(tmp_path):
+    """A misspelled key (`publich:`) must not be silently ignored."""
+    from structlog.testing import capture_logs
+
+    d = tmp_path / ".junior" / "runbooks" / "typo"
+    d.mkdir(parents=True)
+    (d / "typo.yaml").write_text(yaml.safe_dump(
+        {"name": "typo_demo", "system_prompt": "x", "publich": "./oops.sh"}
+    ))
+    with capture_logs() as logs:
+        runbook_from_manifest(d / "typo.yaml")
+    warned = [e for e in logs if e["log_level"] == "warning"]
+    assert warned and "publich" in str(warned[0].get("unknown"))
+
+
 def _write_manifest(tmp_path, *, collect="printf 'hi'", publish=None, name="sdemo"):
     d = tmp_path / ".junior" / "runbooks" / "demo"
     d.mkdir(parents=True)

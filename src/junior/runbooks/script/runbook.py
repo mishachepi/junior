@@ -10,8 +10,9 @@ system prompt and (optionally) a JSON-Schema plus two commands —
 
 Junior turns the JSON-Schema into the harness's output schema, runs the harness
 in between, and pipes the validated result to `publish`. The manifest is loaded
-from `<project>/.junior/runbooks/` by the repo-local loader (opt-in), so it
-follows the same trust model as a repo-local Python runbook.
+from `<project>/.junior/runbooks/` by the repo-local loader (on by default,
+`local_runbooks: false` to disable), so it follows the same trust model as a
+repo-local Python runbook.
 
 Manifest (e.g. `.junior/runbooks/weather/weather.yaml`):
 
@@ -40,13 +41,16 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, create_model
+import structlog
+from pydantic import BaseModel, Field, create_model
 
 from junior.config import Settings
 from junior.runbook.base import Runbook, Usage
 from junior.runbook.registry import register_runbook
+
+logger = structlog.get_logger()
 
 
 class ScriptContext(BaseModel):
@@ -70,7 +74,13 @@ DEFAULT_SCHEMA: dict = {
 
 
 def json_schema_to_model(name: str, schema: dict) -> type[BaseModel]:
-    """Build a pydantic model from a JSON-Schema object (recursively)."""
+    """Build a pydantic model from a JSON-Schema object (recursively).
+
+    Field `description`s and `enum`s survive the conversion: descriptions are
+    the schema author's instructions to the model (what to write in the field),
+    enums become `Literal[...]` so an out-of-set value fails validation instead
+    of slipping through as a free string.
+    """
     if schema.get("type") != "object" or "properties" not in schema:
         # Wrap a non-object schema so the harness still gets a structured model.
         return create_model(name, value=(_json_type(name, schema), ...))
@@ -79,14 +89,18 @@ def json_schema_to_model(name: str, schema: dict) -> type[BaseModel]:
     fields: dict[str, tuple] = {}
     for fname, fschema in schema["properties"].items():
         typ = _json_type(f"{name}_{fname}", fschema)
+        desc = fschema.get("description")
         if fname in required:
-            fields[fname] = (typ, ...)
+            fields[fname] = (typ, Field(..., description=desc))
         else:
-            fields[fname] = (Optional[typ], None)
+            fields[fname] = (Optional[typ], Field(None, description=desc))
     return create_model(name, **fields)
 
 
 def _json_type(name: str, schema: dict):
+    enum = schema.get("enum")
+    if enum and all(isinstance(v, (str, int, bool)) for v in enum):
+        return Literal[tuple(enum)]  # closed value set → validation rejects strays
     t = schema.get("type")
     if t == "string":
         return str
@@ -211,6 +225,14 @@ def _load_schema(spec, base_dir: Path) -> dict:
     return json.loads((base_dir / spec).read_text(encoding="utf-8"))
 
 
+#: every key a manifest may define — anything else is almost certainly a typo
+#: (a misspelled `publish:` would otherwise silently never publish).
+MANIFEST_KEYS = frozenset(
+    {"name", "description", "system_prompt", "schema", "collect", "publish",
+     "needs_git", "blocking"}
+)
+
+
 def runbook_from_manifest(manifest_path: Path) -> type[Runbook]:
     """Build + register a ScriptRunbook subclass from a YAML manifest."""
     import yaml
@@ -218,6 +240,14 @@ def runbook_from_manifest(manifest_path: Path) -> type[Runbook]:
     data = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
     base_dir = manifest_path.parent
     name = data.get("name") or base_dir.name or manifest_path.stem
+    unknown = sorted(set(data) - MANIFEST_KEYS)
+    if unknown:
+        logger.warning(
+            "unknown manifest keys — typo? they are ignored",
+            manifest=str(manifest_path),
+            unknown=unknown,
+            known=sorted(MANIFEST_KEYS),
+        )
     if not data.get("system_prompt") and not data.get("collect"):
         # everything else has a default; a manifest with neither is a typo
         raise ValueError(

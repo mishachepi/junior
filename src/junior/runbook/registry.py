@@ -13,8 +13,9 @@ Runbooks come from four sources, all merged into one registry:
 3. **Direct path** — `--runbook "pkg.module:ClassName"` (or the same in config)
    loads a Runbook subclass directly, an escape hatch for quick experiments.
 4. **Repo-local** — `<project>/.junior/runbooks/` (Python class or YAML manifest),
-   loaded by `load_local_runbooks()`; opt-in via `settings.local_runbooks` since
-   it executes code shipped in the reviewed repository.
+   loaded by `load_local_runbooks()`; on by default (`settings.local_runbooks`,
+   since 0.2.4) — it executes code shipped in the reviewed repository, same
+   trust model as the repo's Makefile or git hooks; disable for untrusted repos.
 
 Harnesses are resolved lazily via the `HarnessKind` enum, whose value is the
 harness module path; each such module exposes a module-level `HARNESS` instance.
@@ -83,7 +84,7 @@ _local_loaded_dirs: set[str] = set()
 
 
 def load_local_runbooks(project_dir) -> list[str]:
-    """Import repo-local runbooks from ``<project_dir>/.junior/runbooks/`` (opt-in).
+    """Import repo-local runbooks from ``<project_dir>/.junior/runbooks/``.
 
     Layout (either works):
       .junior/runbooks/weather/weather.py   ← folder per runbook (preferred)
@@ -92,7 +93,8 @@ def load_local_runbooks(project_dir) -> list[str]:
     Each must expose a ``@register_runbook`` class. The runbooks root is put on
     ``sys.path`` (and kept there) so a runbook can split across sibling modules
     and lazy-import them at runtime. SECURITY: this executes code shipped in the
-    repo — callers gate it behind ``settings.local_runbooks``.
+    repo — callers gate it behind ``settings.local_runbooks`` (default: on;
+    same trust model as the repo's Makefile — disable for untrusted repos).
 
     Returns the names newly registered. Idempotent within a process.
     """

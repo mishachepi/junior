@@ -2,6 +2,15 @@
 
 ## 0.2.4 — 2026-06-29
 
+- **Manifest schemas keep their fidelity.** `json_schema_to_model` now carries
+  field `description`s into the generated pydantic model (they are the schema
+  author's instructions to the LLM) and converts `enum` to a closed `Literal` —
+  an out-of-set value now fails validation instead of passing as a free string.
+- **Unknown manifest keys warn.** A misspelled key (e.g. `publich:`) is reported
+  with the list of known keys instead of being silently ignored.
+- Docs: repo-local runbook loading is documented as on-by-default (was still
+  described as "opt-in" in the registry docstrings).
+
 - **Repo-local runbooks now load by default (`local_runbooks: true`).** Junior
   discovers `<project>/.junior/runbooks/` out of the box, so a repo that ships its
   own runbooks just works after `junior run`. This executes code shipped in the
