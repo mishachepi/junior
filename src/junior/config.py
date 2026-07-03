@@ -378,6 +378,29 @@ class OutputSettings(BaseSettings):
     bitbucket_pr_id: int | None = None
 
 
+# --- Per-runbook overrides ---
+
+
+class RunbookSettings(BaseSettings):
+    """Config scoped to ONE runbook, keyed by its registry name (scion-style:
+    each runbook carries its own prompt layer; the global layer stays thin).
+
+        runbooks:
+          local_review:
+            prompts:
+              - file://./.junior/prompts/review.md
+
+    Applied only when that runbook runs — other runbooks never see these
+    prompts (a global `context.prompts` review rule polluting a changelog
+    runbook costs real tokens and steers the model off-task)."""
+
+    model_config = _BASE_CONFIG
+
+    # Same shape as `context.prompts`: inline text or `file://` URI (resolved
+    # against the config file's directory at load time).
+    prompts: list[str] = Field(default_factory=list)
+
+
 # --- Top-level Settings ---
 
 
@@ -393,6 +416,8 @@ class Settings(BaseSettings):
     context: ContextSettings = Field(default_factory=ContextSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
+    # Per-runbook overrides, keyed by registry name. See RunbookSettings.
+    runbooks: dict[str, RunbookSettings] = Field(default_factory=dict)
     # Which runbook (module) to run — registry name or "module:ClassName".
     # No magic: chosen explicitly via --runbook / RUNBOOK / config; there is no
     # implicit default. Empty → `junior run`/`dry-run` exit 2 with a hint.
@@ -409,6 +434,14 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v.strip().upper()
         return v
+
+    def prompts_for(self, runbook_name: str) -> list[str]:
+        """Effective extra prompts for one runbook: the thin global layer
+        (`context.prompts`, which also carries CLI `--prompt`) plus the
+        runbook's own `runbooks.<name>.prompts`. Order: global first, scoped
+        after — the more specific layer speaks last."""
+        scoped = self.runbooks.get(runbook_name)
+        return list(self.context.prompts) + (list(scoped.prompts) if scoped else [])
 
     def preflight(self, *, review: bool = True) -> list[str]:
         """Generic, runbook-agnostic validation (context files + LLM harness).
@@ -581,7 +614,8 @@ def _flatten_shorthands(cfg: dict) -> dict:
 
 
 def _resolve_prompt_uris(cfg: dict, base_dir: Path) -> dict:
-    """Resolve relative `file://` URIs in `context.prompts` against `base_dir`.
+    """Resolve relative `file://` URIs in `context.prompts` (and every
+    `runbooks.<name>.prompts`) against `base_dir`.
 
     Plain inline strings (no `file://` prefix) and already-absolute URIs are
     left as-is. We resolve at load time so the merged config carries
@@ -591,6 +625,13 @@ def _resolve_prompt_uris(cfg: dict, base_dir: Path) -> dict:
     ctx = cfg.get("context")
     if isinstance(ctx, dict) and isinstance(ctx.get("prompts"), list):
         ctx["prompts"] = [_resolve_one_prompt_entry(str(p), base_dir) for p in ctx["prompts"]]
+    rbs = cfg.get("runbooks")
+    if isinstance(rbs, dict):
+        for rb in rbs.values():
+            if isinstance(rb, dict) and isinstance(rb.get("prompts"), list):
+                rb["prompts"] = [
+                    _resolve_one_prompt_entry(str(p), base_dir) for p in rb["prompts"]
+                ]
     return cfg
 
 

@@ -67,8 +67,10 @@ def resolve_harness(settings: Settings):
         raise typer.Exit(code=3)
 
 
-def load_prompts(settings: Settings, logger) -> list:
-    """Resolve `settings.context.prompts` into Prompt objects (for preflight/log).
+def load_prompts(settings: Settings, logger, runbook_name: str = "") -> list:
+    """Resolve the effective prompts into Prompt objects (for preflight/log):
+    the global `context.prompts` plus, when `runbook_name` is given, that
+    runbook's scoped `runbooks.<name>.prompts`.
 
     Each entry is either inline text or a `file://...` URI (absolute by the
     time it reaches Settings). Empty result is fine.
@@ -76,7 +78,7 @@ def load_prompts(settings: Settings, logger) -> list:
     from junior.prompt_loader import load_prompts as resolve
 
     try:
-        return resolve(list(settings.context.prompts))
+        return resolve(settings.prompts_for(runbook_name))
     except ValueError as e:
         error(str(e))
         raise typer.Exit(code=2)

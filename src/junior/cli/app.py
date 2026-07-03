@@ -230,7 +230,7 @@ def run(
     runbook = resolve_runbook(settings)
 
     needs_review = publish_file is None
-    loaded_prompts = load_prompts(settings, logger) if needs_review else []
+    loaded_prompts = load_prompts(settings, logger, runbook.name) if needs_review else []
 
     # `--from-file` and `--publish-file` skip collection entirely, so the
     # project_dir doesn't need to be a git repo (or even exist).
@@ -346,7 +346,7 @@ def dry_run(
         output_file=output_file,
     )
     runbook = resolve_runbook(settings)
-    loaded_prompts = load_prompts(settings, logger)
+    loaded_prompts = load_prompts(settings, logger, runbook.name)
     log_and_preflight(
         logger, settings, globals_,
         publish_enabled=False, prompts=loaded_prompts,

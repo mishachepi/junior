@@ -147,9 +147,10 @@ class ScriptRunbook(Runbook[ScriptContext, BaseModel]):
     def system_prompt(self, settings: Settings) -> str:
         from junior.prompt_loader import merge_prompts
 
-        # The manifest's `system_prompt` is the head; user --prompts are appended.
+        # The manifest's `system_prompt` is the head; user --prompts (global +
+        # scoped to this runbook) are appended.
         base = _read_maybe_file(self._manifest.get("system_prompt", ""), self._base_dir)
-        return merge_prompts(base, list(settings.context.prompts))
+        return merge_prompts(base, settings.prompts_for(self.name))
 
     def publish(
         self,

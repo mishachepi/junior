@@ -665,3 +665,55 @@ class TestSaveGlobalConfig:
         path.write_text("{ : not: valid: yaml")
         config_module.save_global_config({"harness": "codex"})
         assert yaml.safe_load(path.read_text()) == {"harness": "codex"}
+
+
+class TestPerRunbookPrompts:
+    """`runbooks.<name>.prompts` — scoped prompt layer (scion-style)."""
+
+    def test_prompts_for_merges_global_then_scoped(self):
+        s = Settings(
+            context={"prompts": ["global rule"]},
+            runbooks={"local_review": {"prompts": ["review rule"]}},
+        )
+        assert s.prompts_for("local_review") == ["global rule", "review rule"]
+
+    def test_prompts_for_other_runbook_sees_only_global(self):
+        s = Settings(
+            context={"prompts": ["global rule"]},
+            runbooks={"local_review": {"prompts": ["review rule"]}},
+        )
+        assert s.prompts_for("changelog") == ["global rule"]
+        assert s.prompts_for("") == ["global rule"]
+
+    def test_scoped_prompts_reach_system_prompt_only_for_that_runbook(self):
+        from junior.runbook.base import Runbook
+
+        class _Rb(Runbook):
+            name = "demo_scoped"
+            context_model = None
+            result_model = None
+
+            def collect(self, settings):  # pragma: no cover - not used
+                raise NotImplementedError
+
+            def render(self, context, settings, *, file_access):  # pragma: no cover
+                raise NotImplementedError
+
+            def publish(self, settings, result, usage, *, errors):  # pragma: no cover
+                raise NotImplementedError
+
+        s = Settings(runbooks={"demo_scoped": {"prompts": ["ONLY-FOR-DEMO"]}})
+        assert "ONLY-FOR-DEMO" in _Rb().system_prompt(s)
+        s2 = Settings(runbooks={"other": {"prompts": ["NOT-FOR-DEMO"]}})
+        assert "NOT-FOR-DEMO" not in _Rb().system_prompt(s2)
+
+    def test_config_file_resolves_scoped_file_uris(self, tmp_path):
+        (tmp_path / "rules.md").write_text("scoped rules body")
+        cfg = tmp_path / "c.yaml"
+        cfg.write_text(
+            "runbooks:\n  local_review:\n    prompts:\n      - file://./rules.md\n"
+        )
+        data = config_module.load_config_file(cfg)
+        entry = data["runbooks"]["local_review"]["prompts"][0]
+        assert entry.startswith("file:///")
+        assert entry.endswith("rules.md")

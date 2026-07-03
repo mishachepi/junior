@@ -66,8 +66,8 @@ class CodeReviewRunbook(Runbook[ReviewContext, ReviewOutput]):
         from junior.prompt_loader import merge_prompts
         from junior.runbooks.code_review.instructions import build_review_prompt
 
-        # role + user prompts, then the shared review rules.
-        head = merge_prompts(self.SYSTEM_PROMPT, list(settings.context.prompts))
+        # role + user prompts (global + this runbook's), then the shared rules.
+        head = merge_prompts(self.SYSTEM_PROMPT, settings.prompts_for(self.name))
         return build_review_prompt(head)
 
     def is_blocking(self, result: ReviewOutput) -> bool:

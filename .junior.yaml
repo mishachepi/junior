@@ -5,6 +5,11 @@
 runbook: local_review
 harness: claudecode
 
-context:
-  prompts:
-    - file://./.junior/prompts/review.md
+# Prompts are scoped per runbook (scion-style): the review rules below apply
+# ONLY to local_review — a `junior run --runbook changelog` in this repo won't
+# drag code-review instructions (and their token bill) into an unrelated task.
+# Truly global prompts (style, language) would go under `context.prompts`.
+runbooks:
+  local_review:
+    prompts:
+      - file://./.junior/prompts/review.md

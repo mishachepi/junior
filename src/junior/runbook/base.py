@@ -132,11 +132,12 @@ class Runbook(ABC, Generic[C, R]):
 
     def system_prompt(self, settings: "Settings") -> str:
         """The model's instructions: this runbook's `SYSTEM_PROMPT` role plus any
-        user `--prompt` / `context.prompts` (additive). Override to append domain
-        rules (see `CodeReviewRunbook`)."""
+        user `--prompt` / `context.prompts` (global) plus this runbook's own
+        `runbooks.<name>.prompts` (scoped — other runbooks never see them).
+        Override to append domain rules (see `CodeReviewRunbook`)."""
         from junior.prompt_loader import merge_prompts
 
-        return merge_prompts(self.SYSTEM_PROMPT, list(settings.context.prompts))
+        return merge_prompts(self.SYSTEM_PROMPT, settings.prompts_for(self.name))
 
     # --- phase 3: publish ---
     @abstractmethod

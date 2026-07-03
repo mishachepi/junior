@@ -2,6 +2,13 @@
 
 ## 0.2.4 — 2026-06-29
 
+- **Prompts can be scoped per runbook: `runbooks.<name>.prompts`.** A config-file
+  prompt used to apply to *every* runbook — a repo's code-review rules leaked into
+  an unrelated `--runbook changelog` run, steering the model off-task and paying
+  for it (5× tokens observed). Now `context.prompts` stays as the thin global
+  layer (style, language; CLI `--prompt` still lands there), while
+  `runbooks.<name>.prompts` applies only when that runbook runs. `file://` URIs
+  resolve against the config file's directory, same as before.
 - **Manifest schemas keep their fidelity.** `json_schema_to_model` now carries
   field `description`s into the generated pydantic model (they are the schema
   author's instructions to the LLM) and converts `enum` to a closed `Literal` —
