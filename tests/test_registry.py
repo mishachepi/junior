@@ -6,8 +6,9 @@ import types
 import pytest
 from pydantic import BaseModel
 
+from junior.config import HarnessKind
 from junior.runbook import registry
-from junior.runbook.base import Runbook
+from junior.runbook.base import Harness, Runbook
 
 
 class _Ctx(BaseModel):
@@ -89,3 +90,37 @@ def test_entry_point_plugin_is_registered(monkeypatch):
     monkeypatch.setattr(registry, "entry_points", lambda group: [_FakeEP()])
 
     assert registry.get_runbook("plugin_review").name == "plugin_review"
+
+
+# --- harness resolution: HarnessKind enum → module path → HARNESS singleton ---
+
+
+def test_get_harness_resolves_enum_to_singleton():
+    # CLAUDECODE ships in the core install, so its module always imports.
+    harness = registry.get_harness(HarnessKind.CLAUDECODE)
+    assert isinstance(harness, Harness)
+    # enum value is the module path; the singleton lives there
+    assert harness is sys.modules[HarnessKind.CLAUDECODE.value].HARNESS
+
+
+def test_get_harness_raises_when_module_lacks_singleton():
+    mod = types.ModuleType("_harness_no_singleton")
+    sys.modules["_harness_no_singleton"] = mod  # module exists but has no HARNESS
+    fake_kind = types.SimpleNamespace(value="_harness_no_singleton")
+    try:
+        with pytest.raises(RuntimeError, match="does not expose a HARNESS instance"):
+            registry.get_harness(fake_kind)
+    finally:
+        del sys.modules["_harness_no_singleton"]
+
+
+def test_get_harness_raises_when_singleton_is_wrong_type():
+    mod = types.ModuleType("_harness_bad_singleton")
+    mod.HARNESS = object()  # present but not a Harness
+    sys.modules["_harness_bad_singleton"] = mod
+    fake_kind = types.SimpleNamespace(value="_harness_bad_singleton")
+    try:
+        with pytest.raises(RuntimeError, match="does not expose a HARNESS instance"):
+            registry.get_harness(fake_kind)
+    finally:
+        del sys.modules["_harness_bad_singleton"]
