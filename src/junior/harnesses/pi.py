@@ -161,9 +161,7 @@ def _last_assistant(stdout: str) -> tuple[str, Usage]:
             + int(usage.get("cacheWrite") or 0)
         )
         output_t += int(usage.get("output") or 0)
-    return text, Usage(
-        input_tokens=input_t, output_tokens=output_t, total_tokens=input_t + output_t
-    )
+    return text, Usage.from_io(input_tokens=input_t, output_tokens=output_t)
 
 
 def _parse_response(text: str, output_schema: type[BaseModel]) -> BaseModel:

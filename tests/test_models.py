@@ -161,3 +161,18 @@ def test_shim_aliases_resolve_to_renamed_models():
 
     assert CollectedContext is ReviewContext
     assert LLMReviewOutput is ReviewOutput
+
+
+# --- Usage.from_io: shared token-construction convention (claudecode, pi) ---
+
+
+def test_usage_from_io_totals_input_plus_output():
+    usage = Usage.from_io(input_tokens=30, output_tokens=12)
+    assert usage.input_tokens == 30
+    assert usage.output_tokens == 12
+    assert usage.total_tokens == 42
+
+
+def test_usage_from_io_defaults_to_zero():
+    usage = Usage.from_io()
+    assert (usage.input_tokens, usage.output_tokens, usage.total_tokens) == (0, 0, 0)

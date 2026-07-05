@@ -93,7 +93,7 @@ class ClaudeCodeHarness(Harness):
         input_t, output_t = _extract_token_usage(result_msg)
         return LLMResult(
             output=output,
-            usage=Usage(input_tokens=input_t, output_tokens=output_t, total_tokens=input_t + output_t),
+            usage=Usage.from_io(input_tokens=input_t, output_tokens=output_t),
         )
 
 

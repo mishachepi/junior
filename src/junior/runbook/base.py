@@ -45,6 +45,21 @@ class Usage(BaseModel):
     output_tokens: int = 0
     total_tokens: int = 0
 
+    @classmethod
+    def from_io(cls, *, input_tokens: int = 0, output_tokens: int = 0) -> "Usage":
+        """Build Usage from input/output counts; total = input + output.
+
+        The shared convention across harnesses that report a split (claudecode,
+        pi): cache tokens are already folded into `input_tokens` by the caller,
+        and the total is their sum. Harnesses that only surface a bundled total
+        (codex) construct `Usage(total_tokens=...)` directly instead.
+        """
+        return cls(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+        )
+
 
 class LLMResult(BaseModel):
     """Envelope around a validated LLM output plus runtime metadata.
