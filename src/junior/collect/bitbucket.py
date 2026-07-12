@@ -43,14 +43,9 @@ def _fetch_bitbucket_metadata(
     """Fetch PR title, description, base SHA, and comments from the Bitbucket API."""
     import httpx
 
+    # A non-HTTPS bitbucket_url with a token is rejected upfront by the runbook's
+    # `_security_requirements`, so the token never reaches this request in cleartext.
     out = settings.output
-    if out.bitbucket_url and not out.bitbucket_url.lower().startswith("https://"):
-        # Publishing hard-fails on non-HTTPS (_publish_requirements); collect
-        # only warns so read-only runs against an intranet instance still work.
-        logger.warning(
-            "BITBUCKET_URL is not HTTPS — the access token is sent in cleartext",
-            url=out.bitbucket_url,
-        )
     try:
         api_base = pr_api_base(
             out.bitbucket_url, out.bitbucket_project, out.bitbucket_repo, out.bitbucket_pr_id

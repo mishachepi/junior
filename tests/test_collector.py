@@ -196,7 +196,7 @@ def test_gitlab_comments_caps_at_max(monkeypatch):
     assert [c.body for c in out] == ["c8", "c9", "c10"]
 
 
-# --- non-HTTPS cleartext-token warning ---
+# --- non-HTTPS cleartext-token hard-fail (gitlab) ---
 
 
 def _gitlab_settings(url: str, token: str) -> Settings:
@@ -210,86 +210,53 @@ def _gitlab_settings(url: str, token: str) -> Settings:
     )
 
 
-def _warned_cleartext(records) -> bool:
-    return any(
-        r.get("event", "").startswith("CI_SERVER_URL is not HTTPS") for r in records
+def _gitlab_runbook():
+    from junior.runbook import registry
+
+    return registry.get_runbook("gitlab_pr_review")
+
+
+def _rejects_cleartext(errors) -> bool:
+    return any("CI_SERVER_URL must use HTTPS" in e for e in errors)
+
+
+def test_validate_rejects_non_https_with_token():
+    # The token would travel in cleartext — a hard config error, not a warning.
+    errors = _gitlab_runbook().validate(
+        _gitlab_settings("http://gitlab.intranet", "secret"), publish_enabled=True
     )
+    assert _rejects_cleartext(errors)
 
 
-def test_collect_warns_on_non_https_with_token():
-    from structlog.testing import capture_logs
-
-    from junior.collect.gitlab import _fetch_gitlab_metadata
-
-    with capture_logs() as logs:
-        # The API call then soft-fails (no server) — we only assert the warning fired.
-        _fetch_gitlab_metadata(_gitlab_settings("http://gitlab.intranet", "secret"))
-    assert _warned_cleartext(logs)
+def test_validate_rejects_non_https_even_without_publish():
+    # Collect sends the token too, so the check must fire on a read-only run.
+    errors = _gitlab_runbook().validate(
+        _gitlab_settings("http://gitlab.intranet", "secret"), publish_enabled=False
+    )
+    assert _rejects_cleartext(errors)
 
 
-def test_collect_no_warning_on_https():
-    from structlog.testing import capture_logs
-
-    from junior.collect.gitlab import _fetch_gitlab_metadata
-
-    with capture_logs() as logs:
-        _fetch_gitlab_metadata(_gitlab_settings("https://gitlab.com", "secret"))
-    assert not _warned_cleartext(logs)
+def test_validate_allows_https():
+    errors = _gitlab_runbook().validate(
+        _gitlab_settings("https://gitlab.com", "secret"), publish_enabled=True
+    )
+    assert not _rejects_cleartext(errors)
 
 
-def test_collect_no_warning_on_uppercase_https_scheme():
-    from structlog.testing import capture_logs
-
-    from junior.collect.gitlab import _fetch_gitlab_metadata
-
+def test_validate_allows_uppercase_https_scheme():
     # URI schemes are case-insensitive (RFC 3986) — HTTPS is still encrypted.
-    with capture_logs() as logs:
-        _fetch_gitlab_metadata(_gitlab_settings("HTTPS://gitlab.com", "secret"))
-    assert not _warned_cleartext(logs)
+    errors = _gitlab_runbook().validate(
+        _gitlab_settings("HTTPS://gitlab.com", "secret"), publish_enabled=False
+    )
+    assert not _rejects_cleartext(errors)
 
 
-def test_collect_no_warning_when_token_empty():
-    from structlog.testing import capture_logs
-
-    from junior.collect.gitlab import _fetch_gitlab_metadata
-
-    with capture_logs() as logs:
-        _fetch_gitlab_metadata(_gitlab_settings("http://gitlab.intranet", ""))
-    assert not _warned_cleartext(logs)
-
-
-def test_publish_warns_on_non_https_with_token():
-    from structlog.testing import capture_logs
-
-    from junior.publish.gitlab import post_review
-    from junior.runbooks.code_review.models import ReviewOutput, ReviewResult
-
-    with capture_logs() as logs:
-        try:
-            post_review(
-                _gitlab_settings("http://gitlab.intranet", "secret"),
-                ReviewResult(output=ReviewOutput(summary="s")),
-            )
-        except Exception:
-            pass  # no server — warning fires before the API call fails
-    assert _warned_cleartext(logs)
-
-
-def test_publish_no_warning_on_https():
-    from structlog.testing import capture_logs
-
-    from junior.publish.gitlab import post_review
-    from junior.runbooks.code_review.models import ReviewOutput, ReviewResult
-
-    with capture_logs() as logs:
-        try:
-            post_review(
-                _gitlab_settings("https://gitlab.com", "secret"),
-                ReviewResult(output=ReviewOutput(summary="s")),
-            )
-        except Exception:
-            pass
-    assert not _warned_cleartext(logs)
+def test_validate_ignores_non_https_when_token_empty():
+    # No token → nothing to leak, so a plain-http URL is not an error here.
+    errors = _gitlab_runbook().validate(
+        _gitlab_settings("http://gitlab.intranet", ""), publish_enabled=False
+    )
+    assert not _rejects_cleartext(errors)
 
 
 # --- GitHub comment parsing ---

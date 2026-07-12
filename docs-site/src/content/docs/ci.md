@@ -195,8 +195,8 @@ stage('Code Review') {
 > [!NOTE]
 > `BITBUCKET_TOKEN` is a Bitbucket **HTTP access token** (repository or project scoped,
 > with write permission to comment) — Junior sends it as an `Authorization: Bearer`
-> header, so the instance must be reached over **HTTPS**; plain `http://` URLs are
-> rejected when publishing. Basic auth is not supported.
+> header, so the instance must be reached over **HTTPS**; a plain `http://` URL with a
+> token set is rejected as a config error (exit 2) before any request. Basic auth is not supported.
 
 ### TeamCity
 

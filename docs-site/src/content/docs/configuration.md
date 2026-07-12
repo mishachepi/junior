@@ -170,7 +170,7 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 | `PUBLISH` | `--publish` / `--no-publish` | `false` | Run the runbook's custom publish. `local_review` renders pretty Markdown locally; platform runbooks post to the PR/MR and require their tokens (see below). Without it, every runbook emits raw output instead |
 | `GITLAB_TOKEN` | — | — | GitLab token with `api` scope |
 | `GITHUB_TOKEN` | — | — | GitHub token |
-| `CI_SERVER_URL` | — | `https://gitlab.com` | GitLab instance URL. A non-`https://` URL with a token set logs a cleartext-token warning (it does not block) |
+| `CI_SERVER_URL` | — | `https://gitlab.com` | GitLab instance URL. A non-`https://` URL with a token set is a hard config error (the token would travel in cleartext) |
 | `CI_PROJECT_ID` | — | — | GitLab project ID (auto-set by runner) |
 | `CI_MERGE_REQUEST_IID` | — | — | MR number (auto-set by runner) |
 | `CI_MERGE_REQUEST_DIFF_BASE_SHA` | — | — | Base SHA for inline comments (auto-set by runner) |
@@ -196,10 +196,11 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 > Platform tokens and CI auto-vars are typically set as environment variables by the runner — you almost never list them yourself. See [CI Setup](ci.md).
 
 > [!WARNING]
-> Always point `CI_SERVER_URL` (GitLab) and `BITBUCKET_URL` (Bitbucket DC) at an
-> `https://` instance: over plain HTTP the access token is sent in cleartext. With a
-> token set, both platforms log a warning on a non-HTTPS URL; Bitbucket additionally
-> refuses to publish over non-HTTPS.
+> `CI_SERVER_URL` (GitLab) and `BITBUCKET_URL` (Bitbucket DC) must be `https://`
+> whenever a token is set: over plain HTTP the access token travels in cleartext.
+> Junior treats a non-HTTPS URL with a token as a **hard config error** (exit 2)
+> and fails fast — before any request, on both the collect and publish paths, with
+> no opt-out. Use an `https://` instance.
 
 ## Variable details
 

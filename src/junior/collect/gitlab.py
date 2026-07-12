@@ -23,14 +23,10 @@ def collect(settings: Settings) -> ReviewContext:
 def _fetch_gitlab_metadata(
     settings: Settings,
 ) -> tuple[str, list[str], list[MRComment]]:
-    """Fetch MR description, labels, and discussion comments from GitLab API."""
-    out = settings.output
-    if out.gitlab_token and not out.ci_server_url.lower().startswith("https://"):
-        # Warn but keep going — local/intranet HTTP instances stay usable.
-        logger.warning(
-            "CI_SERVER_URL is not HTTPS — the private token is sent in cleartext",
-            url=out.ci_server_url,
-        )
+    """Fetch MR description, labels, and discussion comments from GitLab API.
+
+    A non-HTTPS `ci_server_url` with a token is rejected upfront by the runbook's
+    `_security_requirements`, so the token never reaches this request in cleartext."""
     try:
         import gitlab
 

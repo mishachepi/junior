@@ -32,6 +32,21 @@ logger = structlog.get_logger()
 INLINE_DIFF_MAX_CHARS = 50_000
 
 
+def require_https_url(url: str, token: str, *, var_name: str) -> list[str]:
+    """Reject a cleartext platform URL that would carry an access token.
+
+    A non-HTTPS `url` sends `token` over the wire in the clear, so both collect
+    and publish refuse rather than leak it — there is no opt-out. An empty token
+    or url means there is nothing to protect (no error). Schemes are compared
+    case-insensitively (RFC 3986)."""
+    if token and url and not url.lower().startswith("https://"):
+        return [
+            f"{var_name} must use HTTPS — the access token would otherwise be "
+            "sent in cleartext. Use an https:// URL."
+        ]
+    return []
+
+
 class CodeReviewRunbook(Runbook[ReviewContext, ReviewOutput]):
     context_model = ReviewContext
     result_model = ReviewOutput
@@ -107,12 +122,22 @@ class CodeReviewRunbook(Runbook[ReviewContext, ReviewOutput]):
         )
 
     def validate(self, settings: Settings, *, publish_enabled: bool) -> list[str]:
-        return self._publish_requirements(settings) if publish_enabled else []
+        # Security checks run always — a platform collector sends the token too,
+        # so a cleartext URL leaks it even on a no-publish (read-only) run.
+        errors = self._security_requirements(settings)
+        if publish_enabled:
+            errors += self._publish_requirements(settings)
+        return errors
 
     # --- per-platform hooks (subclasses implement) ---
 
     def _post_to_platform(self, settings: Settings, review: ReviewResult) -> None:
         raise NotImplementedError
+
+    def _security_requirements(self, settings: Settings) -> list[str]:
+        """Checks that apply whenever the runbook runs (collect included), not
+        just when publishing. Default: none."""
+        return []
 
     def _publish_requirements(self, settings: Settings) -> list[str]:
         """Config keys this runbook needs in order to publish."""

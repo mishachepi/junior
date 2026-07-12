@@ -6,7 +6,7 @@ from junior.config import Settings
 from junior.runbooks.code_review.models import ReviewContext, ReviewResult
 from junior.runbook.base import EnvVar
 from junior.runbook.registry import register_runbook
-from junior.runbooks.code_review.base import CodeReviewRunbook
+from junior.runbooks.code_review.base import CodeReviewRunbook, require_https_url
 
 
 @register_runbook
@@ -32,13 +32,16 @@ class BitbucketPrReview(CodeReviewRunbook):
 
         post_review(settings, review)
 
+    def _security_requirements(self, settings: Settings) -> list[str]:
+        return require_https_url(
+            settings.output.bitbucket_url, settings.output.bitbucket_token, var_name="BITBUCKET_URL"
+        )
+
     def _publish_requirements(self, settings: Settings) -> list[str]:
         out = settings.output
         errors: list[str] = []
         if not out.bitbucket_url:
             errors.append("BITBUCKET_URL is required to publish to Bitbucket.")
-        elif not out.bitbucket_url.startswith("https://"):
-            errors.append("BITBUCKET_URL must use HTTPS (the access token is sent as a header).")
         if not out.bitbucket_token:
             errors.append("BITBUCKET_TOKEN (HTTP access token) is required to publish.")
         if not out.bitbucket_project:

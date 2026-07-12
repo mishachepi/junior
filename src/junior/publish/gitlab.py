@@ -13,14 +13,8 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
     """Post review results to GitLab MR."""
     import gitlab
 
-    out = settings.output
-    if out.gitlab_token and not out.ci_server_url.lower().startswith("https://"):
-        # Warn but keep going — local/intranet HTTP instances stay usable.
-        logger.warning(
-            "CI_SERVER_URL is not HTTPS — the private token is sent in cleartext",
-            url=out.ci_server_url,
-        )
-
+    # A non-HTTPS ci_server_url with a token is rejected upfront by the runbook's
+    # `_security_requirements`, so the token never travels here in cleartext.
     gl = gitlab.Gitlab(
         settings.output.ci_server_url, private_token=settings.output.gitlab_token
     )

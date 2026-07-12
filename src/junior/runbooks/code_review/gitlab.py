@@ -6,7 +6,7 @@ from junior.config import Settings
 from junior.runbooks.code_review.models import ReviewContext, ReviewResult
 from junior.runbook.base import EnvVar
 from junior.runbook.registry import register_runbook
-from junior.runbooks.code_review.base import CodeReviewRunbook
+from junior.runbooks.code_review.base import CodeReviewRunbook, require_https_url
 
 
 @register_runbook
@@ -31,6 +31,11 @@ class GitlabPrReview(CodeReviewRunbook):
         from junior.publish.gitlab import post_review
 
         post_review(settings, review)
+
+    def _security_requirements(self, settings: Settings) -> list[str]:
+        return require_https_url(
+            settings.output.ci_server_url, settings.output.gitlab_token, var_name="CI_SERVER_URL"
+        )
 
     def _publish_requirements(self, settings: Settings) -> list[str]:
         errors: list[str] = []

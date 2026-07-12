@@ -348,9 +348,8 @@ def test_validate_requires_all_fields_for_publish():
         assert any(var in e for e in errors), f"no error mentions {var}"
 
 
-def test_validate_rejects_plain_http():
-    runbook = registry.get_runbook("bitbucket_pr_review")
-    settings = Settings(
+def _http_settings() -> Settings:
+    return Settings(
         output=OutputSettings(
             bitbucket_url="http://bitbucket.example.com",
             bitbucket_token="t",
@@ -359,8 +358,20 @@ def test_validate_rejects_plain_http():
             bitbucket_pr_id=1,
         )
     )
-    errors = runbook.validate(settings, publish_enabled=True)
-    assert errors == ["BITBUCKET_URL must use HTTPS (the access token is sent as a header)."]
+
+
+def test_validate_rejects_plain_http():
+    runbook = registry.get_runbook("bitbucket_pr_review")
+    errors = runbook.validate(_http_settings(), publish_enabled=True)
+    assert any("BITBUCKET_URL must use HTTPS" in e for e in errors)
+
+
+def test_validate_rejects_plain_http_even_without_publish():
+    # Collect fetches PR metadata with the token, so a cleartext URL leaks it
+    # even on a read-only run — the check must not be gated on publish.
+    runbook = registry.get_runbook("bitbucket_pr_review")
+    errors = runbook.validate(_http_settings(), publish_enabled=False)
+    assert any("BITBUCKET_URL must use HTTPS" in e for e in errors)
 
 
 def test_validate_passes_with_full_config():

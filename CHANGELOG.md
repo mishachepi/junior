@@ -17,7 +17,16 @@
   with the list of known keys instead of being silently ignored.
 - Docs: repo-local runbook loading is documented as on-by-default (was still
   described as "opt-in" in the registry docstrings).
-
+- **Security: a non-HTTPS platform URL with a token is now a hard error, not a
+  warning.** GitLab (`CI_SERVER_URL`) and Bitbucket (`BITBUCKET_URL`) previously
+  only *warned* when the access token would travel in cleartext, and Bitbucket
+  hard-failed on publish but not on collect — a half-measure, since the collector
+  sends the token too. Now a http:// URL with a token set fails config validation
+  (exit 2) up front, on **both** the collect and publish paths, for **both**
+  platforms, with no opt-out. The check lives in a new `_security_requirements`
+  runbook hook (shared `require_https_url` helper); the old inline cleartext
+  warnings were removed as dead code. GitHub is unaffected (it drives the `gh` CLI,
+  Junior never handles its token/URL directly).
 - **Repo-local runbooks now load by default (`local_runbooks: true`).** Junior
   discovers `<project>/.junior/runbooks/` out of the box, so a repo that ships its
   own runbooks just works after `junior run`. This executes code shipped in the
