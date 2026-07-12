@@ -2,8 +2,9 @@
 `collect.bitbucket` and `publish.bitbucket`.
 
 Auth is an HTTP access token sent as a Bearer header (no basic auth); the
-instance should be reached over HTTPS only — `bitbucket_pr_review.validate()`
-enforces that when publishing.
+instance must be reached over HTTPS only — `bitbucket_pr_review` rejects a
+non-HTTPS `BITBUCKET_URL` with a token set (in `_security_requirements`, before
+any request) so the token is never sent in cleartext.
 """
 
 from __future__ import annotations
