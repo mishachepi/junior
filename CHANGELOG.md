@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **The target branch is validated, and the repo's default branch is detected.**
+  On a `master`-based repo the built-in `main` default produced three doomed
+  diff attempts, each logged as a `warning`, before falling back to the working
+  diff. Now, when the configured target branch doesn't exist, junior resolves
+  the repo's default branch (`origin/HEAD`, then `main`/`master`) and uses it.
+  Intermediate diff candidates that fail log at `debug`; one `info` line reports
+  which diff source was ultimately used.
+
 ## 0.2.4 — 2026-06-29
 
 - **New harness: `gemini`** — drives Google's `gemini` CLI

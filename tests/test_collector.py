@@ -1,13 +1,19 @@
 """Tests for collector: diff parsing, file status."""
 
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
+
+import structlog.testing
 
 from junior.collect.core.diff import (
     _detect_file_status,
     _parse_diff_header,
     _split_diff_by_file,
+    detect_default_branch,
+    get_diff,
     resolve_base_sha,
+    resolve_target_branch,
 )
 from junior.config import ContextSettings, OutputSettings, Settings
 from junior.collect.github import _parse_github_comments
@@ -322,3 +328,61 @@ def test_resolve_base_sha_priority_order():
         )
     )
     assert resolve_base_sha(s) == ("mrbase", "mr_diff_base")
+
+
+# --- default branch detection ---
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", "-c", "user.email=t@t.t", "-c", "user.name=t", *args],
+        cwd=repo, check=True, capture_output=True,
+    )
+
+
+def _make_repo(tmp_path: Path, default_branch: str) -> Path:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-b", default_branch)
+    _git(repo, "commit", "--allow-empty", "-m", "init")
+    return repo
+
+
+def test_resolve_target_branch_keeps_existing(tmp_path):
+    repo = _make_repo(tmp_path, "main")
+    assert resolve_target_branch(repo, "main") == "main"
+
+
+def test_resolve_target_branch_falls_back_to_master(tmp_path):
+    repo = _make_repo(tmp_path, "master")
+    assert resolve_target_branch(repo, "main") == "master"
+
+
+def test_resolve_target_branch_non_git_dir_returns_configured(tmp_path):
+    assert resolve_target_branch(tmp_path, "main") == "main"
+
+
+def test_detect_default_branch_prefers_origin_head(tmp_path):
+    repo = _make_repo(tmp_path, "master")
+    _git(repo, "update-ref", "refs/remotes/origin/develop", "HEAD")
+    _git(repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/develop")
+    assert detect_default_branch(repo) == "develop"
+
+
+def test_detect_default_branch_none_when_nothing_matches(tmp_path):
+    repo = _make_repo(tmp_path, "trunk")
+    assert detect_default_branch(repo) is None
+
+
+def test_get_diff_auto_missing_target_branch_no_warnings(tmp_path):
+    repo = _make_repo(tmp_path, "master")
+    _git(repo, "checkout", "-b", "feature")
+    (repo / "f.txt").write_text("hello\n")
+    _git(repo, "add", "f.txt")
+
+    with structlog.testing.capture_logs() as logs:
+        diff, desc = get_diff(repo, "nosuchbranch", None, source="auto")
+
+    assert desc == "uncommitted changes"
+    assert "hello" in diff
+    assert [e for e in logs if e["log_level"] == "warning"] == []
