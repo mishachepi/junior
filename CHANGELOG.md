@@ -10,6 +10,13 @@
   trim context files, or pick a bigger-context model), rate limiting
   (HTTP 429), bad API key (401/403), and the `llm.max_tokens_per_agent` cap
   (`UsageLimitExceeded`). Unrecognized exceptions still propagate unchanged.
+- **The target branch is validated, and the repo's default branch is detected.**
+  On a `master`-based repo the built-in `main` default produced three doomed
+  diff attempts, each logged as a `warning`, before falling back to the working
+  diff. Now, when the configured target branch doesn't exist, junior resolves
+  the repo's default branch (`origin/HEAD`, then `main`/`master`) and uses it.
+  Intermediate diff candidates that fail log at `debug`; one `info` line reports
+  which diff source was ultimately used.
 
 ## 0.2.4 — 2026-06-29
 
