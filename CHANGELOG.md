@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **The test suite runs on a fresh clone.** Dev tooling moved from the `dev`
+  extra to a PEP 735 `[dependency-groups]` group (uv installs it by default), so
+  a plain `uv run pytest -q` just works. Tests needing an optional platform/SDK
+  dependency (`httpx`, `openai`, `gitlab`) now skip via `importorskip` instead
+  of killing collection, and `conftest.py` pins a deterministic terminal
+  environment — an ambient `FORCE_COLOR` (common in CI) no longer breaks
+  CLI-output assertions. Full suite: `uv run --all-extras pytest -q`.
 - **The target branch is validated, and the repo's default branch is detected.**
   On a `master`-based repo the built-in `main` default produced three doomed
   diff attempts, each logged as a `warning`, before falling back to the working

@@ -9,7 +9,21 @@ both sources for every test — mirroring the local fixture in test_config.py
 explicitly via `--config` or by re-setting the candidates themselves.
 """
 
+import os
+
 import pytest
+
+# Deterministic terminal for CLI-output tests: an ambient FORCE_COLOR makes
+# rich emit ANSI escapes inside CliRunner captures, and TERM=dumb pins tables
+# to 80 columns — either flips help-text/table assertions depending on the
+# machine (or CI) running the suite. Must happen at import time: junior's rich
+# Console is built when the CLI module is first imported.
+for _var in (
+    "FORCE_COLOR", "NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE",
+    "COLORTERM", "COLUMNS", "LINES",
+):
+    os.environ.pop(_var, None)
+os.environ["TERM"] = "xterm-256color"
 
 
 # These manage their own config paths (the wizard writes to CANDIDATES[0], and
