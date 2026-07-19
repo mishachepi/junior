@@ -11,6 +11,7 @@ from junior.runbooks.code_review.models import ReviewOutput
 
 
 def test_output_schema_is_strict():
+    pytest.importorskip("openai")
     schema = _build_output_schema(ReviewOutput)
 
     assert schema["type"] == "object"

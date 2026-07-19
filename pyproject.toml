@@ -36,6 +36,10 @@ bitbucket = ["httpx>=0.28"]  # Bitbucket Data Center (self-hosted)
 
 # --- Convenience ---
 all = ["junior[gitlab,github,bitbucket,codex,pydantic,deepagents]"]
+
+# Dev tooling is a PEP 735 dependency group (not an extra): uv installs the
+# `dev` group by default, so a plain `uv run pytest` works on a fresh clone.
+[dependency-groups]
 dev = [
     "pytest>=9.1.1",
     "pytest-mock>=3.15",
