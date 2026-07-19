@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Run records no longer pollute the host repo's `git status`.** On first
+  write junior drops a self-ignoring `.junior/.gitignore` (covering `output/`
+  and itself), so `?? .junior/` never appears in repos junior reviews.
+  `.junior/runbooks/` and `.junior/prompts/` stay trackable, and an existing
+  `.junior/.gitignore` is never touched.
 - **The test suite runs on a fresh clone.** Dev tooling moved from the `dev`
   extra to a PEP 735 `[dependency-groups]` group (uv installs it by default), so
   a plain `uv run pytest -q` just works. Tests needing an optional platform/SDK

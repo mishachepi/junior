@@ -317,7 +317,7 @@ junior run --publish > review.md                     # rendered Markdown → fil
 
 Every **successful** `junior run` writes a machine-readable, secret-free JSON record to `<project_dir>/.junior/output/{timestamp}.json`. It captures the runbook, harness, model, source, usage, errors, summary, blocking status, and the full structured output — handy for auditing, dashboards, or post-processing.
 
-It's on by default. Disable it with the `--no-record` flag or `output.record: false` (field `OutputSettings.record`, default `true`). The `.junior/output/` directory should be gitignored.
+It's on by default. Disable it with the `--no-record` flag or `output.record: false` (field `OutputSettings.record`, default `true`). On first write junior also drops a self-ignoring `.junior/.gitignore` (covering `output/` and itself), so run records never show up as untracked noise in the host repo — `.junior/runbooks/` and `.junior/prompts/` stay trackable. An existing `.junior/.gitignore` is never touched.
 
 ```bash
 junior run                # writes .junior/output/2026-06-06T12-00-00.json
