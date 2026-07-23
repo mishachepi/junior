@@ -49,7 +49,8 @@ docker run --rm \
 
 `-e ANTHROPIC_API_KEY` forwards the key from your shell (or use `OPENAI_API_KEY`).
 `--publish` renders the review as Markdown to the terminal; drop it for raw JSON.
-Tags: `:latest` and `:0.2.2` (multi-arch — amd64 + arm64).
+Tags: `:latest` (the newest release) plus an immutable per-release tag matching
+the project version, e.g. `:0.2.4` (multi-arch — amd64 + arm64).
 
 ### What each extra pulls
 
