@@ -1,18 +1,15 @@
 # Changelog
 
-## Unreleased
-
-- **Dependabot config (`.github/dependabot.yml`).** Weekly version updates for
-  the Python deps (`uv`), the docs-site (`npm`), GitHub Actions, and the
-  Dockerfile base images; minor+patch grouped per ecosystem to keep PR noise down.
+## 0.2.4 — 2026-06-29
 
 - **Fix: `pydantic` harness crashed with `'RunUsage' object is not callable`.**
   pydantic-ai turned `AgentRunResult.usage` from a method into a property in its
   2.x line; the harness still called it as `result.usage()`. Now reads it as a
   property, and the `pydantic-ai-slim` floor is raised to `>=2.0` so a 1.x install
   (where it was still a method) can't be resolved against the new code.
-
-## 0.2.4 — 2026-06-29
+- **Dependabot config (`.github/dependabot.yml`).** Weekly version updates for
+  the Python deps (`uv`), the docs-site (`npm`), GitHub Actions, and the
+  Dockerfile base images; minor+patch grouped per ecosystem to keep PR noise down.
 
 - **New harness: `gemini`** — drives Google's `gemini` CLI
   (`HARNESS=gemini` / `--harness gemini`). A single
