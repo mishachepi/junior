@@ -30,7 +30,7 @@ deepagents = [
 ]
 
 # --- Platforms: collect MR/PR metadata + publish comments ---
-gitlab = ["python-gitlab>=8.0"]
+gitlab = ["python-gitlab>=8.4.0"]
 github = ["httpx>=0.28"]  # + `gh` CLI authenticated
 bitbucket = ["httpx>=0.28"]  # Bitbucket Data Center (self-hosted)
 
