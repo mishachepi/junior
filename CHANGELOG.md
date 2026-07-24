@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Dependabot config (`.github/dependabot.yml`).** Weekly version updates for
+  the Python deps (`uv`), the docs-site (`npm`), GitHub Actions, and the
+  Dockerfile base images; minor+patch grouped per ecosystem to keep PR noise down.
+
 - **Fix: `pydantic` harness crashed with `'RunUsage' object is not callable`.**
   pydantic-ai turned `AgentRunResult.usage` from a method into a property in its
   2.x line; the harness still called it as `result.usage()`. Now reads it as a
