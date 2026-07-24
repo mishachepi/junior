@@ -30,9 +30,7 @@ def test_complete_builds_file_tools_without_namerror(monkeypatch):
 
     class _Result:
         output = ReviewOutput(summary="looks good", recommendation="approve", comments=[])
-
-        def usage(self):
-            return _Usage()
+        usage = _Usage()
 
     async def _fake_run(self, *args, **kwargs):  # noqa: ANN001 — stub signature
         return _Result()

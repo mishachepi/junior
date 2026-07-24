@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Fix: `pydantic` harness crashed with `'RunUsage' object is not callable`.**
+  pydantic-ai turned `AgentRunResult.usage` from a method into a property in its
+  2.x line; the harness still called it as `result.usage()`. Now reads it as a
+  property, and the `pydantic-ai-slim` floor is raised to `>=2.0` so a 1.x install
+  (where it was still a method) can't be resolved against the new code.
+
 ## 0.2.4 — 2026-06-29
 
 - **New harness: `gemini`** — drives Google's `gemini` CLI

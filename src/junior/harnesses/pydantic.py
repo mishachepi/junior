@@ -174,7 +174,7 @@ class PydanticHarness(Harness):
             max_file_size=settings.llm.max_file_size,
         )
         usage_limits = (
-            UsageLimits(response_tokens_limit=settings.llm.max_tokens_per_agent)
+            UsageLimits(output_tokens_limit=settings.llm.max_tokens_per_agent)
             if settings.llm.max_tokens_per_agent
             else None
         )
@@ -189,7 +189,7 @@ class PydanticHarness(Harness):
             tools=_TOOLS,
         )
         result = await agent.run(user_message, deps=deps, usage_limits=usage_limits)
-        u = result.usage()
+        u = result.usage
         input_t = u.input_tokens or 0
         output_t = u.output_tokens or 0
         return LLMResult(
