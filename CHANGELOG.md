@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **`pydantic` harness: provider errors are now actionable.** A failed
+  `agent.run()` used to surface as a raw SDK dump
+  (`status_code: 400, model_name: …, body: {…}`). The harness now translates
+  the common failures into clear messages: input exceeding the model's context
+  window (with hints — lower `context.max_diff_chars` / `llm.max_file_size`,
+  trim context files, or pick a bigger-context model), rate limiting
+  (HTTP 429), bad API key (401/403), and the `llm.max_tokens_per_agent` cap
+  (`UsageLimitExceeded`). Unrecognized exceptions still propagate unchanged.
+
 ## 0.2.4 — 2026-06-29
 
 - **Fix: `pydantic` harness crashed with `'RunUsage' object is not callable`.**
