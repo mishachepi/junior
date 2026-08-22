@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --extra dev --extra pydantic --extra gitlab --extra github --extra bitbucket
+      - run: uv run ruff check src/ tests/
+      - run: uv run pytest -q
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build full image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: full
+          platforms: linux/amd64
+          push: false
+          provenance: false
+          build-args: VERSION=ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
