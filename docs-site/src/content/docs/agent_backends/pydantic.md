@@ -111,9 +111,16 @@ return LLMResult(
 
 ## Error Handling
 
+Provider/SDK failures from `agent.run()` are translated into actionable
+`RuntimeError`s (`_translate_error`); anything unrecognized re-raises as-is.
+
 | Situation | Behavior |
 |-----------|----------|
-| API call fails | Exception propagates from `agent.run()` |
+| Input exceeds the model's context window (HTTP 400, provider phrasing matched) | `RuntimeError`: "input is too large for model …" + hints (`context.max_diff_chars`, `llm.max_file_size`, bigger model) |
+| Rate limit (HTTP 429) | `RuntimeError` with the provider message + retry hint |
+| Bad API key (HTTP 401/403) | `RuntimeError` pointing at `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` |
+| Other HTTP 4xx/5xx | `RuntimeError` with status + provider message |
+| `max_tokens_per_agent` cap hit (`UsageLimitExceeded`) | `RuntimeError` pointing at `llm.max_tokens_per_agent` |
 | Validation error | pydantic-ai retries automatically |
 | No findings | Model returns an empty `comments` list in the `output_schema` instance |
 | Tool error (file not found) | Error string returned to the agent, which continues |

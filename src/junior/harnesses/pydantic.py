@@ -128,6 +128,71 @@ def _grep(ctx: RunContext[ReviewDeps], pattern: str, path: str = ".") -> list[st
 _TOOLS = [_read_file, _list_dir, _grep]
 
 
+# --- Error translation (SDK exceptions → actionable messages) ---
+
+# Provider phrasings for "the input exceeds the model's context window" (OpenAI
+# and Anthropic word it differently; matched case-insensitively on HTTP 400).
+_CONTEXT_OVERFLOW_MARKERS = (
+    "context_length_exceeded",
+    "maximum context length",
+    "prompt is too long",
+    "too many tokens",
+    "exceeds the context window",
+    "input tokens exceed",
+)
+
+
+def _provider_message(body: object) -> str:
+    """Dig the human-readable message out of a provider error body.
+
+    OpenAI nests it as ``{"error": {"message": ...}}``; Anthropic the same shape
+    with an extra ``type`` — fall back to the raw body for anything else.
+    """
+    if isinstance(body, str):
+        return body
+    if isinstance(body, dict):
+        err = body.get("error", body)
+        if isinstance(err, dict) and isinstance(err.get("message"), str):
+            return err["message"]
+    return str(body) if body is not None else ""
+
+
+def _translate_error(e: Exception, model_str: str) -> RuntimeError | None:
+    """Map a pydantic-ai/provider exception to an actionable RuntimeError.
+
+    Returns None for anything unrecognized — the caller re-raises the original
+    so no stack trace information is lost.
+    """
+    from pydantic_ai.exceptions import ModelHTTPError, UsageLimitExceeded
+
+    if isinstance(e, UsageLimitExceeded):
+        return RuntimeError(
+            f"response hit the configured output-token cap: {e}. "
+            "Raise or unset llm.max_tokens_per_agent (MAX_TOKENS_PER_AGENT)."
+        )
+    if isinstance(e, ModelHTTPError):
+        msg = _provider_message(e.body) or str(e)
+        low = msg.lower()
+        if e.status_code == 400 and any(m in low for m in _CONTEXT_OVERFLOW_MARKERS):
+            return RuntimeError(
+                f"input is too large for model '{model_str}': {msg} — shrink the input "
+                "(lower context.max_diff_chars / llm.max_file_size, trim context files) "
+                "or pick a model with a larger context window."
+            )
+        if e.status_code == 429:
+            return RuntimeError(
+                f"model '{model_str}' rate-limited the request (HTTP 429): {msg} — "
+                "retry later or reduce concurrent junior runs."
+            )
+        if e.status_code in (401, 403):
+            return RuntimeError(
+                f"model '{model_str}' rejected the API key (HTTP {e.status_code}): {msg} — "
+                "check OPENAI_API_KEY / ANTHROPIC_API_KEY."
+            )
+        return RuntimeError(f"model '{model_str}' call failed (HTTP {e.status_code}): {msg}")
+    return None
+
+
 class PydanticHarness(Harness):
     name = "pydantic"
     file_access = False  # gets the diff inline; tools are for extra exploration
@@ -188,7 +253,13 @@ class PydanticHarness(Harness):
             system_prompt=system_prompt,
             tools=_TOOLS,
         )
-        result = await agent.run(user_message, deps=deps, usage_limits=usage_limits)
+        try:
+            result = await agent.run(user_message, deps=deps, usage_limits=usage_limits)
+        except Exception as e:
+            friendly = _translate_error(e, model_str)
+            if friendly is not None:
+                raise friendly from e
+            raise
         u = result.usage
         input_t = u.input_tokens or 0
         output_t = u.output_tokens or 0
