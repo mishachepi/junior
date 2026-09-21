@@ -39,6 +39,56 @@ def resolve_base_sha(settings: Settings) -> tuple[str | None, str]:
     return None, "none"
 
 
+def resolve_target_branch(project_dir: Path, configured: str) -> str:
+    """Return a usable base branch: the configured one if it exists, else the
+    repo's detected default branch.
+
+    Keeps a wrong guess (e.g. the built-in `main` default on a `master`-based
+    repo) from producing a series of doomed diff attempts and their warnings.
+    """
+    if _branch_exists(project_dir, configured):
+        return configured
+    detected = detect_default_branch(project_dir)
+    if detected and detected != configured:
+        logger.info(
+            "target branch not found, using repo default branch",
+            configured=configured,
+            detected=detected,
+        )
+        return detected
+    return configured
+
+
+def detect_default_branch(project_dir: Path) -> str | None:
+    """Detect the repo's default branch.
+
+    Tries `origin/HEAD` (set on clone), then falls back to whichever of
+    `main` / `master` exists as a local or remote-tracking branch.
+    """
+    ref = _run_git(
+        project_dir,
+        ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
+        allow_failure=True,
+    )
+    if ref and ref.strip():
+        return ref.strip().removeprefix("origin/")
+    for candidate in ("main", "master"):
+        if _branch_exists(project_dir, candidate):
+            return candidate
+    return None
+
+
+def _branch_exists(project_dir: Path, branch: str) -> bool:
+    """True when `branch` resolves as a local or origin remote-tracking ref."""
+    for ref in (f"refs/heads/{branch}", f"refs/remotes/origin/{branch}"):
+        ok = _run_git(
+            project_dir, ["rev-parse", "--verify", "--quiet", ref], allow_failure=True
+        )
+        if ok is not None:
+            return True
+    return False
+
+
 def get_diff(
     project_dir: Path,
     target_branch: str,
@@ -88,9 +138,11 @@ def get_diff(
         if diff is not None:
             return diff, f"new commits since {base_sha[:8]} ({base_source})"
 
-    # Branch-based strategies (skip if on target branch)
+    # Branch-based strategies (skip if on target branch). Individual candidates
+    # are allowed to fail quietly (debug log) — a missing ref here is a normal
+    # part of the waterfall, not an error worth a warning.
     if not on_target:
-        diff = _run_git(project_dir, ["diff", f"{target_branch}...HEAD"])
+        diff = _run_git(project_dir, ["diff", f"{target_branch}...HEAD"], allow_failure=True)
         if diff is not None and diff.strip():
             return diff, f"branch {current_branch} vs {target_branch}"
 
@@ -100,11 +152,13 @@ def get_diff(
                 return diff + local, f"branch {current_branch} vs {target_branch} + uncommitted"
 
         _run_git(project_dir, ["fetch", "origin", target_branch], allow_failure=True)
-        diff = _run_git(project_dir, ["diff", f"origin/{target_branch}...HEAD"])
+        diff = _run_git(
+            project_dir, ["diff", f"origin/{target_branch}...HEAD"], allow_failure=True
+        )
         if diff is not None and diff.strip():
             return diff, f"branch {current_branch} vs origin/{target_branch}"
 
-        diff = _run_git(project_dir, ["diff", target_branch, "HEAD"])
+        diff = _run_git(project_dir, ["diff", target_branch, "HEAD"], allow_failure=True)
         if diff is not None and diff.strip():
             return diff, f"branch {current_branch} vs {target_branch}"
 
@@ -250,7 +304,9 @@ def _run_git(
             timeout=60,
         )
         if result.returncode != 0:
-            if not allow_failure:
+            if allow_failure:
+                logger.debug("git command failed", args=args, stderr=result.stderr[:200])
+            else:
                 logger.warning("git command failed", args=args, stderr=result.stderr[:200])
             return None
         return result.stdout

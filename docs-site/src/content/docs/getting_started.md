@@ -146,7 +146,8 @@ junior run --prompt-file docs/review-rules.md
 ## 4. Every run is on the record
 
 Each successful run writes a secret-free JSON trace to `.junior/output/` in your project
-(runbook, harness, tokens, findings, the full structured output). Browse it any time:
+(runbook, harness, tokens, findings, the full structured output). The directory ships its
+own `.gitignore`, so it never shows up in your repo's `git status`. Browse it any time:
 
 ```bash
 junior runs                       # table of recent runs

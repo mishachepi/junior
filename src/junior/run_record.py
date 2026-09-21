@@ -26,6 +26,16 @@ logger = structlog.get_logger()
 
 RECORD_SUBDIR = Path(".junior") / "output"
 
+# Dropped into `.junior/` on first write so run records never show up as
+# untracked noise in the host repo. Ignores itself too — otherwise git would
+# still report `?? .junior/` for the .gitignore alone. Deliberately does NOT
+# ignore `.junior/runbooks/` or `.junior/prompts/`: those are repo content.
+_SELF_IGNORE = """\
+# Created by junior — run records are a local audit trail, not repo content.
+output/
+.gitignore
+"""
+
 
 def record_dir(settings: Settings) -> Path:
     """Where run records live: `<project_dir>/.junior/output/` (next to the repo)."""
@@ -85,6 +95,9 @@ def write_run_record(
     try:
         out_dir = record_dir(settings)
         out_dir.mkdir(parents=True, exist_ok=True)
+        gitignore = out_dir.parent / ".gitignore"
+        if not gitignore.exists():
+            gitignore.write_text(_SELF_IGNORE, encoding="utf-8")
         path = out_dir / fname
         path.write_text(
             json.dumps(record, indent=2, ensure_ascii=False, default=str) + "\n",

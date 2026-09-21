@@ -103,7 +103,7 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 | `--project-dir PATH` | `.` | Path to git repository. Alias for `--env PROJECT_DIR=…` |
 | `--source` | `auto` | Git-diff strategy (git-based runbooks): `auto`, `staged`, `commit`, `branch`. Alias for `--env SOURCE=…` |
 | `--base-sha SHA` | — | Diff against this commit (overrides CI auto-vars). Alias for `--env BASE_SHA=…` |
-| `--target-branch` | `main` | Target branch for diff. Alias for `--env TARGET_BRANCH=…` (CI auto-var: `CI_MERGE_REQUEST_TARGET_BRANCH_NAME`) |
+| `--target-branch` | `main` | Target branch for diff. If the configured branch doesn't exist in the repo, the repo's default branch is detected instead (`origin/HEAD`, then `main`/`master`). Alias for `--env TARGET_BRANCH=…` (CI auto-var: `CI_MERGE_REQUEST_TARGET_BRANCH_NAME`) |
 | `--prompt TEXT` | — | Inline prompt text for the LLM. Repeatable. Appends to `context.prompts` |
 | `--prompt-file FILE` | — | `.md` prompt file. Repeatable. Sugar for `--prompt file://<abs>` |
 | `--context KEY="text"` | — | A named **fact** folded into the user message under `KEY` — data, *not* instructions (for those use `--prompt`). Repeatable |
@@ -161,7 +161,7 @@ junior run -o -                 # force stdout even if config sets output_file
 | `commit` | `git diff HEAD~1` | After commit, before push |
 | `branch` | `git diff target_branch...HEAD` | All branch changes |
 
-`auto` detection order (first non-empty wins):
+`auto` detection order (first non-empty wins). The target branch is validated first: when the configured one (default `main`) doesn't exist, the repo's default branch is used instead — detected via `origin/HEAD`, falling back to whichever of `main`/`master` exists.
 
 1. `--base-sha` / CI auto-var base (see below)
 2. Branch diff (`target_branch...HEAD`) when not on target branch

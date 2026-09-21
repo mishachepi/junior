@@ -13,6 +13,7 @@ from junior.collect.core.diff import (
     get_diff,
     parse_changed_files,
     resolve_base_sha,
+    resolve_target_branch,
 )
 from junior.config import Settings
 from junior.runbooks.code_review.models import ReviewContext, MRComment
@@ -45,7 +46,7 @@ def collect_base(settings: Settings) -> ReviewContext:
         return _apply_context_files(context, settings.context.context_files)
 
     project_dir = Path(settings.context.project_dir)
-    target_branch = settings.context.target_branch
+    target_branch = resolve_target_branch(project_dir, settings.context.target_branch)
     base_sha, base_source = resolve_base_sha(settings)
 
     logger.debug(
@@ -62,7 +63,12 @@ def collect_base(settings: Settings) -> ReviewContext:
         source=settings.context.source.value, base_source=base_source,
     )
     changed_files = parse_changed_files(full_diff, project_dir, settings.llm.max_file_size)
-    logger.debug("diff parsed", source=diff_desc, diff_size=len(full_diff), changed_files=len(changed_files))
+    logger.info(
+        "diff collected",
+        source=diff_desc,
+        diff_size=len(full_diff),
+        changed_files=len(changed_files),
+    )
 
     # 2. Commit messages
     commit_messages = get_commit_messages(project_dir, target_branch, base_sha)

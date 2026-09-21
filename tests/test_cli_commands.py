@@ -765,6 +765,53 @@ def test_run_writes_run_record(monkeypatch, tmp_path):
     assert data["output"]["summary"] == "Looks clean."
 
 
+def test_run_record_drops_self_ignoring_gitignore(monkeypatch, tmp_path):
+    """First record write drops `.junior/.gitignore` so the host repo stays clean."""
+    _make_git_repo(tmp_path)
+    import junior.collect.local
+    import junior.publish.local
+    from junior.runbook.base import LLMResult, Usage
+
+    monkeypatch.setattr(junior.collect.local, "collect", lambda s: _fake_context())
+    monkeypatch.setattr(junior.publish.local, "post_review", lambda s, r: None)
+    _patch_engine(
+        monkeypatch,
+        lambda **kw: LLMResult(output=_fake_llm_output(), usage=Usage(total_tokens=42)),
+    )
+
+    result = runner.invoke(app, ["run", "--runbook", "local_review", "--harness", "claudecode", "--project-dir", str(tmp_path)])
+    assert result.exit_code == 0, result.stdout + result.stderr
+
+    gitignore = (tmp_path / ".junior" / ".gitignore").read_text()
+    # Ignores the records and itself; runbooks/prompts stay trackable.
+    assert "output/" in gitignore
+    assert ".gitignore" in gitignore
+    assert "runbooks" not in gitignore
+    assert "prompts" not in gitignore
+
+
+def test_run_record_keeps_existing_gitignore(monkeypatch, tmp_path):
+    """A user-managed `.junior/.gitignore` is never overwritten."""
+    _make_git_repo(tmp_path)
+    import junior.collect.local
+    import junior.publish.local
+    from junior.runbook.base import LLMResult, Usage
+
+    monkeypatch.setattr(junior.collect.local, "collect", lambda s: _fake_context())
+    monkeypatch.setattr(junior.publish.local, "post_review", lambda s, r: None)
+    _patch_engine(
+        monkeypatch,
+        lambda **kw: LLMResult(output=_fake_llm_output(), usage=Usage(total_tokens=42)),
+    )
+    (tmp_path / ".junior").mkdir()
+    (tmp_path / ".junior" / ".gitignore").write_text("# mine\n")
+
+    result = runner.invoke(app, ["run", "--runbook", "local_review", "--harness", "claudecode", "--project-dir", str(tmp_path)])
+    assert result.exit_code == 0, result.stdout + result.stderr
+
+    assert (tmp_path / ".junior" / ".gitignore").read_text() == "# mine\n"
+
+
 def test_run_no_record_flag_skips_record(monkeypatch, tmp_path):
     """`--no-record` suppresses the .junior/output JSON."""
     _make_git_repo(tmp_path)

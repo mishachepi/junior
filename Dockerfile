@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ---- base: uv + python + git ----
-FROM ghcr.io/astral-sh/uv:0.11-python3.14-trixie-slim AS base
+FROM ghcr.io/astral-sh/uv:0.12-python3.14-trixie-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

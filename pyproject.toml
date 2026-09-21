@@ -5,19 +5,19 @@ description = "Deterministic LLM runbook framework like dynamic workflows. Inclu
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
-    "pydantic>=2.12",
+    "pydantic>=2.13.4",
     "pydantic-settings>=2.13",
     "structlog>=25.0",
-    "questionary>=2.1",
+    "questionary>=2.1.1",
     "typer>=0.15",
-    "rich>=13.0",
+    "rich>=15.0.0",
     "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
 # --- Agent backends ---
 claudecode = []  # default — drives the `claude` CLI (Node.js), no Python deps
-codex = ["openai>=1.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
+codex = ["openai>=2.48.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
 pydantic = ["pydantic-ai-slim[anthropic,openai]>=2.0"]  # single structured call via API key
 deepagents = [
     "deepagents>=0.4.0",
@@ -27,17 +27,21 @@ deepagents = [
 ]
 
 # --- Built-in platforms for code review collect MR/PR metadata + publish comments ---
-gitlab = ["python-gitlab>=8.0"]
+gitlab = ["python-gitlab>=8.4.0"]
 github = ["httpx>=0.28"]  # + `gh` CLI authenticated
 bitbucket = ["httpx>=0.28"]  # Bitbucket Data Center (self-hosted)
 
 # --- Convenience ---
 all = ["junior[gitlab,github,bitbucket,codex,pydantic,deepagents]"]
+
+# Dev tooling is a PEP 735 dependency group (not an extra): uv installs the
+# `dev` group by default, so a plain `uv run pytest` works on a fresh clone.
+[dependency-groups]
 dev = [
-    "pytest>=9.0",
+    "pytest>=9.1.1",
     "pytest-mock>=3.15",
     "pytest-cov>=7.0",
-    "ruff>=0.15",
+    "ruff>=0.16.0",
 ]
 
 [project.scripts]

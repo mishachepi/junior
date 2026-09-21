@@ -1,6 +1,5 @@
 """Bitbucket DC vertical: collect (API metadata), publish (comments), runbook."""
 
-import httpx
 import pytest
 
 from junior.collect.bitbucket import (
@@ -20,6 +19,10 @@ from junior.runbooks.code_review.models import (
 )
 from junior.publish.bitbucket import post_review
 from junior.runbook import registry
+
+# The bitbucket vertical lazily imports httpx (the `bitbucket` extra); without
+# it these tests skip instead of killing the whole collection run.
+httpx = pytest.importorskip("httpx", reason="bitbucket extra (httpx) not installed")
 
 BITBUCKET_ENV_VARS = (
     "BITBUCKET_URL",

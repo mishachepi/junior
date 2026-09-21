@@ -9,7 +9,7 @@ Both ABCs live in `src/junior/runbook/base.py`. The big picture is documented â€
 
 ## Commands
 
-- Tests: `uv run pytest tests/ -q`
+- Tests: `uv run pytest -q` (works on a bare clone; platform/SDK tests skip without extras). Full suite: `uv run --all-extras pytest -q`
 - Lint: `uv run ruff check src/ tests/`
 - Docs site: `cd docs-site && npm run build` (dev: `npm run dev` â†’ <http://127.0.0.1:8181>)
 
@@ -87,4 +87,4 @@ Docs authoring: every page needs a frontmatter `title`; cross-link with relative
 
 - One change = one branch = one squashed commit; don't batch unrelated changes.
 - Update `CHANGELOG.md` (top `Unreleased` section) for every user-visible change.
-- Keep `uv run pytest -q` and `uv run ruff check src/ tests/` green before merging.
+- Keep `uv run --all-extras pytest -q` and `uv run ruff check src/ tests/` green before merging.
