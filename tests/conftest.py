@@ -17,10 +17,13 @@ import pytest
 # rich emit ANSI escapes inside CliRunner captures, and TERM=dumb pins tables
 # to 80 columns — either flips help-text/table assertions depending on the
 # machine (or CI) running the suite. Must happen at import time: junior's rich
-# Console is built when the CLI module is first imported.
+# Console is built when the CLI module is first imported. GITHUB_ACTIONS and
+# PY_COLORS are in the list because typer's rich help forces a colour terminal
+# when either is set — on a GitHub runner `--help` output then carries ANSI
+# escapes that break plain-substring assertions.
 for _var in (
     "FORCE_COLOR", "NO_COLOR", "CLICOLOR", "CLICOLOR_FORCE",
-    "COLORTERM", "COLUMNS", "LINES",
+    "COLORTERM", "COLUMNS", "LINES", "GITHUB_ACTIONS", "PY_COLORS",
 ):
     os.environ.pop(_var, None)
 os.environ["TERM"] = "xterm-256color"
@@ -56,6 +59,18 @@ def _hermetic_ambient_config(request, monkeypatch):
         "HARNESS", "MODEL", "PUBLISH", "RUNBOOK", "BACKEND", "OUTPUT_FILE",
         "LOCAL_RUNBOOKS", "SOURCE", "TARGET_BRANCH", "LOG_LEVEL",
         "BASE_SHA", "PROJECT_DIR", "RECORD",
+    ):
+        monkeypatch.delenv(var, raising=False)
+    # Platform publish vars that OutputSettings reads from the environment. CI
+    # runners set some of them for their own purposes (GitHub Actions exports
+    # GITHUB_REPOSITORY, GitLab CI exports CI_PROJECT_ID / CI_MERGE_REQUEST_IID),
+    # which silently satisfies "missing field" validation tests.
+    for var in (
+        "GITHUB_TOKEN", "GITHUB_REPOSITORY", "GITHUB_EVENT_NUMBER", "GITHUB_EVENT_BEFORE",
+        "GITLAB_TOKEN", "CI_PROJECT_ID", "CI_MERGE_REQUEST_IID",
+        "CI_COMMIT_SHA", "CI_MERGE_REQUEST_DIFF_BASE_SHA",
+        "BITBUCKET_URL", "BITBUCKET_TOKEN", "BITBUCKET_PROJECT", "BITBUCKET_REPO",
+        "BITBUCKET_PR_ID",
     ):
         monkeypatch.delenv(var, raising=False)
 
