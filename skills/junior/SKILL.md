@@ -14,9 +14,9 @@ boundary — the same frame fits a Jira ticket, a config file, a deploy log, any
 
 ```
   ┌────── a Runbook you control (deterministic) ──────┐
-     collect   →     one LLM call    →    publish
-                    └─ Harness ─┘
-                     (swappable)
+     collect context  →   one LLM call   →   publish
+                          └─ Harness ─┘
+                           (swappable)
 ```
 
 ## The two concepts (there are only two)

@@ -1,7 +1,7 @@
 [project]
 name = "junior"
 version = "0.2.4"
-description = "Deterministic LLM runbook framework — built-in AI code review for GitLab MRs, GitHub PRs, and Bitbucket DC PRs"
+description = "Deterministic LLM runbook framework like dynamic workflows. Includes built-in AI code review tooling."
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [

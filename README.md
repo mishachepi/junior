@@ -1,6 +1,10 @@
 # Junior — hand any task to an AI junior
 
-Junior runs **runbooks**: deterministic collect → **one schema-validated LLM call** → deterministic publish. Code review is the built-in flagship — for GitLab MRs, GitHub PRs, and Bitbucket Data Center PRs, locally or in CI — but the framework assumes nothing about code: a YAML manifest turns any prompt + shell command into a runbook of your own.
+Junior runs **runbooks**: deterministic collect context → **one LLM call with schema-validated output** → any process with output from LLM call.
+
+Code review is the built-in flagship — for GitLab MRs, GitHub PRs, and Bitbucket Data Center PRs, locally or in CI. 
+
+A YAML manifest turns any prompt + shell command into a runbook of your own.
 
 Two independent extension points — **runbooks** (`local_review` / `github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`, `weather_advice`, or your own module/YAML) and **harnesses** (`claudecode` / `codex` / `pydantic` / `deepagents` / `pi`, incl. local models) — one config priority chain: flags → env → YAML config.
 
