@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.5 — 2026-09-22
+
 - **`pydantic` harness: provider errors are now actionable.** A failed
   `agent.run()` used to surface as a raw SDK dump
   (`status_code: 400, model_name: …, body: {…}`). The harness now translates
