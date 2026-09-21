@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 # No LLM SDKs here — `claudecode` drives the `claude` CLI, so a bare install
 # already runs a full review (local collect → claudecode → stdout/file).
 dependencies = [
-    "pydantic>=2.12",
+    "pydantic>=2.13.4",
     "pydantic-settings>=2.13",
     "structlog>=25.0",
     "questionary>=2.1.1",
