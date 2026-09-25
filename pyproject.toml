@@ -5,11 +5,11 @@ description = "Deterministic LLM runbook framework like dynamic workflows. Inclu
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
-    "pydantic>=2.13.4",
-    "pydantic-settings>=2.13",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
     "structlog>=26.1.0",
     "questionary>=2.1.1",
-    "typer>=0.15",
+    "typer>=0.27.2",
     "rich>=15.0.0",
     "PyYAML>=6.0",
 ]
@@ -17,17 +17,17 @@ dependencies = [
 [project.optional-dependencies]
 # --- Agent backends ---
 claudecode = []  # default — drives the `claude` CLI (Node.js), no Python deps
-codex = ["openai>=2.48.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
+codex = ["openai>=3.17.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
 pydantic = ["pydantic-ai-slim[anthropic,openai]>=2.47.0"]  # single structured call via API key
 deepagents = [
-    "deepagents>=0.4.0",
+    "deepagents>=0.7.17",
     "langchain>=0.3.0",
     "langchain-anthropic>=0.3.0",
     "langchain-openai>=0.3.0",
 ]
 
 # --- Built-in platforms for code review collect MR/PR metadata + publish comments ---
-gitlab = ["python-gitlab>=8.4.0"]
+gitlab = ["python-gitlab>=8.5.0"]
 github = ["httpx>=0.28"]  # + `gh` CLI authenticated
 bitbucket = ["httpx>=0.28"]  # Bitbucket Data Center (self-hosted)
 
