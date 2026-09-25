@@ -18,7 +18,7 @@ dependencies = [
 # --- Agent backends ---
 claudecode = []  # default — drives the `claude` CLI (Node.js), no Python deps
 codex = ["openai>=2.48.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
-pydantic = ["pydantic-ai-slim[anthropic,openai]>=2.17.0"]  # single structured call via API key
+pydantic = ["pydantic-ai-slim[anthropic,openai]>=2.47.0"]  # single structured call via API key
 deepagents = [
     "deepagents>=0.4.0",
     "langchain>=0.3.0",
