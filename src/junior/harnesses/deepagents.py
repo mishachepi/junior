@@ -61,7 +61,7 @@ EXACTLY ONCE with your synthesized result. Do not call it more than once.
 """
 
 
-def _make_submit_tool(output_schema: type[BaseModel]) -> tuple["object", list[BaseModel]]:
+def _make_submit_tool(output_schema: type[BaseModel]) -> tuple[object, list[BaseModel]]:
     """Create a submit tool whose args_schema is `output_schema` + a capture list."""
     from langchain_core.tools import StructuredTool
 

@@ -25,27 +25,26 @@ from junior.interactive.prompts import (
     ask_model,
     ask_output_file,
     ask_output_mode,
-    ask_runbook,
     ask_publish,
+    ask_runbook,
     ask_source,
     ask_target_branch,
     confirm_run,
 )
 
-
 __all__ = [
     "InteractiveIO",
-    "interactive_run",
     "ask_config_target",
     "ask_harness",
     "ask_model",
     "ask_output_file",
     "ask_output_mode",
-    "ask_runbook",
     "ask_publish",
+    "ask_runbook",
     "ask_source",
     "ask_target_branch",
     "confirm_run",
+    "interactive_run",
 ]
 
 

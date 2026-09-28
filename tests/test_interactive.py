@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from junior import interactive
-from junior.config import HarnessKind, OutputSettings, LLMSettings, Settings
+from junior.config import HarnessKind, LLMSettings, OutputSettings, Settings
 from junior.interactive import InteractiveIO
 
 

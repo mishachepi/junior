@@ -32,7 +32,7 @@ def test_complete_builds_file_tools_without_namerror(monkeypatch):
         output = ReviewOutput(summary="looks good", recommendation="approve", comments=[])
         usage = _Usage()
 
-    async def _fake_run(self, *args, **kwargs):  # noqa: ANN001 — stub signature
+    async def _fake_run(self, *args, **kwargs):
         return _Result()
 
     # Real Agent.__init__ (with the file tools) still runs — that's the exact step
@@ -156,7 +156,7 @@ def test_run_wraps_model_http_error(monkeypatch):
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
 
-    async def _fake_run(self, *args, **kwargs):  # noqa: ANN001 — stub signature
+    async def _fake_run(self, *args, **kwargs):
         raise ModelHTTPError(
             status_code=400,
             model_name="claude-test",

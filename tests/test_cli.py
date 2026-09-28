@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from junior.cli import _startup_warnings
-from junior.config import HarnessKind, OutputSettings, LLMSettings, Settings
+from junior.config import HarnessKind, LLMSettings, OutputSettings, Settings
 
 
 def test_no_setup_warning_for_claudecode_without_config_or_keys():

@@ -16,5 +16,4 @@ that tests depend on.
 from junior.cli.app import app, main
 from junior.cli.observability import _startup_warnings
 
-
-__all__ = ["app", "main", "_startup_warnings"]
+__all__ = ["_startup_warnings", "app", "main"]

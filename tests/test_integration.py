@@ -3,10 +3,10 @@
 import pytest
 
 from junior.config import (
-    HarnessKind,
     ContextSettings,
-    OutputSettings,
+    HarnessKind,
     LLMSettings,
+    OutputSettings,
     Settings,
 )
 from junior.runbook.base import Usage
@@ -21,7 +21,6 @@ from junior.runbooks.code_review.models import (
     ReviewResult,
     Severity,
 )
-
 
 # --- Fixtures ---
 

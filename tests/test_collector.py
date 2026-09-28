@@ -15,11 +15,10 @@ from junior.collect.core.diff import (
     resolve_base_sha,
     resolve_target_branch,
 )
-from junior.config import ContextSettings, OutputSettings, Settings
 from junior.collect.github import _parse_github_comments
 from junior.collect.gitlab import _fetch_gitlab_comments
+from junior.config import ContextSettings, OutputSettings, Settings
 from junior.models import FileStatus
-
 
 # --- finalize_comments ---
 

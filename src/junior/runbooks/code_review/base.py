@@ -12,13 +12,13 @@ from __future__ import annotations
 import structlog
 
 from junior.config import Settings
+from junior.runbook.base import Runbook, Usage
 from junior.runbooks.code_review.models import (
     ReviewContext,
     ReviewOutput,
     ReviewResult,
     assemble_review_result,
 )
-from junior.runbook.base import Runbook, Usage
 
 logger = structlog.get_logger()
 

@@ -7,8 +7,8 @@ import pytest
 from pydantic import BaseModel
 
 import junior.harnesses.gemini as gemini_mod
-from junior.harnesses.gemini import HARNESS, _parse_envelope, _sum_tokens
 from junior.config import Settings
+from junior.harnesses.gemini import HARNESS, _parse_envelope, _sum_tokens
 
 
 class _Out(BaseModel):

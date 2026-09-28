@@ -46,7 +46,7 @@ class Usage(BaseModel):
     total_tokens: int = 0
 
     @classmethod
-    def from_io(cls, *, input_tokens: int = 0, output_tokens: int = 0) -> "Usage":
+    def from_io(cls, *, input_tokens: int = 0, output_tokens: int = 0) -> Usage:
         """Build Usage from input/output counts; total = input + output.
 
         The shared convention across harnesses that report a split (claudecode,
@@ -96,7 +96,7 @@ class Harness(ABC):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: "Settings",
+        settings: Settings,
     ) -> LLMResult:
         """Call the model and return an LLMResult whose `.output` is an
         instance of `output_schema`."""
@@ -136,16 +136,16 @@ class Runbook(ABC, Generic[C, R]):
 
     # --- phase 1: collect ---
     @abstractmethod
-    def collect(self, settings: "Settings") -> C:
+    def collect(self, settings: Settings) -> C:
         """Gather domain context. May dispatch internally (gitlab/github/local)."""
 
     # --- phase 2 inputs: what the LLM sees ---
     @abstractmethod
-    def render(self, context: C, settings: "Settings", *, file_access: bool) -> str:
+    def render(self, context: C, settings: Settings, *, file_access: bool) -> str:
         """Turn context into the user message. `file_access` tells whether the
         chosen engine reads files itself (so a full diff need not be inlined)."""
 
-    def system_prompt(self, settings: "Settings") -> str:
+    def system_prompt(self, settings: Settings) -> str:
         """The model's instructions: this runbook's `SYSTEM_PROMPT` role plus any
         user `--prompt` / `context.prompts` (global) plus this runbook's own
         `runbooks.<name>.prompts` (scoped — other runbooks never see them).
@@ -158,7 +158,7 @@ class Runbook(ABC, Generic[C, R]):
     @abstractmethod
     def publish(
         self,
-        settings: "Settings",
+        settings: Settings,
         result: R,
         usage: Usage,
         *,
@@ -180,7 +180,7 @@ class Runbook(ABC, Generic[C, R]):
         return result.model_dump_json(indent=2)
 
     # --- validation ---
-    def validate(self, settings: "Settings", *, publish_enabled: bool) -> list[str]:
+    def validate(self, settings: Settings, *, publish_enabled: bool) -> list[str]:
         """Runbook-specific config checks (e.g. publish needs a token). Default: none."""
         return []
 
@@ -198,7 +198,7 @@ class Runbook(ABC, Generic[C, R]):
         """Key/value pairs for the final `done` log line. Default: none."""
         return {}
 
-    def output_destination(self, settings: "Settings", *, publish_enabled: bool) -> str:
+    def output_destination(self, settings: Settings, *, publish_enabled: bool) -> str:
         """Human-readable sink for the final `done` log (`output=...`).
 
         Default: the platform (runbook name) when publishing, else the output

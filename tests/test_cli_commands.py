@@ -10,15 +10,14 @@ this catches CLI/runbook plumbing regressions that unit tests miss.
 
 from typer.testing import CliRunner
 
-from junior.cli import app
 from junior import __version__
+from junior.cli import app
 from junior.runbooks.code_review.models import (
     ChangedFile,
     FileStatus,
     Recommendation,
     ReviewContext,
 )
-
 
 runner = CliRunner()
 
@@ -311,7 +310,7 @@ def test_config_path_prints_global_and_local():
 
 def _fake_tty(monkeypatch):
     """CliRunner's stdin is not a TTY; pretend it is so wizards proceed."""
-    import junior.cli.actions as actions
+    from junior.cli import actions
 
     monkeypatch.setattr(actions, "ensure_interactive_tty", lambda what: None)
 
@@ -509,7 +508,7 @@ def _fake_llm_output():
 
 def _patch_engine(monkeypatch, complete_fn):
     """Replace registry.get_harness with a fake engine driving `complete_fn`."""
-    import junior.runbook.registry as registry
+    from junior.runbook import registry
 
     class _FakeEngine:
         file_access = True
@@ -622,8 +621,8 @@ def test_run_raw_output_hints_publish_on_tty_only(monkeypatch, tmp_path):
     """Raw stdout output adds a stderr --publish hint for humans (TTY), and
     stays hint-free in pipes/CI. The stdout bytes are identical either way."""
     _make_git_repo(tmp_path)
-    import junior.cli.actions as actions
     import junior.collect.local
+    from junior.cli import actions
     from junior.runbook.base import LLMResult, Usage
 
     monkeypatch.setattr(junior.collect.local, "collect", lambda s: _fake_context())

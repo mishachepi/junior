@@ -8,7 +8,7 @@ Settings, log+preflight, and delegate the actual work to functions in
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -26,6 +26,8 @@ from junior.cli.actions import (
 )
 from junior.cli.config_show import print_example_config
 from junior.cli.options import (
+    OPS_PANEL,
+    OUTPUT_PANEL,
     BaseShaOpt,
     ConfigOpt,
     ContextFileOpt,
@@ -33,20 +35,18 @@ from junior.cli.options import (
     EnvOpt,
     FromFileOpt,
     HarnessOpt,
+    InputArg,
     InteractiveOpt,
     ModelOpt,
     NoRecordOpt,
-    OPS_PANEL,
-    OUTPUT_PANEL,
     OutputFileOpt,
-    RunbookOpt,
-    InputArg,
     ProjectDirArg,
     ProjectDirOpt,
     PromptFileOpt,
     PromptOpt,
     PublishFileOpt,
     PublishOpt,
+    RunbookOpt,
     SourceOpt,
     TargetBranchOpt,
     VerboseOpt,
@@ -61,7 +61,6 @@ from junior.cli.settings_builder import (
 )
 from junior.config import find_global_config, find_local_config
 from junior.interactive import InteractiveIO
-
 
 app = typer.Typer(
     name="junior",
@@ -84,7 +83,7 @@ app.add_typer(config_app, name="config")
 def _callback(
     ctx: typer.Context,
     config: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--config",
             metavar="FILE",
@@ -106,7 +105,7 @@ def _callback(
         ),
     ] = False,
     _version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version",
             help="Show version and exit",
@@ -138,7 +137,7 @@ def _callback(
     ctx.obj = GlobalOpts(config=config, verbose=verbose)
 
 
-def _resolve_globals(ctx: typer.Context, config: Optional[str]) -> GlobalOpts:
+def _resolve_globals(ctx: typer.Context, config: str | None) -> GlobalOpts:
     """Merge a post-command `--config` with the parent (global-position) one.
 
     There is one effective config: the value nearest the command wins, so
@@ -296,7 +295,7 @@ def dry_run(
     runbook_name: RunbookOpt = None,
     publish: PublishOpt = None,
     output_file: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "-o",
             "--output-file",

@@ -3,11 +3,13 @@
 import pytest
 
 from junior.collect.bitbucket import (
-    _parse_bitbucket_comments,
     _paginate_activities,
+    _parse_bitbucket_comments,
     collect,
 )
 from junior.config import OutputSettings, Settings
+from junior.publish.bitbucket import post_review
+from junior.runbook import registry
 from junior.runbooks.code_review.models import (
     Recommendation,
     ReviewCategory,
@@ -17,8 +19,6 @@ from junior.runbooks.code_review.models import (
     ReviewResult,
     Severity,
 )
-from junior.publish.bitbucket import post_review
-from junior.runbook import registry
 
 # The bitbucket vertical lazily imports httpx (the `bitbucket` extra); without
 # it these tests skip instead of killing the whole collection run.

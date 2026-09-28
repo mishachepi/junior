@@ -15,7 +15,6 @@ from junior.runbooks.code_review.models import (
     assemble_review_result,
 )
 
-
 # --- ReviewOutput counting / blocking logic ---
 
 

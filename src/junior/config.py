@@ -32,7 +32,6 @@ import yaml
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 # --- Config file paths ---
 
 GLOBAL_CONFIG_DIR = Path.home() / ".config" / "junior"

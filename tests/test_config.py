@@ -9,19 +9,18 @@ Target shape:
       .preflight(review, publish) -> list[str]
 """
 
-import yaml
-
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from junior import config as config_module
 from junior.config import (
     ClaudeCodeSettings,
-    HarnessKind,
     ContextSettings,
+    HarnessKind,
+    LLMSettings,
     LogLevel,
     OutputSettings,
-    LLMSettings,
     Settings,
     SourceMode,
 )

@@ -16,7 +16,7 @@ from junior.collect.core.diff import (
     resolve_target_branch,
 )
 from junior.config import Settings
-from junior.runbooks.code_review.models import ReviewContext, MRComment
+from junior.runbooks.code_review.models import MRComment, ReviewContext
 
 logger = structlog.get_logger()
 

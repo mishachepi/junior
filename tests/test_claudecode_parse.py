@@ -12,7 +12,7 @@ import pytest
 from junior.config import LLMSettings, Settings
 from junior.harnesses import claudecode as cc
 from junior.harnesses.claudecode import _extract_output
-from junior.runbooks.code_review.models import ReviewOutput, Recommendation
+from junior.runbooks.code_review.models import Recommendation, ReviewOutput
 
 
 def test_extract_from_structured_output_tool_use():

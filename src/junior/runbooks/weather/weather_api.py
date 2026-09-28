@@ -40,7 +40,7 @@ _WMO = {
 
 def _get_json(url: str, timeout: float = 10.0) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": "junior-weather/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 (trusted hosts)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 

@@ -11,10 +11,11 @@ from datetime import UTC, datetime
 
 import structlog
 
-from junior.bitbucket_api import headers as bitbucket_headers, pr_api_base
+from junior.bitbucket_api import headers as bitbucket_headers
+from junior.bitbucket_api import pr_api_base
 from junior.collect.core import collect_base, enrich_with_metadata, finalize_comments
 from junior.config import Settings
-from junior.runbooks.code_review.models import ReviewContext, MRComment
+from junior.runbooks.code_review.models import MRComment, ReviewContext
 
 logger = structlog.get_logger()
 

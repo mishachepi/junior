@@ -8,13 +8,12 @@ signature stays short and consistent.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
 from junior import __version__
 from junior.config import SourceMode
-
 
 # === Rich help panels ===
 
@@ -39,7 +38,7 @@ VerboseOpt = Annotated[
 # Runbooks and harnesses declare the env vars they need (`junior config env`
 # lists them); --env supplies any of those inline instead of exporting first.
 EnvOpt = Annotated[
-    Optional[list[str]],
+    list[str] | None,
     typer.Option(
         "--env",
         metavar="KEY=VALUE",
@@ -59,7 +58,7 @@ EnvOpt = Annotated[
 # before it. There is still one effective config: the post-command value wins
 # when both positions are given (see app.run / dry_run).
 ConfigOpt = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--config",
         metavar="FILE",
@@ -74,7 +73,7 @@ ConfigOpt = Annotated[
 # === Small parsers / callbacks ===
 
 
-def parse_kv(values: Optional[list[str]], flag_name: str) -> dict[str, str]:
+def parse_kv(values: list[str] | None, flag_name: str) -> dict[str, str]:
     """Parse a list of KEY=VALUE strings into a dict."""
     if not values:
         return {}
@@ -98,7 +97,7 @@ def version_callback(value: bool) -> None:
 # === Reusable Annotated option types (shared across subcommands) ===
 
 ProjectDirArg = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Argument(
         metavar="[PROJECT_DIR]",
         help="Path to git repository (default: current directory)",
@@ -110,7 +109,7 @@ ProjectDirArg = Annotated[
 # `junior run` / `dry-run` take free text positionally; the project dir moved
 # to --project-dir so the positional slot always means "task input".
 InputArg = Annotated[
-    Optional[str],
+    str | None,
     typer.Argument(
         metavar="[INPUT]",
         help=(
@@ -124,7 +123,7 @@ InputArg = Annotated[
 ]
 
 ProjectDirOpt = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Option(
         "--project-dir",
         metavar="PATH",
@@ -135,7 +134,7 @@ ProjectDirOpt = Annotated[
 ]
 
 SourceOpt = Annotated[
-    Optional[SourceMode],
+    SourceMode | None,
     typer.Option(
         "--source",
         help="What to review: auto, staged, commit, branch. Alias for --env SOURCE=…",
@@ -146,7 +145,7 @@ SourceOpt = Annotated[
 ]
 
 BaseShaOpt = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--base-sha",
         metavar="SHA",
@@ -157,7 +156,7 @@ BaseShaOpt = Annotated[
 ]
 
 TargetBranchOpt = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--target-branch",
         help="Target branch for diff. Alias for --env TARGET_BRANCH=… "
@@ -168,7 +167,7 @@ TargetBranchOpt = Annotated[
 ]
 
 ContextInstructionOpt = Annotated[
-    Optional[list[str]],
+    list[str] | None,
     typer.Option(
         "--context",
         metavar='KEY="text"',
@@ -181,7 +180,7 @@ ContextInstructionOpt = Annotated[
 ]
 
 ContextFileOpt = Annotated[
-    Optional[list[str]],
+    list[str] | None,
     typer.Option(
         "--context-file",
         metavar="KEY=path",
@@ -193,7 +192,7 @@ ContextFileOpt = Annotated[
 ]
 
 PromptOpt = Annotated[
-    Optional[list[str]],
+    list[str] | None,
     typer.Option(
         "--prompt",
         metavar="TEXT",
@@ -206,7 +205,7 @@ PromptOpt = Annotated[
 ]
 
 PromptFileOpt = Annotated[
-    Optional[list[Path]],
+    list[Path] | None,
     typer.Option(
         "--prompt-file",
         metavar="FILE",
@@ -218,7 +217,7 @@ PromptFileOpt = Annotated[
 ]
 
 HarnessOpt = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--harness",
         "--backend",  # deprecated alias, kept for one version
@@ -230,7 +229,7 @@ HarnessOpt = Annotated[
 ]
 
 ModelOpt = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--model",
         help=(
@@ -244,7 +243,7 @@ ModelOpt = Annotated[
 ]
 
 RunbookOpt = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--runbook",
         help=(
@@ -258,7 +257,7 @@ RunbookOpt = Annotated[
 ]
 
 OutputFileOpt = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Option(
         "-o",
         "--output-file",
@@ -270,7 +269,7 @@ OutputFileOpt = Annotated[
 ]
 
 PublishOpt = Annotated[
-    Optional[bool],
+    bool | None,
     typer.Option(
         "--publish/--no-publish",
         help=(
@@ -284,7 +283,7 @@ PublishOpt = Annotated[
 ]
 
 PublishFileOpt = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Option(
         "--publish-file",
         metavar="REVIEW_FILE",
@@ -305,7 +304,7 @@ NoRecordOpt = Annotated[
 ]
 
 FromFileOpt = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Option(
         "--from-file",
         metavar="CONTEXT_FILE",
