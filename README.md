@@ -6,7 +6,7 @@ Code review is the built-in flagship — for GitLab MRs, GitHub PRs, and Bitbuck
 
 A YAML manifest turns any prompt + shell command into a runbook of your own.
 
-Two independent extension points — **runbooks** (`local_review` / `github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`, `weather_advice`, or your own module/YAML) and **harnesses** (`claudecode` / `codex` / `pydantic` / `pi` / `gemini`, incl. local models) — one config priority chain: flags → env → YAML config.
+Two independent extension points — **runbooks** (`local_review` / `github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`, `weather_advice`, or your own module/YAML) and **harnesses** (`pydantic` / `claudecode` / `codex` / `pi` / `agy`, incl. local models) — one config priority chain: flags → env → YAML config.
 
 ## Install
 
@@ -102,7 +102,7 @@ git diff + PR metadata        claudecode (CLI)               stdout / file / JSO
 a shell command's stdout      codex (CLI)                    PR / MR comments
 live API data                 pydantic (SDK)                 a terminal panel
 stdin from another junior     pi (CLI - local models)        any shell command
-                              gemini (CLI)
+                              agy (CLI)
 ```
 
 Every run also drops a secret-free JSON record at `.junior/output/{timestamp}.json` (disable with `--no-record`). See the [full documentation](https://junior.mchep.dev) for CLI reference, configuration, CI setup, and more.

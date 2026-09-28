@@ -1,4 +1,4 @@
-"""Shared base for the CLI-driven harnesses (claudecode, codex, pi, gemini).
+"""Shared base for the CLI-driven harnesses (claudecode, codex, pi, agy).
 
 Every one of them is a single `subprocess.run` of a local agent CLI with the
 same failure modes (binary missing, timeout) and — for CLIs without a native
@@ -72,7 +72,7 @@ _OUTPUT_CONTRACT = (
 
 
 def schema_contract(output_schema: type[BaseModel]) -> str:
-    """Prompt suffix for CLIs without a native schema flag (pi, gemini): the
+    """Prompt suffix for CLIs without a native schema flag (pi): the
     JSON Schema the reply must validate against — `parse_json_reply` checks it."""
     return f"{_OUTPUT_CONTRACT}{json.dumps(output_schema.model_json_schema())}"
 

@@ -44,7 +44,7 @@ local) is folded into a runbook's own `collect`/`publish`.
   │ local_review              │        │ claudecode                │
   │ github_pr_review          │  uses  │ codex                     │
   │ gitlab_pr_review          │ ─────► │ pydantic                  │
-  │ …a fork's runbook        │        │ pi / gemini               │
+  │ …a fork's runbook        │        │ pi / agy                  │
   └───────────────────────────┘        └───────────────────────────┘
   brings its own Context + Result      schema-agnostic: takes the
   schemas, collect/render/publish      output_schema as a parameter
@@ -119,7 +119,7 @@ class Harness(ABC):
         instance of output_schema."""
 ```
 
-The five harnesses (`junior.harnesses.{claudecode,codex,pydantic,pi,gemini}`) each
+The five harnesses (`junior.harnesses.{claudecode,codex,pydantic,pi,agy}`) each
 implement `complete` and expose a module-level `HARNESS` instance. The schema is
 passed in, never hard-coded, and each harness wires it through its own mechanism:
 
@@ -448,7 +448,7 @@ src/junior/
     runner.py               ← run_runbook()
     registry.py             ← get_runbook (built-in + entry-point + path + repo-local), get_harness
   harnesses/                ← shared LLM drivers (each exposes HARNESS)
-    claudecode.py  codex.py  pydantic.py  pi.py  gemini.py
+    claudecode.py  codex.py  pydantic.py  pi.py  agy.py
   runbooks/
     code_review/            ← the built-in runbook family
       base.py               ← CodeReviewRunbook (shared render/prompt/publish)

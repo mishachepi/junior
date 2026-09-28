@@ -130,7 +130,7 @@ class HarnessKind(_ModulePathEnum):
     CODEX = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
     PI = "junior.harnesses.pi"
-    GEMINI = "junior.harnesses.gemini"
+    AGY = "junior.harnesses.agy"
     MY_HARNESS = "junior.harnesses.my_harness"   # <-- add
 ```
 
@@ -153,7 +153,7 @@ an API key:
 
 ```python
 if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI,
-               HarnessKind.GEMINI, HarnessKind.MY_HARNESS):
+               HarnessKind.AGY, HarnessKind.MY_HARNESS):
     return []
 ```
 

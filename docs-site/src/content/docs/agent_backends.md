@@ -17,7 +17,7 @@ env `HARNESS`, or config `harness:`; default `pydantic`.
 | Predictable cost, deterministic runs (default) | `pydantic` | One structured API call, no agentic wandering |
 | The OpenAI/Codex stack | `codex` | `codex exec` in a sandbox, OAuth or API key |
 | **Local / offline models** | `pi` | Ollama / LM Studio / vLLM via `~/.pi/agent/models.json` — no API key, nothing leaves the machine |
-| The Google / Gemini stack | `gemini` | Drives your `gemini` CLI read-only (`plan` mode) — `GEMINI_API_KEY` or its own auth, explores beyond the diff |
+| The Google / Antigravity stack | `agy` | Drives your `agy` CLI headlessly — its own login, native `--json-schema`, reads files beyond the inlined diff |
 
 ## Comparison
 
@@ -27,7 +27,7 @@ env `HARNESS`, or config `harness:`; default `pydantic`.
 | `codex` | `junior[codex]` | single `codex exec` in sandbox | OAuth or `OPENAI_API_KEY` | stable |
 | `pydantic` | `junior[pydantic]` | single structured pydantic-ai call | API key **required** | stable |
 | `pi` | *(core)* | single `pi --mode json` subprocess | provider key, `auth.json`, or **none (local models)** | stable |
-| `gemini` | *(core)* | single `gemini --output-format json` subprocess (read-only `plan` mode) | `GEMINI_API_KEY` or the CLI's own auth | stable |
+| `agy` | *(core)* | single `agy --print --output-format json --json-schema` subprocess | the CLI's own login | new |
 
 `junior config list harnesses` shows what's installed and ready on your machine;
 `junior config env --harness X` lists the exact env vars one needs.
@@ -38,7 +38,7 @@ Every harness does a **single structured call** and returns a validated instance
 runbook's output schema. They differ in how the schema is enforced and whether the model
 can read repository files itself (`file_access` — see [Glossary](glossary.md#harness)):
 
-| | pydantic | claudecode | codex | pi | gemini |
+| | pydantic | claudecode | codex | pi | agy |
 |--|----------|-----------|-------|------------|----|--------|
 | **`file_access`** | `False` | `True` | `True` | `False` | `True` | `True` (read-only) |
 | **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git…)` (built-in) | Sandbox filesystem access | `read`, `grep`, `find`, `ls` (read-only) | built-in read tools (`plan` mode — no edits/shell) |
@@ -54,5 +54,5 @@ themselves instead.
 Per-harness internals (subprocess flags, event parsing, error handling):
 [Claude Code](agent_backends/claudecode.md) · [Codex](agent_backends/codex.md) ·
 [Pydantic AI](agent_backends/pydantic.md) ·
-[Pi](agent_backends/pi.md) · [Gemini](agent_backends/gemini.md). Writing your own is one file —
+[Pi](agent_backends/pi.md) · [Antigravity CLI](agent_backends/agy.md). Writing your own is one file —
 [Adding a harness](adding_harnesses.md).

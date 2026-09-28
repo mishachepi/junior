@@ -220,7 +220,7 @@ HarnessOpt = Annotated[
     str | None,
     typer.Option(
         "--harness",
-        help="LLM harness: pydantic, claudecode, codex, pi, gemini — or a module path "
+        help="LLM harness: pydantic, claudecode, codex, pi, agy — or a module path "
         "(pkg.my_harness) exposing HARNESS. env: HARNESS",
         rich_help_panel=REVIEW_PANEL,
         show_default=False,

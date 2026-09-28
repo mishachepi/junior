@@ -88,7 +88,7 @@ class HarnessKind(_ModulePathEnum):
     CODEX = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
     PI = "junior.harnesses.pi"
-    GEMINI = "junior.harnesses.gemini"
+    AGY = "junior.harnesses.agy"
 
 
 def harness_ref(value: str) -> HarnessKind | str:
@@ -263,7 +263,7 @@ class LLMSettings(BaseSettings):
     max_tokens_per_agent: int = 0
     # collection + pydantic file tools: skip files larger than this (bytes).
     max_file_size: int = 100_000
-    # CLI harnesses (claudecode/codex/pi/gemini): kill the subprocess after this
+    # CLI harnesses (claudecode/codex/pi/agy): kill the subprocess after this
     # many seconds. Lower it to fail fast on a stuck/runaway agent.
     timeout: int = 600
     # claudecode-only knobs (nested under `llm.claudecode`); other harnesses ignore it.
@@ -293,7 +293,7 @@ class LLMSettings(BaseSettings):
         if ":" in v:
             head = v.partition(":")[0].strip().lower()
             # A "provider:model" prefix names one of our SDK providers. CLI
-            # engines like pi/gemini use "provider/id:tag", where the ':' is a
+            # engines like pi use "provider/id:tag", where the ':' is a
             # model version tag, not our separator — the '/' marks that path
             # form, so its head must not be validated as a provider.
             if "/" not in head and head not in _SUPPORTED_PROVIDERS:
@@ -341,13 +341,13 @@ class LLMSettings(BaseSettings):
         """Model name safe to surface in logs/UI for the active harness.
 
         - pydantic: SDK actually receives resolved_model.
-        - claudecode/gemini: only show when model is explicitly set (the CLI defaults otherwise).
+        - claudecode/agy: only show when model is explicitly set (the CLI defaults otherwise).
         - pi: passes the raw `--model provider/id` through; show it when set.
         - codex: the CLI picks its own model — don't claim one.
         """
         if self.harness == HarnessKind.PYDANTIC:
             return self.resolved_model
-        if self.harness in (HarnessKind.CLAUDECODE, HarnessKind.GEMINI):
+        if self.harness in (HarnessKind.CLAUDECODE, HarnessKind.AGY):
             return self.resolved_model if self.model else ""
         if self.harness == HarnessKind.PI:
             return self.model  # raw, e.g. "ollama/qwen3" — not provider:model
@@ -504,7 +504,7 @@ class Settings(BaseSettings):
         # (module path) checks its own environment in `is_ready()`.
         if not isinstance(harness, HarnessKind):
             return []
-        if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI, HarnessKind.GEMINI):
+        if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI, HarnessKind.AGY):
             return []
 
         errors: list[str] = []

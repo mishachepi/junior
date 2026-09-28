@@ -220,7 +220,7 @@ HARNESS_META: dict[HarnessKind, tuple[str, str, str]] = {
     HarnessKind.CODEX: ("codex CLI subprocess", "codex", "openai"),
     HarnessKind.PYDANTIC: ("single structured call via pydantic-ai (default)", "", ""),
     HarnessKind.PI: ("pi CLI subprocess — incl. local models (models.json)", "", ""),
-    HarnessKind.GEMINI: ("gemini CLI subprocess (Google; GEMINI_API_KEY or its own auth)", "", ""),
+    HarnessKind.AGY: ("agy CLI subprocess (Google Antigravity; its own login)", "", ""),
 }
 
 

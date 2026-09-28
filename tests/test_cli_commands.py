@@ -376,7 +376,7 @@ def test_list_shows_runbooks_and_harnesses():
     assert "Runbooks" in out and "Harnesses" in out
     for name in ("local_review", "github_pr_review", "gitlab_pr_review"):
         assert name in out
-    for name in ("claudecode", "codex", "pydantic", "pi", "gemini"):
+    for name in ("claudecode", "codex", "pydantic", "pi", "agy"):
         assert name in out
     assert "configured default" in out  # the `*` footer
 
@@ -407,7 +407,7 @@ def test_config_list_is_canonical_and_list_is_alias():
     assert canonical.exit_code == 0 and alias.exit_code == 0
     assert "Harnesses" in canonical.stdout
     # both list the same harness names
-    for name in ("claudecode", "codex", "pydantic", "pi", "gemini"):
+    for name in ("claudecode", "codex", "pydantic", "pi", "agy"):
         assert name in canonical.stdout and name in alias.stdout
 
 

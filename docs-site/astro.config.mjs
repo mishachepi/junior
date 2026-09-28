@@ -107,7 +107,7 @@ export default defineConfig({
                 { label: "Codex", link: "/agent_backends/codex/" },
                 { label: "Pydantic AI", link: "/agent_backends/pydantic/" },
                 { label: "Pi", link: "/agent_backends/pi/" },
-                { label: "Gemini", link: "/agent_backends/gemini/" },
+                { label: "Antigravity CLI (agy)", link: "/agent_backends/agy/" },
               ],
             },
             {
