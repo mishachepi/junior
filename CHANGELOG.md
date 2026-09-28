@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Breaking:** the `deepagents` harness (deprecated since 0.2.1) is removed, along with the `junior[deepagents]` extra and its docs page. `pydantic` covers the same API-only use case with a single structured call.
 - **Breaking:** the one-version shims from 0.2.0 are gone — `junior.models` (import from `junior.runbooks.code_review.models`; `CollectedContext`/`LLMReviewOutput` are `ReviewContext`/`ReviewOutput`) and the `--backend` / `BACKEND` / `backend:` alias (use `--harness` / `HARNESS` / `harness:`).
 - Harness internals: the four CLI-driven harnesses (claudecode, codex, pi, gemini) share one `CliHarness` base (`harnesses/_shared.py`) — PATH check, subprocess run, missing-binary/timeout errors and the schema-in-prompt contract live in one place. No behaviour or message changes.
 - Pipeline safety: `--config -` combined with a stdin-fed script runbook (no `collect`) now fails loudly instead of sending the LLM an empty message. New `tests/test_pipe_contract.py` locks the `junior run | junior run` contract (one JSON on stdout, diagnostics on stderr, stdin hand-off, non-zero exit with empty stdout on failure).

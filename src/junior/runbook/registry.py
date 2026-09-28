@@ -213,16 +213,11 @@ def available_runbooks_meta() -> list[tuple[str, str]]:
 # that may fail to import. The pip extra usually equals the short name ("" =
 # ships in the core install). The probe is the third-party package the extra
 # pulls — checked with `find_spec` (locates without executing, so listing never
-# triggers a heavy import like LangChain); "" means nothing to probe (core).
+# triggers a heavy import like pydantic-ai); "" means nothing to probe (core).
 HARNESS_META: dict[HarnessKind, tuple[str, str, str]] = {
     HarnessKind.CLAUDECODE: ("claude CLI subprocess (no API key)", "", ""),
     HarnessKind.CODEX: ("codex CLI subprocess", "codex", "openai"),
     HarnessKind.PYDANTIC: ("single structured call via pydantic-ai", "pydantic", "pydantic_ai"),
-    HarnessKind.DEEPAGENTS: (
-        "LangChain orchestrator — DEPRECATED (unreliable; use pydantic)",
-        "deepagents",
-        "deepagents",
-    ),
     HarnessKind.PI: ("pi CLI subprocess — incl. local models (models.json)", "", ""),
     HarnessKind.GEMINI: ("gemini CLI subprocess (Google; GEMINI_API_KEY or its own auth)", "", ""),
 }

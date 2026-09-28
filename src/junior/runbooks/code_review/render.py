@@ -12,7 +12,7 @@ def build_user_message(
 ) -> str:
     """Build user message with full MR context for AI agents.
 
-    Used by all backends (pydantic, deepagents, codex).
+    Used by all harnesses.
     When include_diff=False (codex), omits the full diff and adds
     file-tool instructions instead — codex reads files via sandbox.
     When inlined, the diff is hard-capped at `max_diff_chars` (0 = no cap)

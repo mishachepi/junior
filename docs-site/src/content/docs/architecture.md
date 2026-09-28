@@ -30,7 +30,6 @@ flowchart LR
         E1["claudecode"]
         E2["codex"]
         E3["pydantic"]
-        E4["deepagents"]
         E5["pi"]
         E6["gemini"]
     end
@@ -64,10 +63,9 @@ flowchart TD
         ENG -->|claudecode| Q2["claude -p subprocess\n--json-schema=output_schema"]
         ENG -->|codex| Q["codex exec subprocess\nstrict schema from output_schema"]
         ENG -->|pydantic| P["pydantic-ai\noutput_type=output_schema"]
-        ENG -->|deepagents| D["LangChain agent\nsubmit_tool=output_schema"]
         ENG -->|pi| PI["pi --mode json subprocess\nschema embedded in prompt"]
         ENG -->|gemini| GM["gemini --output-format json subprocess\nschema embedded in prompt (read-only)"]
-        Q2 & Q & P & D & PI & GM --> LR([LLMResult\n.output / .usage / .errors])
+        Q2 & Q & P & PI & GM --> LR([LLMResult\n.output / .usage / .errors])
     end
 
     LR --> OUT
@@ -112,9 +110,9 @@ class Harness(ABC):
     ) -> LLMResult: ...
 ```
 
-`LLMResult` is an envelope: `.output` (validated `output_schema` instance), `.usage` (`Usage` token counts), `.errors` (partial-failure notes, e.g. one sub-agent died). The only schema plumbing differs per harness — claudecode passes the schema via `--json-schema`, codex builds a strict JSON schema with openai's `to_strict_json_schema`, pydantic-ai uses `output_type=`, deepagents builds a submit tool from it, pi and gemini embed the schema in the prompt and validate the reply.
+`LLMResult` is an envelope: `.output` (validated `output_schema` instance), `.usage` (`Usage` token counts), `.errors` (partial-failure notes, e.g. one sub-agent died). The only schema plumbing differs per harness — claudecode passes the schema via `--json-schema`, codex builds a strict JSON schema with openai's `to_strict_json_schema`, pydantic-ai uses `output_type=`, pi and gemini embed the schema in the prompt and validate the reply.
 
-`file_access` lets a runbook avoid inlining a full diff for harnesses that read files themselves (`claudecode`, `codex`, `pi`, `gemini` → `True`; `pydantic`, `deepagents` get the diff inline → `False`).
+`file_access` lets a runbook avoid inlining a full diff for harnesses that read files themselves (`claudecode`, `codex`, `pi`, `gemini` → `True`; `pydantic` gets the diff inline → `False`).
 
 ### Runbook
 
@@ -149,7 +147,6 @@ class HarnessKind(_ModulePathEnum):
     PYDANTIC   = "junior.harnesses.pydantic"
     CODEX      = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
-    DEEPAGENTS = "junior.harnesses.deepagents"
     PI = "junior.harnesses.pi"
     GEMINI = "junior.harnesses.gemini"
 
@@ -234,7 +231,6 @@ src/junior/
     claudecode.py       ← claude -p subprocess, --json-schema
     codex.py            ← codex exec subprocess, strict JSON schema
     pydantic.py         ← pydantic-ai, single structured call (output_type)
-    deepagents.py       ← LangChain agent, submit_tool from output_schema
     pi.py               ← pi --mode json subprocess, schema embedded in prompt
     gemini.py           ← gemini --output-format json subprocess (read-only), schema in prompt
 

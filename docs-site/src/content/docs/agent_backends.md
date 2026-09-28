@@ -18,7 +18,6 @@ env `HARNESS`, or config `harness:`; default `claudecode`.
 | The OpenAI/Codex stack | `codex` | `codex exec` in a sandbox, OAuth or API key |
 | **Local / offline models** | `pi` | Ollama / LM Studio / vLLM via `~/.pi/agent/models.json` — no API key, nothing leaves the machine |
 | The Google / Gemini stack | `gemini` | Drives your `gemini` CLI read-only (`plan` mode) — `GEMINI_API_KEY` or its own auth, explores beyond the diff |
-| ~~To experiment with orchestration~~ | `deepagents` | **Deprecated** — LangChain orchestrator, unreliable (may skip the submit tool). Use `pydantic` instead |
 
 ## Comparison
 
@@ -27,7 +26,6 @@ env `HARNESS`, or config `harness:`; default `claudecode`.
 | `claudecode` | *(core)* | single `claude -p` subprocess | subscription or `ANTHROPIC_API_KEY` | stable |
 | `codex` | `junior[codex]` | single `codex exec` in sandbox | OAuth or `OPENAI_API_KEY` | stable |
 | `pydantic` | `junior[pydantic]` | single structured pydantic-ai call | API key **required** | stable |
-| `deepagents` | `junior[deepagents]` | LangChain orchestrator + subagents | API key **required** | **deprecated** |
 | `pi` | *(core)* | single `pi --mode json` subprocess | provider key, `auth.json`, or **none (local models)** | stable |
 | `gemini` | *(core)* | single `gemini --output-format json` subprocess (read-only `plan` mode) | `GEMINI_API_KEY` or the CLI's own auth | stable |
 
@@ -40,10 +38,10 @@ Every harness does a **single structured call** and returns a validated instance
 runbook's output schema. They differ in how the schema is enforced and whether the model
 can read repository files itself (`file_access` — see [Glossary](glossary.md#harness)):
 
-| | pydantic | claudecode | codex | deepagents | pi | gemini |
+| | pydantic | claudecode | codex | pi | gemini |
 |--|----------|-----------|-------|------------|----|--------|
 | **`file_access`** | `False` | `True` | `True` | `False` | `True` | `True` (read-only) |
-| **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git…)` (built-in) | Sandbox filesystem access | `read_file`, `ls`, `grep`, `glob` (via deepagents) | `read`, `grep`, `find`, `ls` (read-only) | built-in read tools (`plan` mode — no edits/shell) |
+| **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git…)` (built-in) | Sandbox filesystem access | `read`, `grep`, `find`, `ls` (read-only) | built-in read tools (`plan` mode — no edits/shell) |
 | **Output contract** | Returns the schema instance directly | via `--json-schema` | via `--output-schema` | `submit_review` tool | Schema in system prompt + validated reply | Schema in prompt + validated reply |
 
 The diff is inlined into the user message for **every** harness while it's small
@@ -55,6 +53,6 @@ themselves instead.
 
 Per-harness internals (subprocess flags, event parsing, error handling):
 [Claude Code](agent_backends/claudecode.md) · [Codex](agent_backends/codex.md) ·
-[Pydantic AI](agent_backends/pydantic.md) · [DeepAgents](agent_backends/deepagents.md) ·
+[Pydantic AI](agent_backends/pydantic.md) ·
 [Pi](agent_backends/pi.md) · [Gemini](agent_backends/gemini.md). Writing your own is one file —
 [Adding a harness](adding_harnesses.md).

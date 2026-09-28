@@ -114,7 +114,7 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--harness` | `claudecode` | `claudecode`, `pydantic`, `codex`, `deepagents`, `pi`. env: `HARNESS` |
+| `--harness` | `claudecode` | `claudecode`, `pydantic`, `codex`, `pi`, `gemini`. env: `HARNESS` |
 | `--model` | per provider | `provider:model` (e.g. `anthropic:claude-opus-4-6`) or bare `model`. Alias for `--env MODEL=…` |
 
 > [!NOTE]
@@ -223,7 +223,7 @@ junior dry-run -o ctx.json                      # also save context for --from-f
 In order — the detail first, the summary last:
 
 - **Context** — the collected context: the changed-files table (code-review runbooks) or a generic field dump (any other runbook).
-- **System prompt** and **User message** — the *exact* strings the harness would receive, rendered using the selected harness's `file_access`. When `file_access=True` (e.g. `claudecode`, `codex`) the diff is **not** inlined — the harness reads files itself. When `file_access=False` (e.g. `pydantic`, `deepagents`) the diff **is** inlined into the user message.
+- **System prompt** and **User message** — the *exact* strings the harness would receive, rendered using the selected harness's `file_access`. When `file_access=True` (e.g. `claudecode`, `codex`) the diff is **not** inlined — the harness reads files itself. When `file_access=False` (e.g. `pydantic`) the diff **is** inlined into the user message.
 - **Output schema** — the result model the harness must return, field by field with types and which are optional (e.g. `summary: str`, `outfit: list[OutfitItem] (optional)`).
 - **Plan** (last) — the runbook name; the harness and its `file_access`; the model; the `publish` flag; the `record` flag; and the output-schema model name.
 
@@ -300,7 +300,6 @@ Harnesses
   claudecode   *   claude CLI subprocess (no API key)        ✓ installed · ready
   codex            codex CLI subprocess                      ✓ installed · ready
   pydantic         single structured call via pydantic-ai    ✓ installed · not ready: set OPENAI_API_KEY / ANTHROPIC_API_KEY
-  deepagents       LangChain orchestrator — DEPRECATED        ✗ not installed (pip install 'junior[deepagents]')
 ```
 
 ---
@@ -313,7 +312,7 @@ Interactive setup wizard (also available as the top-level alias `junior init`). 
 
 1. **Config location** — save to the **global** config (`~/.config/junior/settings.yaml`, your default everywhere) or a **local** project config (`./.junior.yaml`, this repo only — commit it to share with your team).
 2. **Runbook** — `local_review` (diff → stdout/file), `github_pr_review` (PR → comments), `gitlab_pr_review` (MR → note), `bitbucket_pr_review` (PR → comments), or any installed plugin.
-3. **Harness** — claudecode / codex (local CLI, no key) or pydantic / deepagents (LLM API, key from env).
+3. **Harness** — claudecode / codex (local CLI, no key) or pydantic (LLM API, key from env).
 4. **Model** — only for API harnesses; accepts `provider:model` or a bare model name.
 5. **Publish** — only for platform runbooks: post the review automatically (default off).
 6. **Output file** (optional) — write the review to a file instead of stdout (empty = stdout).
@@ -375,7 +374,7 @@ junior config env                                   # for your current config
 junior config env --harness pydantic --runbook github_pr_review
 ```
 
-`claudecode` / `codex` need no env var (they use local CLI auth); `pydantic` / `deepagents` need `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. `github_pr_review` needs `GITHUB_TOKEN` (+ `GITHUB_REPOSITORY`, `GITHUB_EVENT_NUMBER`); `gitlab_pr_review` needs `GITLAB_TOKEN` (+ `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`); `bitbucket_pr_review` needs all of `BITBUCKET_URL`, `BITBUCKET_TOKEN`, `BITBUCKET_PROJECT`, `BITBUCKET_REPO`, `BITBUCKET_PR_ID` (Bitbucket DC has no pipelines, so nothing is auto-provided). Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner.
+`claudecode` / `codex` need no env var (they use local CLI auth); `pydantic` needs `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. `github_pr_review` needs `GITHUB_TOKEN` (+ `GITHUB_REPOSITORY`, `GITHUB_EVENT_NUMBER`); `gitlab_pr_review` needs `GITLAB_TOKEN` (+ `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`); `bitbucket_pr_review` needs all of `BITBUCKET_URL`, `BITBUCKET_TOKEN`, `BITBUCKET_PROJECT`, `BITBUCKET_REPO`, `BITBUCKET_PR_ID` (Bitbucket DC has no pipelines, so nothing is auto-provided). Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner.
 
 ### `junior config path`
 

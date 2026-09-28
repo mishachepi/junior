@@ -70,14 +70,14 @@ def interactive_setup() -> None:
     console.print("\n[bold]3. Harness[/] — which AI engine actually runs the review.")
     console.print(
         "[dim]  claudecode / codex → drive a local CLI (no API key)\n"
-        "  pydantic / deepagents → call an LLM API (key from your env)[/]"
+        "  pydantic → calls an LLM API (key from your env)[/]"
     )
     harness = ask_harness(default="claudecode")
     if harness is None:
         return
 
     model = None
-    if harness in ("pydantic", "deepagents"):
+    if harness == "pydantic":
         console.print(
             "[dim]  Model for the API harness as `provider:model` "
             "(e.g. anthropic:claude-opus-4-6). The API key stays in env.[/]"
@@ -132,7 +132,7 @@ def interactive_setup() -> None:
     console.print(f"  Output   : {output_file or 'stdout'}")
 
     # API-key reminder for API harnesses
-    if harness in ("pydantic", "deepagents"):
+    if harness == "pydantic":
         provider = model.partition(":")[0].lower() if model and ":" in model else ""
         env_var = (
             f"{provider.upper()}_API_KEY" if provider

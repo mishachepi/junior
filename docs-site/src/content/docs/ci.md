@@ -243,7 +243,6 @@ GitLab discussions.
 The **LLM API key** depends on the harness: `pydantic` needs `OPENAI_API_KEY` or
 `ANTHROPIC_API_KEY` (with both set it uses OpenAI unless you pass `--model anthropic:…`).
 `claudecode`/`codex` use CLI auth instead — see [Configuration](configuration.md).
-`deepagents` is deprecated; don't use it in CI.
 
 > [!TIP]
 > On ephemeral runners the run record written to `.junior/output/` is discarded with
@@ -259,7 +258,7 @@ that harness needs:
 |--------|-----------|------------------|
 | `pydantic` | `pydantic` | `--extra gitlab --extra pydantic` (the CI default, ~500 MB) |
 | `codex` | `codex` | `--extra gitlab --extra codex` + Node.js + the `@openai/codex` CLI |
-| `full` | `pydantic` + `codex` + `pi` + `deepagents` | `--extra all` + Node.js + the `@openai/codex` and `@earendil-works/pi-coding-agent` CLIs |
+| `full` | `pydantic` + `codex` + `pi` | `--extra all` + Node.js + the `@openai/codex` and `@earendil-works/pi-coding-agent` CLIs |
 
 ```bash
 # Build (stamp the version label from pyproject.toml):

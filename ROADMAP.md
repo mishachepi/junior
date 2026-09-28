@@ -2,18 +2,6 @@
 
 ## Known Issues
 
-### DeepAgents harness (deprecated)
-
-`deepagents` is **deprecated** — the least reliable harness; selecting it now
-prints a deprecation warning. Kept for one more version, but prefer `pydantic`:
-
-- Fails on large diffs (>30KB) — timeout or the orchestrator skips `submit_review`.
-- With a single prompt (the common case) the orchestrator can get lost and never
-  call `submit_review`.
-- No retry logic for provider rate limits.
-
-Prefer `claudecode` (default), `codex`, or `pydantic` for production use.
-
 ### CLI
 
 - `parse_kv` (`--context` / `--context-file`) strips surrounding whitespace from
@@ -72,13 +60,6 @@ it stays strictly opt-in.
   `--publish` it (parse the saved `LLMReviewOutput` and post inline comments to
   GitLab/GitHub), so collect/review/publish can run on different machines without
   re-rendering. Today `--publish-file` posts a pre-rendered `.md` only.
-
-### Remove DeepAgents
-
-`deepagents` has been deprecated since 0.2.1 — the least reliable harness, and
-`pydantic` covers the same "API-only, no CLI" use case. Plan: drop it in an
-upcoming minor release (the harness module, the `deepagents` extra, and its docs
-page) rather than fixing the reliability issues under *Known Issues* in place.
 
 ### Other
 

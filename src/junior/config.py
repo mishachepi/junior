@@ -86,7 +86,6 @@ class HarnessKind(_ModulePathEnum):
     PYDANTIC = "junior.harnesses.pydantic"
     CODEX = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
-    DEEPAGENTS = "junior.harnesses.deepagents"
     PI = "junior.harnesses.pi"
     GEMINI = "junior.harnesses.gemini"
 
@@ -323,12 +322,12 @@ class LLMSettings(BaseSettings):
     def display_model(self) -> str:
         """Model name safe to surface in logs/UI for the active harness.
 
-        - pydantic/deepagents: SDK actually receives resolved_model.
+        - pydantic: SDK actually receives resolved_model.
         - claudecode/gemini: only show when model is explicitly set (the CLI defaults otherwise).
         - pi: passes the raw `--model provider/id` through; show it when set.
         - codex: the CLI picks its own model — don't claim one.
         """
-        if self.harness in (HarnessKind.PYDANTIC, HarnessKind.DEEPAGENTS):
+        if self.harness == HarnessKind.PYDANTIC:
             return self.resolved_model
         if self.harness in (HarnessKind.CLAUDECODE, HarnessKind.GEMINI):
             return self.resolved_model if self.model else ""

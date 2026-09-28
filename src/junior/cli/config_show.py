@@ -25,8 +25,8 @@ _UNIVERSAL = {
 }
 _HINTS = {
     "runbook": "which runbook to run — see: junior list",
-    "harness": "claudecode | codex | pydantic | deepagents | pi | gemini",
-    "model": "provider:model (pydantic/deepagents/pi/gemini; CLI harnesses use their own)",
+    "harness": "claudecode | codex | pydantic | pi | gemini",
+    "model": "provider:model (pydantic/pi/gemini; CLI harnesses use their own)",
     "publish": "run the runbook's publish; else raw output to stdout/-o",
     "output_file": "write the review to a file (empty = stdout)",
     "log_level": "DEBUG | INFO | WARNING | ERROR",

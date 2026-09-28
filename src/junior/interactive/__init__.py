@@ -181,7 +181,7 @@ def _format_summary(settings: Settings, io: InteractiveIO, mode: str) -> str:
     else:
         lines.append("  Output   : stdout")
 
-    if harness in ("pydantic", "deepagents"):
+    if harness == "pydantic":
         provider = settings.llm.resolved_provider
         if provider:
             env_var = f"{provider.upper()}_API_KEY"

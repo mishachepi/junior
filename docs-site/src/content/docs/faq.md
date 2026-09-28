@@ -7,7 +7,7 @@ title: "FAQ"
 ## Which harness should I use?
 
 `claudecode` (default) if you use Claude Code; `pydantic` for cheap predictable CI runs;
-`codex` for the OpenAI stack; `pi` for local models; `deepagents` is experimental. The
+`codex` for the OpenAI stack; `pi` for local models. The
 full decision table is [Choosing a harness](agent_backends.md). The harness is
 independent of the **runbook** (see below) — any harness serves any runbook. The old
 `--backend` / `BACKEND` / `backend:` still work as deprecated aliases for `--harness`.
@@ -38,7 +38,7 @@ junior run --runbook bitbucket_pr_review --publish # Bitbucket DC PR
 
 ## Why is the review so expensive?
 
-- Agentic harnesses (`claudecode`, `codex`, `deepagents`) explore the repo, so they use far more tokens than `pydantic`'s single structured call — switch harness if cost matters.
+- Agentic harnesses (`claudecode`, `codex`) explore the repo, so they use far more tokens than `pydantic`'s single structured call — switch harness if cost matters.
 - Fewer/shorter prompts → a smaller system prompt and fewer response tokens.
 - Review smaller changes: `--source staged` or smaller MRs.
 

@@ -376,7 +376,7 @@ def test_list_shows_runbooks_and_harnesses():
     assert "Runbooks" in out and "Harnesses" in out
     for name in ("local_review", "github_pr_review", "gitlab_pr_review"):
         assert name in out
-    for name in ("claudecode", "codex", "pydantic", "deepagents"):
+    for name in ("claudecode", "codex", "pydantic", "pi", "gemini"):
         assert name in out
     assert "configured default" in out  # the `*` footer
 
@@ -407,7 +407,7 @@ def test_config_list_is_canonical_and_list_is_alias():
     assert canonical.exit_code == 0 and alias.exit_code == 0
     assert "Harnesses" in canonical.stdout
     # both list the same harness names
-    for name in ("claudecode", "codex", "pydantic", "deepagents"):
+    for name in ("claudecode", "codex", "pydantic", "pi", "gemini"):
         assert name in canonical.stdout and name in alias.stdout
 
 
@@ -429,16 +429,16 @@ def test_harness_is_ready_reflects_env(monkeypatch):
     assert HARNESS.is_ready() == "ready"
 
 
-def test_deepagents_import_stays_lazy():
-    """Importing the harness module must NOT pull LangChain (kept lazy for `list`)."""
+def test_pydantic_import_stays_lazy():
+    """Importing the harness module must NOT pull pydantic-ai (kept lazy for `list`)."""
     import subprocess
     import sys
 
     code = (
-        "import sys, junior.harnesses.deepagents; "
-        "sys.exit(1 if 'langchain_core' in sys.modules else 0)"
+        "import sys, junior.harnesses.pydantic; "
+        "sys.exit(1 if 'pydantic_ai' in sys.modules else 0)"
     )
-    assert subprocess.run([sys.executable, "-c", code]).returncode == 0
+    assert subprocess.run([sys.executable, "-c", code], check=False).returncode == 0
 
 
 # --- KV parser via Typer ---

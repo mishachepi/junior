@@ -99,10 +99,10 @@ Key points:
 - Put partial-failure notes in `LLMResult.errors` — runbooks can surface them.
 - **Lazy-import any heavy SDK inside `complete()`**, not at module top level — the
   registry imports every harness module for `junior list` / `config show`, and that
-  must stay cheap (see `pydantic.py` / `deepagents.py`).
+  must stay cheap (see `pydantic.py`).
 - If the engine has no native structured-output mode, embed the schema in the system
-  prompt and validate the reply yourself — `pi.py` shows the pattern
-  (`_OUTPUT_CONTRACT` + `_parse_response`).
+  prompt and validate the reply yourself — `schema_contract()` + `parse_json_reply()`
+  from `_shared.py`; `pi.py` shows the pattern.
 
 ## Step 2: Add the enum member
 
@@ -115,7 +115,6 @@ class HarnessKind(_ModulePathEnum):
     PYDANTIC = "junior.harnesses.pydantic"
     CODEX = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
-    DEEPAGENTS = "junior.harnesses.deepagents"
     PI = "junior.harnesses.pi"
     GEMINI = "junior.harnesses.gemini"
     MY_HARNESS = "junior.harnesses.my_harness"   # <-- add

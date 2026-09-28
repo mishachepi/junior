@@ -82,7 +82,7 @@ context:
     spec: SPEC.md
   max_diff_chars: 200000                        # hard cap on inlined diff chars (0 = no limit)
 llm:
-  harness: pydantic                             # the harness: claudecode (default), pydantic, codex, deepagents
+  harness: pydantic                             # the harness: claudecode (default), pydantic, codex, pi, gemini
   model: anthropic:claude-opus-4-6
   anthropic_api_key: sk-ant-...                 # prefer env var — see warning below
   max_file_size: 100000                         # skip files larger than this (bytes)
@@ -150,7 +150,7 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 
 | Variable | CLI flag | Default | Description |
 |----------|----------|---------|-------------|
-| `HARNESS` | `--harness` | `claudecode` | Harness: `claudecode`, `pydantic`, `codex`, `deepagents`, `pi`, `gemini` |
+| `HARNESS` | `--harness` | `claudecode` | Harness: `claudecode`, `pydantic`, `codex`, `pi`, `gemini` |
 | `MODEL` | `--model` | per provider | Accepts `provider:model` (e.g. `anthropic:claude-opus-4-6`) or bare `model` |
 | `OPENAI_API_KEY` | — | — | OpenAI API key |
 | `ANTHROPIC_API_KEY` | — | — | Anthropic API key |
@@ -228,15 +228,14 @@ A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). A
 | `claudecode` (default) | core — no extra | ✅ yes | optional — `ANTHROPIC_API_KEY` switches the CLI to API mode (`--bare`) | the `claude` CLI; run `claude` once to log in (Claude subscription) |
 | `codex` | `junior[codex]` | ✅ yes | optional — `OPENAI_API_KEY` as fallback | the `codex` CLI; authenticate it once (OAuth) |
 | `pydantic` | `junior[pydantic]` | ❌ no — diff is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key (matches your `--model` provider) |
-| `deepagents` ⚠️ **deprecated** | `junior[deepagents]` | ❌ no — context is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key. Unreliable — use `pydantic` instead |
 | `pi` | core — no extra | ✅ yes | per provider — or **none** for local models (`~/.pi/agent/models.json`) | the `pi` CLI; env key, `~/.pi/agent/auth.json`, or a local model |
 | `gemini` | core — no extra | ✅ yes (read-only `plan` mode) | optional — `GEMINI_API_KEY`, or the CLI's own auth | the `gemini` CLI; set `GEMINI_API_KEY` or log in once |
 
-- **`file_access`** — `claudecode`/`codex`/`pi`/`gemini` explore the repo with their own tools, so the runbook does **not** inline the full diff into the prompt. `pydantic`/`deepagents` get the diff inlined (they also have read-only file tools for extra exploration).
+- **`file_access`** — `claudecode`/`codex`/`pi`/`gemini` explore the repo with their own tools, so the runbook does **not** inline the full diff into the prompt. `pydantic` gets the diff inlined (it also has read-only file tools for extra exploration).
 - **Honored config fields** — every API harness reads `llm.model` and `llm.max_file_size`; only `pydantic` additionally honors `llm.max_tokens_per_agent` (response-token cap); the CLI harnesses (`claudecode`/`codex`/`pi`/`gemini`) honor `llm.timeout` (subprocess kill after N seconds, default 600 — lower it to fail fast on a stuck agent). `claudecode`/`codex`/`gemini` ignore `model` unless you set it explicitly (the CLI picks otherwise).
 - **claudecode-only knob** — `llm.claudecode.permission_mode` sets the `claude` CLI's `--permission-mode`. Allowed: `default`, `acceptEdits`, `plan`, `bypassPermissions` (default). Set in YAML (`llm.claudecode.permission_mode`), not an env var. See the [claudecode harness page](agent_backends/claudecode.md) for when to change it.
 - **gemini is read-only** — the `gemini` harness always runs `--approval-mode plan`: it may read the repo with its tools but never edits or runs anything (a review must not mutate the worktree). No knob to loosen it.
-- **No required env for the CLI harnesses** — `claudecode`/`codex` carry their own auth; `junior config env --harness pydantic` (or `deepagents`) lists the provider key. Setting both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` is fine — pass `--model anthropic:...` / `--model openai:...` to disambiguate.
+- **No required env for the CLI harnesses** — `claudecode`/`codex` carry their own auth; `junior config env --harness pydantic` lists the provider key. Setting both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` is fine — pass `--model anthropic:...` / `--model openai:...` to disambiguate.
 
 Per-harness deep dives: [Harnesses](agent_backends.md).
 

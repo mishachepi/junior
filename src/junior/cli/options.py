@@ -220,7 +220,7 @@ HarnessOpt = Annotated[
     str | None,
     typer.Option(
         "--harness",
-        help="LLM harness: claudecode, pydantic, codex, deepagents, pi, gemini. env: HARNESS",
+        help="LLM harness: claudecode, pydantic, codex, pi, gemini. env: HARNESS",
         rich_help_panel=REVIEW_PANEL,
         show_default=False,
     ),

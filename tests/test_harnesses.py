@@ -5,8 +5,7 @@ self-checks cleanly. The pydantic-ai ``RunContext`` regression (a harness that
 imported fine but blew up building its agent) showed why the registry-import
 path alone isn't enough — but a broad net here still catches a harness that
 fails to expose ``HARNESS``, mislabels its ``name``, or whose ``is_ready()``
-crashes. Per-harness deep paths live in ``test_pydantic_harness`` / ``test_codex``
-/ ``test_deepagents``.
+crashes. Per-harness deep paths live in ``test_pydantic_harness`` / ``test_codex``.
 """
 
 import pytest
