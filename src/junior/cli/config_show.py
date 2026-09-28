@@ -12,6 +12,7 @@ from junior.cli.console import console, err_console, print_content
 from junior.config import (
     ContextSettings,
     HarnessKind,
+    harness_ref,
     LLMSettings,
     OutputSettings,
     Settings,
@@ -74,7 +75,7 @@ def _line(field: str, value, indent: int = 0) -> str:
 def _harness_obj(name: str):
     from junior.runbook.registry import get_harness
 
-    return get_harness(HarnessKind(name))
+    return get_harness(harness_ref(name))
 
 
 def _runbook_obj(name: str):
@@ -83,7 +84,7 @@ def _runbook_obj(name: str):
     return get_runbook(name)
 
 
-def _readiness(kind: HarnessKind) -> str:
+def _readiness(kind: HarnessKind | str) -> str:
     """Short live-status of the resolved harness, for the header comment."""
     from junior.runbook.registry import get_harness, harness_available
 

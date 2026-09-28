@@ -21,9 +21,23 @@ file_access: ClassVar[bool]
 > should fail loudly at instantiation, not slip past a type checker.
 
 Add a harness to support a new model provider, SDK, or CLI. The whole job is
-**implementing one interface** (`Harness`, two methods — one of them optional) plus two
-one-line registrations; the cross-harness contract tests pick the new harness up
-automatically.
+**implementing one interface** (`Harness`, two methods — one of them optional).
+
+## No fork needed: `--harness pkg.module`
+
+Any importable module that exposes a module-level `HARNESS` instance is a harness:
+
+```bash
+# my_harness.py anywhere on PYTHONPATH (or an installed package)
+junior run --runbook summarize --harness my_harness
+HARNESS=mypkg.review_harness junior run …          # env / config `harness:` work too
+```
+
+The value is a built-in short name or an import path that `find_spec` can locate —
+anything else is reported as a typo. A custom harness is not listed by `junior list` (that table is the
+built-ins), but `junior config show --harness mypkg.x` resolves it and reports `is_ready()`.
+The steps below are for adding a **built-in** harness to Junior itself; a custom one
+needs only Step 1.
 
 > [!TIP]
 > Driving a local agent CLI? Subclass `CliHarness` from `junior.harnesses._shared`

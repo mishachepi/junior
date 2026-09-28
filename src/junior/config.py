@@ -20,6 +20,7 @@ root as shorthand (`harness: codex` == `llm: {harness: codex}`).
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import sys
 from enum import StrEnum
@@ -88,6 +89,28 @@ class HarnessKind(_ModulePathEnum):
     CLAUDECODE = "junior.harnesses.claudecode"
     PI = "junior.harnesses.pi"
     GEMINI = "junior.harnesses.gemini"
+
+
+def harness_ref(value: str) -> HarnessKind | str:
+    """Resolve a `--harness` value: built-in short name (or its module path) →
+    HarnessKind; the import path of any other module → returned as-is for the
+    registry (it must expose a module-level `HARNESS`). `find_spec` only
+    locates the module, so a typo is caught here without importing anything,
+    and the error lists the built-ins, not their module paths."""
+    if not value:
+        return value
+    if value in {m.value for m in HarnessKind} or HarnessKind._missing_(value) is not None:
+        return HarnessKind(value)
+    try:
+        if importlib.util.find_spec(value) is not None:
+            return value
+    except (ImportError, ValueError):
+        pass
+    known = ", ".join(m.name.lower() for m in HarnessKind)
+    raise ValueError(
+        f"unknown harness '{value}'. Known: {known} — or the import path of a "
+        "module exposing HARNESS (e.g. 'mypkg.my_harness')"
+    )
 
 
 class SourceMode(_CaseInsensitiveStrEnum):
@@ -221,23 +244,15 @@ class LLMSettings(BaseSettings):
 
     model_config = _BASE_CONFIG
 
-    # The LLM driver: `--harness` / `HARNESS` / config `harness:`.
-    harness: HarnessKind = HarnessKind.PYDANTIC
+    # The LLM driver: `--harness` / `HARNESS` / config `harness:`. A built-in
+    # short name (HarnessKind), or the dotted path of any module exposing a
+    # `HARNESS` instance — a custom harness needs no fork (see `harness_ref`).
+    harness: HarnessKind | str = HarnessKind.PYDANTIC
 
     @field_validator("harness", mode="before")
     @classmethod
     def harness_by_name(cls, v: Any) -> Any:
-        """A human error message: pydantic's default for a bad enum value lists
-        the module paths (`junior.harnesses.…`), which mean nothing to a user."""
-        if (
-            isinstance(v, str)
-            and v
-            and v not in {m.value for m in HarnessKind}  # full module path is valid too
-            and HarnessKind._missing_(v) is None
-        ):
-            known = ", ".join(m.name.lower() for m in HarnessKind)
-            raise ValueError(f"unknown harness '{v}'. Known: {known}")
-        return v
+        return harness_ref(v) if isinstance(v, str) else v
 
     # Accepts "provider:model" or just "model". Provider is inferred from
     # the prefix, falling back to whichever API key is set.
@@ -290,8 +305,11 @@ class LLMSettings(BaseSettings):
 
     @property
     def harness_name(self) -> str:
-        """The harness's short name (e.g. "claudecode") — its registry/UI label."""
-        return self.harness.name.lower()
+        """The harness's label: a built-in's short name (e.g. "claudecode") or
+        a custom harness's module path."""
+        if isinstance(self.harness, HarnessKind):
+            return self.harness.name.lower()
+        return self.harness
 
     @property
     def resolved_provider(self) -> str:
@@ -482,7 +500,10 @@ class Settings(BaseSettings):
 
     def _validate_review(self) -> list[str]:
         harness = self.llm.harness
-        # CLI-driven harnesses manage their own auth/model.
+        # CLI-driven harnesses manage their own auth/model; a custom harness
+        # (module path) checks its own environment in `is_ready()`.
+        if not isinstance(harness, HarnessKind):
+            return []
         if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI, HarnessKind.GEMINI):
             return []
 

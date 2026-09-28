@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `--harness` (and `HARNESS` / `harness:`) accepts the import path of any module exposing a `HARNESS` instance — a custom harness no longer needs a fork or an enum entry, mirroring `--runbook pkg.module:Class`. `config.harness_ref()` resolves the value; `junior config show --harness pkg.x` reports its readiness.
 - **Breaking:** `pydantic` is now the default harness (was `claudecode`) and `pydantic-ai-slim[anthropic,openai]` ships in the core install; `junior[pydantic]` is kept as an empty extra so existing installs keep working. `claudecode`/`codex`/`pi` are unchanged — select them with `--harness`.
 - **Breaking:** the `deepagents` harness (deprecated since 0.2.1) is removed, along with the `junior[deepagents]` extra and its docs page. `pydantic` covers the same API-only use case with a single structured call.
 - **Breaking:** the one-version shims from 0.2.0 are gone — `junior.models` (import from `junior.runbooks.code_review.models`; `CollectedContext`/`LLMReviewOutput` are `ReviewContext`/`ReviewOutput`) and the `--backend` / `BACKEND` / `backend:` alias (use `--harness` / `HARNESS` / `harness:`).

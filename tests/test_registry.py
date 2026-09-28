@@ -106,10 +106,9 @@ def test_get_harness_resolves_enum_to_singleton():
 def test_get_harness_raises_when_module_lacks_singleton():
     mod = types.ModuleType("_harness_no_singleton")
     sys.modules["_harness_no_singleton"] = mod  # module exists but has no HARNESS
-    fake_kind = types.SimpleNamespace(value="_harness_no_singleton")
     try:
         with pytest.raises(RuntimeError, match="does not expose a HARNESS instance"):
-            registry.get_harness(fake_kind)
+            registry.get_harness("_harness_no_singleton")
     finally:
         del sys.modules["_harness_no_singleton"]
 
@@ -118,9 +117,8 @@ def test_get_harness_raises_when_singleton_is_wrong_type():
     mod = types.ModuleType("_harness_bad_singleton")
     mod.HARNESS = object()  # present but not a Harness
     sys.modules["_harness_bad_singleton"] = mod
-    fake_kind = types.SimpleNamespace(value="_harness_bad_singleton")
     try:
         with pytest.raises(RuntimeError, match="does not expose a HARNESS instance"):
-            registry.get_harness(fake_kind)
+            registry.get_harness("_harness_bad_singleton")
     finally:
         del sys.modules["_harness_bad_singleton"]

@@ -114,7 +114,7 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--harness` | `claudecode` | `claudecode`, `pydantic`, `codex`, `pi`, `gemini`. env: `HARNESS` |
+| `--harness` | `pydantic` | `pydantic`, `claudecode`, `codex`, `pi`, `gemini`, or a module path (`pkg.my_harness`) exposing `HARNESS`. env: `HARNESS` |
 | `--model` | per provider | `provider:model` (e.g. `anthropic:claude-opus-4-6`) or bare `model`. Alias for `--env MODEL=…` |
 
 > [!NOTE]
