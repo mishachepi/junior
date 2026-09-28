@@ -118,7 +118,6 @@ commands. Repeatable options (`--prompt`, `--context`, `--context-file`) instead
 | `--model` | per provider | `provider:model` (e.g. `anthropic:claude-opus-4-6`) or bare `model`. Alias for `--env MODEL=…` |
 
 > [!NOTE]
-> `--backend` / env `BACKEND` (and the config key `backend`) are accepted as a deprecated alias for `--harness` / `HARNESS` / `harness`, kept for one version.
 
 ### Options — Output (where to send)
 
@@ -342,7 +341,7 @@ Configuration utilities.
 
 Print your **current effective configuration** as YAML — and, because the header reports where it loaded from and whether the harness is ready, it doubles as a status view. There's no separate `junior status`.
 
-With **no flags** it resolves the harness + runbook from your config (harness defaults to `claudecode`; the runbook has no default) and prints *their* `context:` / `llm:` / `output:` fields at your **real current values** — most group fields are harness- or runbook-specific (e.g. `ci_server_url` only for `gitlab_pr_review`, `max_tokens_per_agent` only for `pydantic`), and each harness/runbook declares its own, so plugins show up too. Pass **`--harness X`** / **`--runbook Y`** to inspect a different combination instead.
+With **no flags** it resolves the harness + runbook from your config (harness defaults to `pydantic`; the runbook has no default) and prints *their* `context:` / `llm:` / `output:` fields at your **real current values** — most group fields are harness- or runbook-specific (e.g. `ci_server_url` only for `gitlab_pr_review`, `max_tokens_per_agent` only for `pydantic`), and each harness/runbook declares its own, so plugins show up too. Pass **`--harness X`** / **`--runbook Y`** to inspect a different combination instead.
 
 A comment header shows the live status (stripped by any YAML parser, so the body stays valid YAML you can pipe back into a config):
 

@@ -72,7 +72,7 @@ def interactive_setup() -> None:
         "[dim]  claudecode / codex → drive a local CLI (no API key)\n"
         "  pydantic → calls an LLM API (key from your env)[/]"
     )
-    harness = ask_harness(default="claudecode")
+    harness = ask_harness(default="pydantic")
     if harness is None:
         return
 

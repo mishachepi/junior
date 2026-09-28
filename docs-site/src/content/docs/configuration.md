@@ -30,7 +30,6 @@ In a config file the three groups are nested explicitly under `context:` / `llm:
 > **`local_runbooks`** (top-level, default `true`). Load runbooks from `<project>/.junior/runbooks/` (see [adding runbooks](adding_runbooks.md#4-repo-local-in-juniorrunbooks)). It executes Python shipped in the repo; set `false` to skip it for repos you don't trust.
 
 > [!NOTE]
-> **Deprecated alias:** `--backend` / env `BACKEND` and the config key `backend` are accepted as a deprecated alias for `harness` (kept for one version). Prefer `harness` / `HARNESS` / `--harness`.
 
 > [!TIP]
 > **Top-level shorthands.** The run-shaping knobs you set most often — `harness`, `model`, `publish`, `output_file` (plus `runbook` and `log_level`) — may live at the config **root** as shorthand. `harness: codex` is exactly `llm: {harness: codex}`; `output_file: review.md` is `output: {output_file: review.md}`. Both forms work; if you write both in one file the top-level value wins. `junior init` writes the flat form.
@@ -82,7 +81,7 @@ context:
     spec: SPEC.md
   max_diff_chars: 200000                        # hard cap on inlined diff chars (0 = no limit)
 llm:
-  harness: pydantic                             # the harness: claudecode (default), pydantic, codex, pi, gemini
+  harness: pydantic                             # the harness: pydantic (default), claudecode, codex, pi, gemini
   model: anthropic:claude-opus-4-6
   anthropic_api_key: sk-ant-...                 # prefer env var — see warning below
   max_file_size: 100000                         # skip files larger than this (bytes)
@@ -159,7 +158,6 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 | `TIMEOUT` | — | `600` | Kill the CLI-harness subprocess (`claudecode`/`codex`/`pi`/`gemini`) after N seconds |
 
 > [!NOTE]
-> `BACKEND` / `--backend` and the config key `backend` remain accepted as a deprecated alias for `HARNESS` / `--harness` / `harness` (kept for one version).
 
 ### Group 3 — Output (where to send)
 
@@ -225,9 +223,9 @@ A **harness** is the LLM driver (`llm.harness` / `--harness` / env `HARNESS`). A
 
 | Harness | Install | Reads files itself (`file_access`) | API key | Authenticates via |
 |---------|---------|-----------------------------------|---------|-------------------|
-| `claudecode` (default) | core — no extra | ✅ yes | optional — `ANTHROPIC_API_KEY` switches the CLI to API mode (`--bare`) | the `claude` CLI; run `claude` once to log in (Claude subscription) |
+| `claudecode` | core — no extra | ✅ yes | optional — `ANTHROPIC_API_KEY` switches the CLI to API mode (`--bare`) | the `claude` CLI; run `claude` once to log in (Claude subscription) |
 | `codex` | `junior[codex]` | ✅ yes | optional — `OPENAI_API_KEY` as fallback | the `codex` CLI; authenticate it once (OAuth) |
-| `pydantic` | `junior[pydantic]` | ❌ no — diff is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key (matches your `--model` provider) |
+| `pydantic` (default) | core — no extra | ❌ no — diff is inlined | **required** — `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | a provider API key (matches your `--model` provider) |
 | `pi` | core — no extra | ✅ yes | per provider — or **none** for local models (`~/.pi/agent/models.json`) | the `pi` CLI; env key, `~/.pi/agent/auth.json`, or a local model |
 | `gemini` | core — no extra | ✅ yes (read-only `plan` mode) | optional — `GEMINI_API_KEY`, or the CLI's own auth | the `gemini` CLI; set `GEMINI_API_KEY` or log in once |
 

@@ -222,7 +222,7 @@ class LLMSettings(BaseSettings):
     model_config = _BASE_CONFIG
 
     # The LLM driver: `--harness` / `HARNESS` / config `harness:`.
-    harness: HarnessKind = HarnessKind.CLAUDECODE
+    harness: HarnessKind = HarnessKind.PYDANTIC
 
     @field_validator("harness", mode="before")
     @classmethod

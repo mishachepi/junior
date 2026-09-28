@@ -177,7 +177,7 @@ def run(
     """Run the selected runbook end-to-end: collect → AI review (harness) → publish.
 
     Pick the runbook with --runbook (or RUNBOOK / config `runbook:` — required,
-    no implicit default) and the LLM driver with --harness (default claudecode).
+    no implicit default) and the LLM driver with --harness (default pydantic).
     Each run writes a JSON record to .junior/output/ unless --no-record is set.
 
     Exit codes: 0=success, 1=blocking issues, 2=config error, 3=runtime error.

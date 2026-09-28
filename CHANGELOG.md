@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Breaking:** `pydantic` is now the default harness (was `claudecode`) and `pydantic-ai-slim[anthropic,openai]` ships in the core install; `junior[pydantic]` is kept as an empty extra so existing installs keep working. `claudecode`/`codex`/`pi` are unchanged — select them with `--harness`.
 - **Breaking:** the `deepagents` harness (deprecated since 0.2.1) is removed, along with the `junior[deepagents]` extra and its docs page. `pydantic` covers the same API-only use case with a single structured call.
 - **Breaking:** the one-version shims from 0.2.0 are gone — `junior.models` (import from `junior.runbooks.code_review.models`; `CollectedContext`/`LLMReviewOutput` are `ReviewContext`/`ReviewOutput`) and the `--backend` / `BACKEND` / `backend:` alias (use `--harness` / `HARNESS` / `harness:`).
 - Harness internals: the four CLI-driven harnesses (claudecode, codex, pi, gemini) share one `CliHarness` base (`harnesses/_shared.py`) — PATH check, subprocess run, missing-binary/timeout errors and the schema-in-prompt contract live in one place. No behaviour or message changes.

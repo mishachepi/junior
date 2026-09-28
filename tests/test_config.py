@@ -101,7 +101,7 @@ class TestContextSettings:
 class TestLLMSettings:
     def test_defaults(self):
         s = LLMSettings()
-        assert s.harness == HarnessKind.CLAUDECODE
+        assert s.harness == HarnessKind.PYDANTIC
         assert s.model == ""
         assert s.openai_api_key is None
         assert s.anthropic_api_key is None
@@ -120,8 +120,8 @@ class TestLLMSettings:
         """`BACKEND` / `backend=` (deprecated in 0.2.0) no longer selects the harness."""
         monkeypatch.delenv("HARNESS", raising=False)
         monkeypatch.setenv("BACKEND", "pydantic")
-        assert LLMSettings().harness == HarnessKind.CLAUDECODE
-        assert LLMSettings(backend="codex").harness == HarnessKind.CLAUDECODE
+        assert LLMSettings().harness == HarnessKind.PYDANTIC
+        assert LLMSettings(backend="codex").harness == HarnessKind.PYDANTIC
 
     def test_model_explicit_provider_prefix(self):
         s = LLMSettings(model="anthropic:claude-opus-4-6")

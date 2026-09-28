@@ -217,7 +217,7 @@ def available_runbooks_meta() -> list[tuple[str, str]]:
 HARNESS_META: dict[HarnessKind, tuple[str, str, str]] = {
     HarnessKind.CLAUDECODE: ("claude CLI subprocess (no API key)", "", ""),
     HarnessKind.CODEX: ("codex CLI subprocess", "codex", "openai"),
-    HarnessKind.PYDANTIC: ("single structured call via pydantic-ai", "pydantic", "pydantic_ai"),
+    HarnessKind.PYDANTIC: ("single structured call via pydantic-ai (default)", "", ""),
     HarnessKind.PI: ("pi CLI subprocess — incl. local models (models.json)", "", ""),
     HarnessKind.GEMINI: ("gemini CLI subprocess (Google; GEMINI_API_KEY or its own auth)", "", ""),
 }

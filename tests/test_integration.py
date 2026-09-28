@@ -137,7 +137,7 @@ class TestFullRunbook:
         out = capsys.readouterr().out
         assert "Junior Code Review" in out
         assert "Consider adding a docstring" in out
-        assert "claudecode" in out
+        assert "pydantic" in out
 
     def test_formatter_produces_valid_output(self, sample_review_result):
         """Format review and check it contains all expected sections."""

@@ -529,6 +529,7 @@ version = "0.2.5"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
+    { name = "pydantic-ai-slim", extra = ["anthropic", "openai"] },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "questionary" },
@@ -541,7 +542,6 @@ dependencies = [
 all = [
     { name = "httpx" },
     { name = "openai" },
-    { name = "pydantic-ai-slim", extra = ["anthropic", "openai"] },
     { name = "python-gitlab" },
 ]
 bitbucket = [
@@ -555,9 +555,6 @@ github = [
 ]
 gitlab = [
     { name = "python-gitlab" },
-]
-pydantic = [
-    { name = "pydantic-ai-slim", extra = ["anthropic", "openai"] },
 ]
 
 [package.dev-dependencies]
@@ -575,7 +572,7 @@ requires-dist = [
     { name = "junior", extras = ["gitlab", "github", "bitbucket", "codex", "pydantic"], marker = "extra == 'all'" },
     { name = "openai", marker = "extra == 'codex'", specifier = ">=3.17.0" },
     { name = "pydantic", specifier = ">=2.13.5" },
-    { name = "pydantic-ai-slim", extras = ["anthropic", "openai"], marker = "extra == 'pydantic'", specifier = ">=2.47.0" },
+    { name = "pydantic-ai-slim", extras = ["anthropic", "openai"], specifier = ">=2.47.0" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "python-gitlab", marker = "extra == 'gitlab'", specifier = ">=8.5.0" },
     { name = "pyyaml", specifier = ">=6.0" },
@@ -584,7 +581,7 @@ requires-dist = [
     { name = "structlog", specifier = ">=26.1.0" },
     { name = "typer", specifier = ">=0.27.2" },
 ]
-provides-extras = ["claudecode", "codex", "pydantic", "gitlab", "github", "bitbucket", "all"]
+provides-extras = ["pydantic", "claudecode", "codex", "gitlab", "github", "bitbucket", "all"]
 
 [package.metadata.requires-dev]
 dev = [

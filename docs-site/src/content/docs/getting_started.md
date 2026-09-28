@@ -19,14 +19,15 @@ your changes. The same mechanics drive any runbook you write
 
 ## 1. Install
 
-The core install is lean — the CLI plus the default `claudecode` harness, no LLM SDKs:
+The core install is the CLI plus the default `pydantic` harness (pydantic-ai):
 
 ```bash
 uv tool install "junior @ git+https://github.com/mishachepi/junior.git"
 ```
 
-The default harness drives the `claude` CLI — if Claude Code is installed and logged in,
-there is nothing else to set up, no API key needed.
+The default harness makes one structured API call — export `OPENAI_API_KEY` or
+`ANTHROPIC_API_KEY` and there is nothing else to set up. Prefer a local coding-agent CLI
+instead? `--harness claudecode` / `codex` / `pi` need no API key, only the CLI logged in.
 
 Verify the setup — `junior list` shows every runbook and harness, with install state and
 readiness:

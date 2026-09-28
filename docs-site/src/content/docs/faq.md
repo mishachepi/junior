@@ -6,11 +6,10 @@ title: "FAQ"
 
 ## Which harness should I use?
 
-`claudecode` (default) if you use Claude Code; `pydantic` for cheap predictable CI runs;
+`pydantic` (default) for cheap, predictable runs; `claudecode` if you use Claude Code;
 `codex` for the OpenAI stack; `pi` for local models. The
 full decision table is [Choosing a harness](agent_backends.md). The harness is
-independent of the **runbook** (see below) — any harness serves any runbook. The old
-`--backend` / `BACKEND` / `backend:` still work as deprecated aliases for `--harness`.
+independent of the **runbook** (see below) — any harness serves any runbook.
 
 ## Which runbook should I use?
 

@@ -7,14 +7,14 @@ title: "Choosing a harness"
 A **harness** is the LLM driver — one way of calling a model. Every harness serves every
 runbook (the output schema is a parameter), so picking one is purely about *how you want
 the model to run*: which CLI/SDK, which auth, cloud or local. Select with `--harness`,
-env `HARNESS`, or config `harness:`; default `claudecode`.
+env `HARNESS`, or config `harness:`; default `pydantic`.
 
 ## Quick answer
 
 | You want… | Pick | Why |
 |----------|---------|-----|
-| Zero-setup local reviews (default) | `claudecode` | Drives your `claude` CLI — subscription auth, git tools, explores beyond the diff |
-| Predictable CI cost | `pydantic` | One structured API call, no agentic wandering |
+| Zero-setup local reviews | `claudecode` | Drives your `claude` CLI — subscription auth, git tools, explores beyond the diff |
+| Predictable cost, deterministic runs (default) | `pydantic` | One structured API call, no agentic wandering |
 | The OpenAI/Codex stack | `codex` | `codex exec` in a sandbox, OAuth or API key |
 | **Local / offline models** | `pi` | Ollama / LM Studio / vLLM via `~/.pi/agent/models.json` — no API key, nothing leaves the machine |
 | The Google / Gemini stack | `gemini` | Drives your `gemini` CLI read-only (`plan` mode) — `GEMINI_API_KEY` or its own auth, explores beyond the diff |

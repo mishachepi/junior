@@ -240,7 +240,6 @@ class LLMSettings(BaseSettings):
 
 > [!NOTE]
 > `llm.harness` (env `HARNESS`, flag `--harness`) is canonical. The old
-> `llm.backend` / `BACKEND` / `--backend` is kept as a deprecated alias.
 
 The system prompt is the runbook's own: its one-line `SYSTEM_PROMPT` role merged
 with the user's `context.prompts` (`--prompt` / `--prompt-file`) via the shared

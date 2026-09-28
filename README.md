@@ -10,17 +10,17 @@ Two independent extension points — **runbooks** (`local_review` / `github_pr_r
 
 ## Install
 
-The core install is lean — just the CLI plus the default `claudecode` harness (no LLM
-SDKs, since `claudecode` drives the `claude` CLI). Add an **extra** for every harness or
-platform you actually use; extras compose in one bracket.
+The core install is the CLI plus the default `pydantic` harness — one structured API
+call via pydantic-ai, `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in your env. The CLI-agent
+harnesses (`claudecode`, `codex`, `pi`) need no Python deps, only their CLI on PATH. Add an
+**extra** for every other harness or platform you actually use; extras compose in one bracket.
 
 ```bash
-# Core — runs `junior run` with the default claudecode harness out of the box
+# Core — runs `junior run` with the default pydantic harness (API key in env)
 uv tool install "junior @ git+https://github.com/mishachepi/junior.git"
 
 # Pick what you need (extras compose: junior[gitlab,codex])
 uv tool install "junior[codex]      @ git+https://github.com/mishachepi/junior.git"  # codex harness
-uv tool install "junior[pydantic]   @ git+https://github.com/mishachepi/junior.git"  # pydantic-ai harness
 uv tool install "junior[gitlab]     @ git+https://github.com/mishachepi/junior.git"  # GitLab MR metadata
 uv tool install "junior[github]     @ git+https://github.com/mishachepi/junior.git"  # GitHub PR metadata
 uv tool install "junior[bitbucket]  @ git+https://github.com/mishachepi/junior.git"  # Bitbucket DC PR metadata
@@ -59,16 +59,15 @@ the project version, e.g. `:0.2.4` (multi-arch — amd64 + arm64).
 
 | Extra | Python deps it adds | Also needs (not pip) |
 |-------|---------------------|----------------------|
-| *(core)* | — | `claude` CLI for the default harness |
+| *(core)* | `pydantic-ai-slim[anthropic,openai]` (default harness) | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
 | `codex` | `openai` (strict-schema helper) | `codex` CLI + auth |
-| `pydantic` | `pydantic-ai-slim[anthropic,openai]` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
+| `claudecode` | — | `claude` CLI + login |
 | `gitlab` | `python-gitlab` | `GITLAB_TOKEN` |
 | `github` | `httpx` | `gh` CLI + `GITHUB_TOKEN` |
 | `bitbucket` | `httpx` | `BITBUCKET_*` env vars (token, url, project, repo, PR id) |
 | `all` | everything above | — |
 
-Install only the harness you run and you skip every other harness's SDK — e.g. a
-`claudecode`-only or `codex`-only setup never pulls the `pydantic-ai` tree.
+Install only the platform extras you use; the CLI-agent harnesses add no Python deps.
 
 ## Quick Start
 

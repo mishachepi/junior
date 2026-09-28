@@ -248,13 +248,13 @@ def test_config_show_reflects_effective_setup(monkeypatch):
     parsed = yaml.safe_load(result.stdout)  # header is comments → still valid YAML
     # effective shorthands (defaults when no config is present)
     assert parsed["runbook"] == ""  # no implicit default — must be chosen explicitly
-    assert parsed["harness"] == "claudecode"
+    assert parsed["harness"] == "pydantic"
     assert parsed["publish"] is False
     # with no runbook configured, its specific fields are hidden (nothing to introspect)
     assert "source" not in (parsed.get("context") or {})
     assert parsed["output"]["record"] is True
     # status header present (labels padded to a fixed width so values align)
-    assert "# harness: claudecode" in result.stdout
+    assert "# harness: pydantic" in result.stdout
     assert "# runbook: (none" in result.stdout
     assert "# source:  defaults (no config file)" in result.stdout
 

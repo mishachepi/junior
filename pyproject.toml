@@ -12,13 +12,14 @@ dependencies = [
     "typer>=0.27.2",
     "rich>=15.0.0",
     "PyYAML>=6.0",
+    "pydantic-ai-slim[anthropic,openai]>=2.47.0",  # the default harness: one structured API call
 ]
 
 [project.optional-dependencies]
 # --- Agent backends ---
-claudecode = []  # default — drives the `claude` CLI (Node.js), no Python deps
+pydantic = []  # default — ships in core (pydantic-ai); kept so `junior[pydantic]` still installs
+claudecode = []  # drives the `claude` CLI (Node.js), no Python deps
 codex = ["openai>=3.17.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
-pydantic = ["pydantic-ai-slim[anthropic,openai]>=2.47.0"]  # single structured call via API key
 
 # --- Built-in platforms for code review collect MR/PR metadata + publish comments ---
 gitlab = ["python-gitlab>=8.5.0"]
