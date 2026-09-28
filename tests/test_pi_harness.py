@@ -6,9 +6,10 @@ from types import SimpleNamespace
 import pytest
 from pydantic import BaseModel
 
-import junior.harnesses.pi as pi_mod
+import junior.harnesses._shared as shared
 from junior.config import Settings
-from junior.harnesses.pi import HARNESS, _last_assistant, _parse_response
+from junior.harnesses._shared import parse_json_reply
+from junior.harnesses.pi import HARNESS, _last_assistant
 
 
 class _Out(BaseModel):
@@ -50,25 +51,26 @@ def test_last_assistant_ignores_garbage_lines():
 
 
 def test_parse_response_strict_json():
-    out = _parse_response('{"verdict": "ok", "score": 5}', _Out)
+    out = parse_json_reply('{"verdict": "ok", "score": 5}', _Out, source="pi")
     assert out.verdict == "ok" and out.score == 5
 
 
 def test_parse_response_tolerates_fences_and_prose():
-    out = _parse_response(
-        'Here is my answer:\n```json\n{"verdict": "bad", "score": 1}\n```\nDone.', _Out
+    out = parse_json_reply(
+        'Here is my answer:\n```json\n{"verdict": "bad", "score": 1}\n```\nDone.', _Out,
+        source="pi",
     )
     assert out.verdict == "bad" and out.score == 1
 
 
 def test_parse_response_rejects_non_json():
     with pytest.raises(RuntimeError, match="JSON"):
-        _parse_response("I could not produce JSON, sorry.", _Out)
+        parse_json_reply("I could not produce JSON, sorry.", _Out, source="pi")
 
 
 def test_parse_response_rejects_schema_mismatch():
     with pytest.raises(RuntimeError, match="validation"):
-        _parse_response('{"verdict": "ok"}', _Out)  # missing required `score`
+        parse_json_reply('{"verdict": "ok"}', _Out, source="pi")  # missing required `score`
 
 
 def test_complete_builds_hermetic_command(monkeypatch, tmp_path):
@@ -81,7 +83,7 @@ def test_complete_builds_hermetic_command(monkeypatch, tmp_path):
                         {"input": 10, "output": 5, "cacheRead": 0, "cacheWrite": 0})
         return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
 
-    monkeypatch.setattr(pi_mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(shared.subprocess, "run", fake_run)
     settings = Settings(
         context={"project_dir": str(tmp_path)}, llm={"harness": "pi", "model": "anthropic/x"}
     )
@@ -112,7 +114,7 @@ def test_complete_raises_on_failure_without_text(monkeypatch, tmp_path):
     def fake_run(cmd, **kwargs):
         return SimpleNamespace(returncode=1, stdout="", stderr="boom")
 
-    monkeypatch.setattr(pi_mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(shared.subprocess, "run", fake_run)
     settings = Settings(context={"project_dir": str(tmp_path)}, llm={"harness": "pi"})
 
     with pytest.raises(RuntimeError, match="pi CLI failed"):

@@ -26,10 +26,13 @@ one-line registrations; the cross-harness contract tests pick the new harness up
 automatically.
 
 > [!TIP]
-> A complete, real worked example is the `pi` harness
-> (`src/junior/harnesses/pi.py`, ~200 lines): a subprocess CLI driver with no native
-> structured-output mode, so it also shows the prompt-embedded-schema pattern and a
-> tolerant JSON parser. It was written exactly by following the steps below.
+> Driving a local agent CLI? Subclass `CliHarness` from `junior.harnesses._shared`
+> instead of `Harness`: set `binary` and `install_hint`, and call
+> `self.run_cli(cmd, settings, input=..., cwd=...)` — it gives you `is_ready()`
+> (PATH check), the missing-binary and timeout errors, and `check=False` semantics.
+> For a CLI without a native output-schema flag, append `schema_contract(output_schema)`
+> to the prompt and validate the reply with `parse_json_reply(...)`. The `pi` harness
+> (`src/junior/harnesses/pi.py`) is the complete worked example of that pattern.
 
 ## Step 1: Create the module
 

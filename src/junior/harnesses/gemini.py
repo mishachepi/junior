@@ -16,27 +16,20 @@ large diffs), and Junior's runbook supplies every instruction.
 """
 
 import json
-import shutil
-import subprocess
 
 import structlog
 from pydantic import BaseModel
 
 from junior.config import Settings
-from junior.harnesses._shared import parse_json_reply
-from junior.runbook.base import EnvVar, Harness, LLMResult, Usage
+from junior.harnesses._shared import CliHarness, parse_json_reply, schema_contract
+from junior.runbook.base import EnvVar, LLMResult, Usage
 
 logger = structlog.get_logger()
 
-_OUTPUT_CONTRACT = (
-    "## Output format\n"
-    "When you are done, reply with ONLY one JSON object — no prose, no markdown "
-    "fences — that validates against this JSON Schema:\n"
-)
-
-
-class GeminiHarness(Harness):
+class GeminiHarness(CliHarness):
     name = "gemini"
+    binary = "gemini"
+    install_hint = "npm install -g @google/gemini-cli"
     file_access = True  # reads repo files via its own (plan-mode, read-only) tools
     config_fields = ("model", "timeout")
     env_vars = (
@@ -52,9 +45,6 @@ class GeminiHarness(Harness):
         "(`gemini`); reviews run read-only (--approval-mode plan)."
     )
 
-    def is_ready(self) -> str:
-        return "ready" if shutil.which("gemini") else "not ready: `gemini` CLI not found on PATH"
-
     def complete(
         self,
         *,
@@ -63,8 +53,7 @@ class GeminiHarness(Harness):
         output_schema: type[BaseModel],
         settings: Settings,
     ) -> LLMResult:
-        schema_json = json.dumps(output_schema.model_json_schema())
-        prompt = f"{system_prompt}\n\n{_OUTPUT_CONTRACT}{schema_json}\n\n---\n\n{user_message}"
+        prompt = f"{system_prompt}\n\n{schema_contract(output_schema)}\n\n---\n\n{user_message}"
 
         logger.debug(
             "invoking gemini CLI",
@@ -81,19 +70,9 @@ class GeminiHarness(Harness):
         if settings.llm.model:
             cmd.extend(["--model", settings.llm.model])
 
-        try:
-            proc = subprocess.run(
-                cmd, input=prompt, capture_output=True, text=True,
-                cwd=str(settings.context.project_dir), timeout=settings.llm.timeout,
-            )
-        except FileNotFoundError:
-            raise RuntimeError(
-                "gemini CLI not found — install with: npm install -g @google/gemini-cli"
-            )
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                f"gemini CLI timed out after {settings.llm.timeout}s (raise llm.timeout if expected)"
-            )
+        proc = self.run_cli(
+            cmd, settings, input=prompt, cwd=str(settings.context.project_dir),
+        )
 
         text, usage = _parse_envelope(proc.stdout, proc.returncode, proc.stderr)
         output = parse_json_reply(text, output_schema, source="gemini")

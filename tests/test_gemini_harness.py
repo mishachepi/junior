@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import BaseModel
 
-import junior.harnesses.gemini as gemini_mod
+import junior.harnesses._shared as shared
 from junior.config import Settings
 from junior.harnesses.gemini import HARNESS, _parse_envelope, _sum_tokens
 
@@ -76,7 +76,7 @@ def test_complete_builds_readonly_command(monkeypatch, tmp_path):
         )
         return SimpleNamespace(returncode=0, stdout=stdout, stderr="")
 
-    monkeypatch.setattr(gemini_mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(shared.subprocess, "run", fake_run)
     settings = Settings(
         context={"project_dir": str(tmp_path)},
         llm={"harness": "gemini", "model": "gemini-2.5-pro"},
@@ -107,7 +107,7 @@ def test_complete_raises_on_failure(monkeypatch, tmp_path):
     def fake_run(cmd, **kwargs):
         return SimpleNamespace(returncode=1, stdout="", stderr="not authenticated")
 
-    monkeypatch.setattr(gemini_mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(shared.subprocess, "run", fake_run)
     settings = Settings(context={"project_dir": str(tmp_path)}, llm={"harness": "gemini"})
 
     with pytest.raises(RuntimeError, match="empty output"):

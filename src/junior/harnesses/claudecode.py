@@ -8,28 +8,26 @@ requested output schema.
 """
 
 import json
-import shutil
-import subprocess
 
 import structlog
 from pydantic import BaseModel
 
 from junior.config import Settings
-from junior.runbook.base import Harness, LLMResult, Usage
+from junior.harnesses._shared import CliHarness
+from junior.runbook.base import LLMResult, Usage
 
 logger = structlog.get_logger()
 
 _TOOLS = "Read,Bash(git log:*,git show:*,git diff:*,git blame:*),Grep,Glob"
 
 
-class ClaudeCodeHarness(Harness):
+class ClaudeCodeHarness(CliHarness):
     name = "claudecode"
+    binary = "claude"
+    install_hint = "npm install -g @anthropic-ai/claude-code"
     file_access = True  # reads repo files via its own tools
     config_fields = ("model", "timeout", "claudecode")
     setup_note = "Uses the local `claude` CLI — run `claude` once to authenticate (no env var)."
-
-    def is_ready(self) -> str:
-        return "ready" if shutil.which("claude") else "not ready: `claude` CLI not found on PATH"
 
     def complete(
         self,
@@ -62,17 +60,7 @@ class ClaudeCodeHarness(Harness):
         if settings.llm.model:
             cmd.extend(["--model", settings.llm.model])
 
-        try:
-            proc = subprocess.run(
-                cmd, input=user_message, capture_output=True, text=True,
-                cwd=project_dir, timeout=settings.llm.timeout,
-            )
-        except FileNotFoundError:
-            raise RuntimeError("claude CLI not found — install with: npm install -g @anthropic-ai/claude-code")
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                f"claude CLI timed out after {settings.llm.timeout}s (raise llm.timeout if expected)"
-            )
+        proc = self.run_cli(cmd, settings, input=user_message, cwd=project_dir)
 
         if proc.returncode != 0:
             if not proc.stdout.strip():
