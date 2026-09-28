@@ -222,12 +222,8 @@ class LLMSettings(BaseSettings):
 
     model_config = _BASE_CONFIG
 
-    # The LLM driver. `harness`/`HARNESS` is canonical; `backend`/`BACKEND` is a
-    # deprecated alias kept for one version so existing configs/CI keep working.
-    harness: HarnessKind = Field(
-        default=HarnessKind.CLAUDECODE,
-        validation_alias=AliasChoices("harness", "backend"),
-    )
+    # The LLM driver: `--harness` / `HARNESS` / config `harness:`.
+    harness: HarnessKind = HarnessKind.CLAUDECODE
 
     @field_validator("harness", mode="before")
     @classmethod

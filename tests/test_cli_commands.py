@@ -235,7 +235,7 @@ def _isolate_config(monkeypatch):
     for mod in (cfg, sb):
         monkeypatch.setattr(mod, "find_global_config", lambda: None)
         monkeypatch.setattr(mod, "find_local_config", lambda: None)
-    for var in ("HARNESS", "RUNBOOK", "BACKEND", "MODEL", "PUBLISH"):
+    for var in ("HARNESS", "RUNBOOK", "MODEL", "PUBLISH"):
         monkeypatch.delenv(var, raising=False)
 
 

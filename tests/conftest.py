@@ -56,7 +56,7 @@ def _hermetic_ambient_config(request, monkeypatch):
     # without this per-test cleanup — including the self-managed files, which
     # set the env they need explicitly.
     for var in (
-        "HARNESS", "MODEL", "PUBLISH", "RUNBOOK", "BACKEND", "OUTPUT_FILE",
+        "HARNESS", "MODEL", "PUBLISH", "RUNBOOK", "OUTPUT_FILE",
         "LOCAL_RUNBOOKS", "SOURCE", "TARGET_BRANCH", "LOG_LEVEL",
         "BASE_SHA", "PROJECT_DIR", "RECORD",
     ):

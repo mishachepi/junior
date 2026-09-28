@@ -18,7 +18,7 @@ from junior.collect.core.diff import (
 from junior.collect.github import _parse_github_comments
 from junior.collect.gitlab import _fetch_gitlab_comments
 from junior.config import ContextSettings, OutputSettings, Settings
-from junior.models import FileStatus
+from junior.runbooks.code_review.models import FileStatus
 
 # --- finalize_comments ---
 

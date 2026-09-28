@@ -51,10 +51,6 @@ The diff is inlined into the user message for **every** harness while it's small
 file tools for context beyond the diff, and for oversized diffs they read the files
 themselves instead.
 
-> [!NOTE]
-> `--harness` / `HARNESS` / config `harness:` is canonical. The old `--backend` /
-> `BACKEND` / `backend:` is kept as a deprecated alias for one version.
-
 ## Going deeper
 
 Per-harness internals (subprocess flags, event parsing, error handling):

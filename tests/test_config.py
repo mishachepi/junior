@@ -116,15 +116,12 @@ class TestLLMSettings:
         s = LLMSettings()
         assert s.harness == HarnessKind.PYDANTIC
 
-    def test_backend_alias_via_env(self, monkeypatch):
-        """Deprecated `BACKEND` env still maps to `harness` (kept one version)."""
+    def test_backend_alias_is_gone(self, monkeypatch):
+        """`BACKEND` / `backend=` (deprecated in 0.2.0) no longer selects the harness."""
         monkeypatch.delenv("HARNESS", raising=False)
         monkeypatch.setenv("BACKEND", "pydantic")
-        assert LLMSettings().harness == HarnessKind.PYDANTIC
-
-    def test_backend_alias_via_kwarg(self):
-        """Deprecated `backend=` kwarg/config key still maps to `harness`."""
-        assert LLMSettings(backend="codex").harness == HarnessKind.CODEX
+        assert LLMSettings().harness == HarnessKind.CLAUDECODE
+        assert LLMSettings(backend="codex").harness == HarnessKind.CLAUDECODE
 
     def test_model_explicit_provider_prefix(self):
         s = LLMSettings(model="anthropic:claude-opus-4-6")
@@ -280,7 +277,7 @@ class TestSettingsComposition:
 
     def test_each_group_loads_env(self, monkeypatch):
         monkeypatch.setenv("SOURCE", "staged")
-        monkeypatch.setenv("BACKEND", "pydantic")
+        monkeypatch.setenv("HARNESS", "pydantic")
         monkeypatch.setenv("OUTPUT_FILE", "/tmp/review.md")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-xxx")
         s = Settings()

@@ -220,9 +220,7 @@ HarnessOpt = Annotated[
     str | None,
     typer.Option(
         "--harness",
-        "--backend",  # deprecated alias, kept for one version
-        help="LLM harness: claudecode, pydantic, codex, deepagents, pi. "
-        "env: HARNESS (--backend/BACKEND deprecated)",
+        help="LLM harness: claudecode, pydantic, codex, deepagents, pi, gemini. env: HARNESS",
         rich_help_panel=REVIEW_PANEL,
         show_default=False,
     ),
