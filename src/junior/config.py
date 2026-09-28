@@ -663,9 +663,23 @@ def load_config_file(path: Path) -> dict:
     return _resolve_prompt_uris(_promote_shorthands(data), path.parent.resolve())
 
 
+_STDIN_CONSUMED_BY_CONFIG = False
+
+
+def stdin_consumed_by_config() -> bool:
+    """True once `--config -` has drained stdin in this process.
+
+    A runbook that reads its user message from stdin (script runbook without a
+    `collect` command) must check this: after `--config -` the stream is at EOF
+    and would silently yield an empty message."""
+    return _STDIN_CONSUMED_BY_CONFIG
+
+
 def load_config_stdin() -> dict:
     """Load YAML config from stdin. Relative file:// URIs resolve against CWD."""
+    global _STDIN_CONSUMED_BY_CONFIG
     text = sys.stdin.read()
+    _STDIN_CONSUMED_BY_CONFIG = True
     try:
         data = _parse_config_text(text)
     except yaml.YAMLError as e:

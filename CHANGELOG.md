@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Pipeline safety: `--config -` combined with a stdin-fed script runbook (no `collect`) now fails loudly instead of sending the LLM an empty message. New `tests/test_pipe_contract.py` locks the `junior run | junior run` contract (one JSON on stdout, diagnostics on stderr, stdin hand-off, non-zero exit with empty stdout on failure).
+
 ## 0.2.5 — 2026-09-22
 
 - **`pydantic` harness: provider errors are now actionable.** A failed

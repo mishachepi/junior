@@ -135,3 +135,29 @@ def test_failed_link_exits_nonzero_with_empty_stdout(monkeypatch, pipeline):
     assert result.exit_code != 0                             # rule 5
     assert result.stdout == ""                               # nothing half-written
     assert "model unavailable" in result.stderr
+
+
+def test_config_from_stdin_cannot_also_feed_the_runbook(monkeypatch, pipeline):
+    """`--config -` swallows stdin; a collect-less runbook then silently sees an
+    empty user message. That must be a loud error, not an empty LLM call."""
+    tmp_path, cfg = pipeline
+    called = []
+
+    def fake_complete(**_):
+        called.append(True)
+        raise AssertionError("harness must not run")
+
+    _patch_engine(monkeypatch, fake_complete)
+    result = runner.invoke(
+        app,
+        [
+            "--config", "-", "run",
+            "--runbook", "link1", "--harness", "claudecode",
+            "--project-dir", str(tmp_path), "--no-record",
+        ],
+        input=cfg.read_text(),
+    )
+    assert result.exit_code != 0
+    assert result.stdout == ""
+    assert called == []
+    assert "--config -" in result.stderr and "stdin" in result.stderr
