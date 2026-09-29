@@ -47,10 +47,17 @@ class CliHarness(Harness):
     ) -> subprocess.CompletedProcess[str]:
         """`subprocess.run` with the two failures every CLI shares turned into
         the RuntimeError the runner reports. Exit codes are the caller's to
-        judge — some CLIs return non-zero and still print a usable reply."""
+        judge — some CLIs return non-zero and still print a usable reply.
+
+        The child never inherits Junior's stdin: with no `input` it gets
+        /dev/null. In a `junior run | junior run` chain stdin is the upstream
+        document (already consumed by the runbook), and an idle open stdin makes
+        codex «read additional input from stdin» and hang or fail (EAGAIN).
+        """
+        stdin = subprocess.DEVNULL if input is None else None
         try:
             return subprocess.run(
-                cmd, input=input, capture_output=True, text=True,
+                cmd, input=input, stdin=stdin, capture_output=True, text=True,
                 cwd=cwd, env=env, timeout=llm.timeout, check=False,
             )
         except FileNotFoundError:
