@@ -34,19 +34,19 @@ From a local clone: `git clone … && cd junior && uv tool install ".[codex,gitl
 
 ### Try it from Docker (no install)
 
-The published image (`mihchepi/junior` on Docker Hub — the `full` build, every
+The published image (`ghcr.io/mishachepi/junior` on GitHub Container Registry — the `full` build, every
 harness included) runs Junior without installing anything:
 
 ```bash
 # Smoke check — what's inside the image:
-docker run --rm mihchepi/junior:latest junior --version
-docker run --rm mihchepi/junior:latest junior config list harnesses
+docker run --rm ghcr.io/mishachepi/junior:latest junior --version
+docker run --rm ghcr.io/mishachepi/junior:latest junior config list harnesses
 
 # Review your current repo's diff — mount it and pass an API key (export it first):
 docker run --rm \
   -e ANTHROPIC_API_KEY \
   -v "$PWD:/repo" -w /repo \
-  mihchepi/junior:latest \
+  ghcr.io/mishachepi/junior:latest \
   junior run --runbook local_review --harness pydantic --publish
 ```
 

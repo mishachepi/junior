@@ -287,13 +287,13 @@ which only the `full` target installs.
 ### Publishing a multi-arch image
 
 To serve both Intel and Apple-Silicon runners from one tag, build with `buildx` and
-push amd64 + arm64 in a single command (works for any registry — Docker Hub shown):
+push amd64 + arm64 in a single command (works for any registry — GitHub Container Registry shown):
 
 ```bash
 VERSION=$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)
 docker buildx build --target full --platform linux/amd64,linux/arm64 \
   --build-arg VERSION=$VERSION \
-  -t mihchepi/junior:$VERSION -t mihchepi/junior:latest --push .
+  -t ghcr.io/mishachepi/junior:$VERSION -t ghcr.io/mishachepi/junior:latest --push .
 ```
 
 Swap the `-t` prefix for any registry you publish to — e.g.
