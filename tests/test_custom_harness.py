@@ -27,7 +27,7 @@ ECHO_HARNESS = textwrap.dedent('''
         def is_ready(self):
             return "ready"
 
-        def complete(self, *, system_prompt, user_message, output_schema, settings):
+        def complete(self, *, system_prompt, user_message, output_schema, llm, project_dir):
             field = next(iter(output_schema.model_fields))
             return LLMResult(output=output_schema(**{field: user_message}), usage=Usage(total_tokens=1))
 

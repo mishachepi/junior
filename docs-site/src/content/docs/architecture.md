@@ -106,7 +106,8 @@ class Harness(ABC):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],   # ← the runbook's result_model
-        settings: Settings,
+        llm: LLMSettings,                 # ← LLM-side config only, not the whole Settings
+        project_dir: Path,
     ) -> LLMResult: ...
 ```
 

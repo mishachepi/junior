@@ -95,7 +95,7 @@ def test_complete_builds_headless_command(monkeypatch, tmp_path):
     )
 
     result = HARNESS.complete(
-        system_prompt="Review.", user_message="diff", output_schema=_Out, settings=settings
+        system_prompt="Review.", user_message="diff", output_schema=_Out, llm=settings.llm, project_dir=settings.context.project_dir
     )
 
     cmd = captured["cmd"]
@@ -125,5 +125,5 @@ def test_complete_raises_on_failure(monkeypatch, tmp_path):
 
     with pytest.raises(RuntimeError, match="empty output"):
         HARNESS.complete(
-            system_prompt="x", user_message="y", output_schema=_Out, settings=settings
+            system_prompt="x", user_message="y", output_schema=_Out, llm=settings.llm, project_dir=settings.context.project_dir
         )

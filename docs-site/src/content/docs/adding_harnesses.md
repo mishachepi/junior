@@ -12,7 +12,7 @@ are ABCs in `src/junior/runbook/base.py`.
 ```
 Harness (driver)
 ----------------
-complete(*, system_prompt, user_message, output_schema, settings) -> LLMResult
+complete(*, system_prompt, user_message, output_schema, llm, project_dir) -> LLMResult
 file_access: ClassVar[bool]
 ```
 
@@ -42,7 +42,7 @@ needs only Step 1.
 > [!TIP]
 > Driving a local agent CLI? Subclass `CliHarness` from `junior.harnesses._shared`
 > instead of `Harness`: set `binary` and `install_hint`, and call
-> `self.run_cli(cmd, settings, input=..., cwd=...)` — it gives you `is_ready()`
+> `self.run_cli(cmd, llm, input=..., cwd=...)` — it gives you `is_ready()`
 > (PATH check), the missing-binary and timeout errors, and `check=False` semantics.
 > For a CLI without a native output-schema flag, append `schema_contract(output_schema)`
 > to the prompt and validate the reply with `parse_json_reply(...)`. The `pi` harness
@@ -86,7 +86,8 @@ class MyHarness(Harness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,      # model, timeout, API keys, per-CLI knobs
+        project_dir: Path,     # the directory the harness may read
     ) -> LLMResult:
         # Call the model however you like. Return an LLMResult whose `.output`
         # is a *validated instance of output_schema* (not the schema class).

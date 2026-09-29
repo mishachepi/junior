@@ -64,7 +64,8 @@ def test_complete_cleans_up_temp_files_when_schema_build_fails(monkeypatch):
             system_prompt="sys",
             user_message="msg",
             output_schema=ReviewOutput,
-            settings=Settings(),
+            llm=Settings().llm,
+            project_dir=Settings().context.project_dir,
         )
 
     # The one temp file that was opened got unlinked — nothing left behind.

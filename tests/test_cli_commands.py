@@ -536,7 +536,7 @@ def test_run_default_emits_raw_json_no_publish(monkeypatch, tmp_path):
         assert settings.context.project_dir == tmp_path
         return _fake_context()
 
-    def fake_complete(*, system_prompt, user_message, output_schema, settings):
+    def fake_complete(*, system_prompt, user_message, output_schema, llm, project_dir):
         calls.append("review")
         assert "feat: add hello" in user_message
         assert "Check security" in system_prompt, (

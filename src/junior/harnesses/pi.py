@@ -17,11 +17,12 @@ prompt templates / context files — Junior's runbook supplies the whole prompt.
 
 import json
 import os
+from pathlib import Path
 
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
+from junior.config import LLMSettings
 from junior.harnesses._shared import CliHarness, parse_json_reply, schema_contract
 from junior.runbook.base import EnvVar, LLMResult, Usage
 
@@ -56,13 +57,14 @@ class PiHarness(CliHarness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
         full_system = f"{system_prompt}\n\n{schema_contract(output_schema)}"
 
         logger.debug(
             "invoking pi CLI",
-            model=settings.llm.model or "(pi default)",
+            model=llm.model or "(pi default)",
             schema=output_schema.__name__,
         )
 
@@ -73,14 +75,14 @@ class PiHarness(CliHarness):
             "--tools", _TOOLS,
             "--system-prompt", full_system,
         ]
-        if settings.llm.model:
-            cmd.extend(["--model", settings.llm.model])
+        if llm.model:
+            cmd.extend(["--model", llm.model])
         cmd.append(user_message)  # the positional message goes last
 
         env = dict(os.environ)
         env["PI_OFFLINE"] = "1"  # no startup update checks/telemetry
 
-        proc = self.run_cli(cmd, settings, cwd=str(settings.context.project_dir), env=env)
+        proc = self.run_cli(cmd, llm, cwd=str(project_dir), env=env)
 
         text, usage = _last_assistant(proc.stdout)
         if proc.returncode != 0 and not text:

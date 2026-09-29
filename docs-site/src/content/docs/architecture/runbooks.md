@@ -213,7 +213,8 @@ def run_runbook(runbook, harness, context, settings, *, publish_enabled) -> LLMR
         system_prompt=runbook.system_prompt(settings),   # SYSTEM_PROMPT role + --prompts
         user_message=runbook.render(context, settings, file_access=harness.file_access),
         output_schema=runbook.result_model,         # ← R schema
-        settings=settings,
+        llm=settings.llm,                           # ← per-call LLM config + cwd,
+        project_dir=settings.context.project_dir,   #   not the whole Settings
     )
     if publish_enabled:                              # custom publish only with --publish;
         runbook.publish(                            # otherwise the CLI writes render_output()

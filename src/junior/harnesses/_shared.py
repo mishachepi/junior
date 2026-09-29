@@ -17,7 +17,7 @@ from typing import ClassVar
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
+from junior.config import LLMSettings
 from junior.runbook.base import Harness
 
 logger = structlog.get_logger()
@@ -39,7 +39,7 @@ class CliHarness(Harness):
     def run_cli(
         self,
         cmd: list[str],
-        settings: Settings,
+        llm: LLMSettings,
         *,
         input: str | None = None,
         cwd: str | None = None,
@@ -51,7 +51,7 @@ class CliHarness(Harness):
         try:
             return subprocess.run(
                 cmd, input=input, capture_output=True, text=True,
-                cwd=cwd, env=env, timeout=settings.llm.timeout, check=False,
+                cwd=cwd, env=env, timeout=llm.timeout, check=False,
             )
         except FileNotFoundError:
             raise RuntimeError(
@@ -59,7 +59,7 @@ class CliHarness(Harness):
             ) from None
         except subprocess.TimeoutExpired:
             raise RuntimeError(
-                f"{self.binary} CLI timed out after {settings.llm.timeout}s "
+                f"{self.binary} CLI timed out after {llm.timeout}s "
                 "(raise llm.timeout if expected)"
             ) from None
 

@@ -513,7 +513,8 @@ class Settings(BaseSettings):
             errors.append(
                 "MODEL provider is required. Pass --model 'openai:gpt-...' or "
                 "'anthropic:claude-...', or set OPENAI_API_KEY / ANTHROPIC_API_KEY "
-                "for auto-detection."
+                "for auto-detection — or use a CLI agent instead: "
+                "--harness claudecode|codex|pi|agy."
             )
             return errors
 

@@ -25,11 +25,12 @@ repository files on its own for context beyond the diff.
 """
 
 import json
+from pathlib import Path
 
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
+from junior.config import LLMSettings
 from junior.harnesses._shared import CliHarness, parse_json_reply
 from junior.runbook.base import LLMResult, Usage
 
@@ -60,14 +61,15 @@ class AgyHarness(CliHarness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
         prompt = f"{system_prompt}\n\n{_HEADLESS_NOTE}\n\n---\n\n{user_message}"
         schema_json = json.dumps(output_schema.model_json_schema())
 
         logger.debug(
             "invoking agy CLI",
-            model=settings.llm.model or "(agy default)",
+            model=llm.model or "(agy default)",
             schema=output_schema.__name__,
         )
 
@@ -79,10 +81,10 @@ class AgyHarness(CliHarness):
             "--output-format", "json",
             "--json-schema", schema_json,
         ]
-        if settings.llm.model:
-            cmd.extend(["--model", settings.llm.model])
+        if llm.model:
+            cmd.extend(["--model", llm.model])
 
-        proc = self.run_cli(cmd, settings, cwd=str(settings.context.project_dir))
+        proc = self.run_cli(cmd, llm, cwd=str(project_dir))
 
         data = _parse_envelope(proc.stdout, proc.returncode, proc.stderr)
         output = _extract_output(data, output_schema)

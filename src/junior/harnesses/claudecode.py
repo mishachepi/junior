@@ -8,11 +8,12 @@ requested output schema.
 """
 
 import json
+from pathlib import Path
 
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
+from junior.config import LLMSettings
 from junior.harnesses._shared import CliHarness
 from junior.runbook.base import LLMResult, Usage
 
@@ -35,14 +36,15 @@ class ClaudeCodeHarness(CliHarness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
-        project_dir = str(settings.context.project_dir)
+        project_dir = str(project_dir)
         schema_json = json.dumps(output_schema.model_json_schema())
 
         logger.debug(
             "invoking claude CLI",
-            model=settings.llm.model or None,
+            model=llm.model or None,
             schema=output_schema.__name__,
         )
 
@@ -52,15 +54,15 @@ class ClaudeCodeHarness(CliHarness):
             "--json-schema", schema_json,
             "--append-system-prompt", system_prompt,
             "--tools", _TOOLS,
-            "--permission-mode", settings.llm.claudecode.permission_mode,
+            "--permission-mode", llm.claudecode.permission_mode,
             "--no-session-persistence",
         ]
-        if settings.llm.anthropic_api_key:
+        if llm.anthropic_api_key:
             cmd.append("--bare")
-        if settings.llm.model:
-            cmd.extend(["--model", settings.llm.model])
+        if llm.model:
+            cmd.extend(["--model", llm.model])
 
-        proc = self.run_cli(cmd, settings, input=user_message, cwd=project_dir)
+        proc = self.run_cli(cmd, llm, input=user_message, cwd=project_dir)
 
         if proc.returncode != 0:
             if not proc.stdout.strip():

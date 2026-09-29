@@ -90,7 +90,7 @@ def _run_and_capture(monkeypatch, settings) -> list[str]:
     monkeypatch.setattr(shared.subprocess, "run", fake_run)
     cc.HARNESS.complete(
         system_prompt="sys", user_message="usr",
-        output_schema=ReviewOutput, settings=settings,
+        output_schema=ReviewOutput, llm=settings.llm, project_dir=settings.context.project_dir,
     )
     return captured["cmd"]
 

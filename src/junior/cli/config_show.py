@@ -12,10 +12,10 @@ from junior.cli.console import console, err_console, print_content
 from junior.config import (
     ContextSettings,
     HarnessKind,
-    harness_ref,
     LLMSettings,
     OutputSettings,
     Settings,
+    harness_ref,
 )
 
 # Group fields that apply to every run (shown in detailed mode regardless of choice).

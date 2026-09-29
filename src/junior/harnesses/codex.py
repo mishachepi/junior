@@ -12,11 +12,12 @@ import os
 import re
 import subprocess
 import tempfile
+from pathlib import Path
 
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
+from junior.config import LLMSettings
 from junior.harnesses._shared import CliHarness, parse_json_reply
 from junior.runbook.base import LLMResult, Usage
 
@@ -30,7 +31,7 @@ def _build_output_schema(output_schema: type[BaseModel]) -> dict:
     return to_strict_json_schema(output_schema)
 
 
-def _ensure_codex_auth(settings: Settings) -> None:
+def _ensure_codex_auth(llm: LLMSettings) -> None:
     """Ensure codex CLI is authenticated. Uses existing OAuth or OPENAI_API_KEY."""
     try:
         result = subprocess.run(
@@ -45,7 +46,7 @@ def _ensure_codex_auth(settings: Settings) -> None:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         raise RuntimeError("codex CLI not found — install with: npm install -g @openai/codex")
 
-    api_key = settings.llm.openai_api_key
+    api_key = llm.openai_api_key
     if not api_key:
         raise RuntimeError(
             "codex is not authenticated. Either run 'codex login' or set OPENAI_API_KEY."
@@ -81,9 +82,10 @@ class CodexHarness(CliHarness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
-        _ensure_codex_auth(settings)
+        _ensure_codex_auth(llm)
         prompt = f"{system_prompt}\n---\n\n{user_message}"
 
         logger.debug("invoking codex CLI", schema=output_schema.__name__, prompt_size=len(prompt))
@@ -102,13 +104,13 @@ class CodexHarness(CliHarness):
                 "codex", "exec",
                 "--output-schema", schema_path,
                 "-o", output_path,
-                "-C", str(settings.context.project_dir),
+                "-C", str(project_dir),
                 "--ephemeral",
                 "--skip-git-repo-check",
                 prompt,
             ]
 
-            result = self.run_cli(cmd, settings)
+            result = self.run_cli(cmd, llm)
 
             if result.returncode != 0:
                 logger.error(

@@ -20,7 +20,9 @@ from typing import TYPE_CHECKING, ClassVar, Generic, NamedTuple, TypeVar
 from pydantic import BaseModel, Field, SerializeAsAny
 
 if TYPE_CHECKING:
-    from junior.config import Settings
+    from pathlib import Path
+
+    from junior.config import LLMSettings, Settings
 
 C = TypeVar("C", bound=BaseModel)  # a runbook's context schema
 R = TypeVar("R", bound=BaseModel)  # a runbook's result schema (raw LLM output)
@@ -96,10 +98,16 @@ class Harness(ABC):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
         """Call the model and return an LLMResult whose `.output` is an
-        instance of `output_schema`."""
+        instance of `output_schema`.
+
+        `llm` is the LLM-side config (model, timeout, keys, per-CLI knobs) and
+        `project_dir` the working directory the harness may read — deliberately
+        not the whole `Settings`, so a workflow can hand each step its own
+        harness/model without rebuilding global config."""
 
     def is_ready(self) -> str | None:
         """Optional runtime self-check, run by `junior list` only when this

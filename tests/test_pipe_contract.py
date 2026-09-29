@@ -78,7 +78,7 @@ def test_two_links_compose_through_stdin(monkeypatch, pipeline):
     tmp_path, cfg = pipeline
     seen: dict[str, str] = {}
 
-    def fake_complete(*, system_prompt, user_message, output_schema, settings):
+    def fake_complete(*, system_prompt, user_message, output_schema, llm, project_dir):
         field = next(iter(output_schema.model_fields))
         seen[field] = user_message
         return LLMResult(

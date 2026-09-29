@@ -53,7 +53,8 @@ def test_complete_builds_file_tools_without_namerror(monkeypatch):
         system_prompt="You are a code reviewer.",
         user_message="diff goes here",
         output_schema=ReviewOutput,
-        settings=settings,
+        llm=settings.llm,
+        project_dir=settings.context.project_dir,
     )
 
     assert result.output.recommendation == "approve"
@@ -180,6 +181,7 @@ def test_run_wraps_model_http_error(monkeypatch):
             system_prompt="You are a code reviewer.",
             user_message="diff goes here",
             output_schema=ReviewOutput,
-            settings=settings,
+            llm=settings.llm,
+        project_dir=settings.context.project_dir,
         )
     assert isinstance(exc_info.value.__cause__, ModelHTTPError)
