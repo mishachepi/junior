@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0 — 2026-09-30
+
 - **Breaking (harness API):** `Harness.complete()` takes `llm: LLMSettings` and `project_dir: Path` instead of the whole `Settings` (same for `CliHarness.run_cli(cmd, llm, …)`). A harness only ever needed the LLM-side config and a working directory; passing exactly that is what lets a future workflow give each step its own harness/model. Custom harnesses (`--harness pkg.module`) update the two parameter names.
 - `--harness` (and `HARNESS` / `harness:`) accepts the import path of any module exposing a `HARNESS` instance — a custom harness no longer needs a fork or an enum entry, mirroring `--runbook pkg.module:Class`. `config.harness_ref()` resolves the value; `junior config show --harness pkg.x` reports its readiness.
 - **Breaking:** `pydantic` is now the default harness (was `claudecode`) and `pydantic-ai-slim[anthropic,openai]` ships in the core install; `junior[pydantic]` is kept as an empty extra so existing installs keep working. `claudecode`/`codex`/`pi` are unchanged — select them with `--harness`.
