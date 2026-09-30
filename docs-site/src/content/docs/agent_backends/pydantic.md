@@ -7,7 +7,7 @@ title: "Harness: Pydantic AI"
 **File:** `src/junior/harnesses/pydantic.py`
 **Env var:** `HARNESS=pydantic` (default)
 **Dependencies:** `pydantic-ai-slim[anthropic,openai]`
-**Auth:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+**Auth:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` — or a local OpenAI-compatible server via `OPENAI_BASE_URL` (see [Local models](#local-models-openai-compatible-servers))
 
 ## Harness Contract
 
@@ -24,6 +24,31 @@ runbook's result model. The model returns an instance of `output_schema` directl
 
 `file_access = False` — the diff is **inlined** into the user message by the
 runbook; the harness's file tools exist only for *extra* exploration beyond the diff.
+
+## Local models (OpenAI-compatible servers)
+
+Nothing in Junior is cloud-specific: the `openai:` provider is pydantic-ai's
+OpenAI client, and that client honours the standard `OPENAI_BASE_URL` variable.
+Point it at any OpenAI-compatible server — oMLX, Ollama, LM Studio, vLLM,
+llama.cpp — and name the model with the `openai:` prefix:
+
+```bash
+export OPENAI_BASE_URL=http://127.0.0.1:9009/v1        # oMLX (Ollama: :11434/v1, LM Studio: :1234/v1)
+export OPENAI_API_KEY=sk-local                          # the server's key; any non-empty value if it has none
+junior run --harness pydantic --model openai:gemma-4-12B-it-qat-OptiQ-4bit
+```
+
+`OPENAI_API_KEY` must be set even for a server without auth: Junior's preflight
+requires a key for the `openai` provider, and the SDK sends it as a bearer token
+the server ignores. Everything else is unchanged — the same structured call, the
+same file tools, `usage` from the server's token counts. The structured output is
+a pydantic-ai *tool call*, so the model and server must support OpenAI tool
+calling — and the model must fill the schema faithfully: a small model can
+answer the tool call with its own field names (seen with gemma-4-12B on
+`ReviewOutput`: `comment`/`file` instead of `message`/`file_path`), which fails
+the run after pydantic-ai's one retry. A one-field schema works fine on the same
+model. For such models the `pi` harness puts the schema in the prompt instead —
+see [Harness: pi](pi.md).
 
 ## Architecture
 
@@ -94,12 +119,12 @@ All tools skip directories: `.git`, `node_modules`, `.venv`, `venv`, `__pycache_
 
 ## Token Tracking
 
-pydantic-ai returns exact usage via `result.usage()`. The harness reads
+pydantic-ai returns exact usage via `result.usage`. The harness reads
 `input_tokens` and `output_tokens` from that single call and returns them as a
 `Usage` (with `total = input + output`):
 
 ```python
-u = result.usage()
+u = result.usage
 input_t = u.input_tokens or 0
 output_t = u.output_tokens or 0
 return LLMResult(
