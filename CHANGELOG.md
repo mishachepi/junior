@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Docs: the `pydantic` harness drives any OpenAI-compatible local server (oMLX, Ollama, LM Studio, vLLM) through pydantic-ai's standard `OPENAI_BASE_URL` — `--model openai:<id>` plus a (placeholder) `OPENAI_API_KEY`; verified against oMLX (gemma-4-12B) — with the caveat that the default tool-call output needs a model that fills a nested schema faithfully. No code change.
+
 ## 0.3.0 — 2026-09-30
 
 - **Breaking (harness API):** `Harness.complete()` takes `llm: LLMSettings` and `project_dir: Path` instead of the whole `Settings` (same for `CliHarness.run_cli(cmd, llm, …)`). A harness only ever needed the LLM-side config and a working directory; passing exactly that is what lets a future workflow give each step its own harness/model. Custom harnesses (`--harness pkg.module`) update the two parameter names.

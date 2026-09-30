@@ -25,7 +25,7 @@ env `HARNESS`, or config `harness:`; default `pydantic`.
 |---------|---------|----------|------|--------|
 | `claudecode` | *(core)* | single `claude -p` subprocess | subscription or `ANTHROPIC_API_KEY` | stable |
 | `codex` | `junior[codex]` | single `codex exec` in sandbox | OAuth or `OPENAI_API_KEY` | stable |
-| `pydantic` | `junior[pydantic]` | single structured pydantic-ai call | API key **required** | stable |
+| `pydantic` | `junior[pydantic]` | single structured pydantic-ai call | API key **required** (any value for a local server via `OPENAI_BASE_URL`) | stable |
 | `pi` | *(core)* | single `pi --mode json` subprocess | provider key, `auth.json`, or **none (local models)** | stable |
 | `agy` | *(core)* | single `agy --print --output-format json --json-schema` subprocess | the CLI's own login | new |
 
