@@ -17,17 +17,17 @@ dependencies = [
 [project.optional-dependencies]
 # --- Agent backends ---
 claudecode = []  # default — drives the `claude` CLI (Node.js), no Python deps
-codex = ["openai>=3.17.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
+codex = ["openai>=3.24.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
 pydantic = ["pydantic-ai-slim[anthropic,openai]>=2.47.0"]  # single structured call via API key
 deepagents = [
-    "deepagents>=0.7.17",
+    "deepagents>=0.7.22",
     "langchain>=0.3.0",
     "langchain-anthropic>=0.3.0",
-    "langchain-openai>=0.3.0",
+    "langchain-openai>=1.6.7",
 ]
 
 # --- Built-in platforms for code review collect MR/PR metadata + publish comments ---
-gitlab = ["python-gitlab>=8.5.0"]
+gitlab = ["python-gitlab>=8.6.0"]
 github = ["httpx>=0.28"]  # + `gh` CLI authenticated
 bitbucket = ["httpx>=0.28"]  # Bitbucket Data Center (self-hosted)
 
@@ -39,9 +39,9 @@ all = ["junior[gitlab,github,bitbucket,codex,pydantic,deepagents]"]
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
-    "pytest-mock>=3.15",
+    "pytest-mock>=3.16.0",
     "pytest-cov>=7.1.0",
-    "ruff>=0.16.0",
+    "ruff>=0.16.10",
 ]
 
 [project.scripts]
