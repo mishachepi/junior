@@ -91,3 +91,16 @@ def test_local_runbooks_skipped_when_false(tmp_path):
 def test_needs_git_flag():
     assert registry.get_runbook("local_review").needs_git is True
     assert registry.get_runbook("weather_advice").needs_git is False
+
+
+def test_config_show_and_env_see_local_runbooks(tmp_path, monkeypatch):
+    """`config show` / `config env` resolve a repo-local runbook like `run` does."""
+    _make_local(tmp_path, "lp_config")
+    monkeypatch.chdir(tmp_path)
+
+    r = runner.invoke(app, ["config", "env", "--runbook", "lp_config"])
+    assert r.exit_code == 0, r.stdout + r.stderr
+    assert "unavailable" not in r.stdout
+
+    r = runner.invoke(app, ["config", "show", "--runbook", "lp_config"])
+    assert r.exit_code == 0, r.stdout + r.stderr

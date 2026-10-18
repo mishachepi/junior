@@ -33,11 +33,9 @@ def resolve_runbook(settings: Settings):
         )
         raise typer.Exit(code=2)
 
-    if settings.local_runbooks:
-        from junior.runbook.registry import load_local_runbooks
+    from junior.runbook.registry import load_project_runbooks
 
-        load_local_runbooks(settings.context.project_dir)
-
+    load_project_runbooks(settings)
     try:
         return get_runbook(settings.runbook)
     except ValueError as e:

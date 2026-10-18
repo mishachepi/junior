@@ -14,8 +14,8 @@ from junior.config import HarnessKind
 from junior.runbook.registry import (
     HARNESS_META,
     available_runbooks_meta,
-    get_harness,
     harness_available,
+    harness_readiness,
 )
 
 
@@ -52,10 +52,7 @@ def _harness_status(kind: HarnessKind, extra: str) -> str:
         hint = f" [dim](pip install 'junior[{extra}]')[/]" if extra else ""
         return f"[red]✗ not installed[/]{hint}"
 
-    try:
-        ready = get_harness(kind).is_ready()
-    except Exception:
-        ready = None  # installed but its self-check blew up — show install state only
+    ready = harness_readiness(kind)  # None: its self-check blew up — show install state only
     if ready is None:
         return "[green]✓ installed[/]"
     color = "green" if ready.lower() == "ready" else "yellow"
