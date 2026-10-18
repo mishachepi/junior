@@ -42,7 +42,7 @@ def test_complete_cleans_up_temp_files_when_schema_build_fails(monkeypatch):
     created: list[str] = []
     real_unlink = os.unlink
     unlinked: list[str] = []
-    monkeypatch.setattr(codex, "_ensure_codex_auth", lambda settings: None)
+    monkeypatch.setattr(codex.CodexHarness, "_ensure_auth", lambda self, llm: None)
 
     def boom(_schema):
         raise RuntimeError("openai not installed")
@@ -73,3 +73,23 @@ def test_complete_cleans_up_temp_files_when_schema_build_fails(monkeypatch):
     for name in created:
         assert name in unlinked
         assert not os.path.exists(name)
+
+
+def test_auth_probe_goes_through_run_cli(monkeypatch):
+    """`codex login status` gets /dev/null stdin and a short timeout; a timeout says so."""
+    import subprocess
+
+    import junior.harnesses._shared as shared
+    from junior.config import LLMSettings
+
+    calls: list[dict] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append({"cmd": cmd, **kwargs})
+        raise subprocess.TimeoutExpired(cmd, kwargs["timeout"])
+
+    monkeypatch.setattr(shared.subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="timed out after 10s"):
+        codex.HARNESS._ensure_auth(LLMSettings())
+    assert calls[0]["cmd"][:3] == ["codex", "login", "status"]
+    assert calls[0]["stdin"] is subprocess.DEVNULL

@@ -44,6 +44,7 @@ class CliHarness(Harness):
         input: str | None = None,
         cwd: str | None = None,
         env: dict[str, str] | None = None,
+        timeout: int | None = None,
     ) -> subprocess.CompletedProcess[str]:
         """`subprocess.run` with the two failures every CLI shares turned into
         the RuntimeError the runner reports. Exit codes are the caller's to
@@ -53,12 +54,15 @@ class CliHarness(Harness):
         /dev/null. In a `junior run | junior run` chain stdin is the upstream
         document (already consumed by the runbook), and an idle open stdin makes
         codex «read additional input from stdin» and hang or fail (EAGAIN).
+
+        `timeout` defaults to `llm.timeout`; pass a short one for quick probes.
         """
         stdin = subprocess.DEVNULL if input is None else None
+        timeout = timeout or llm.timeout
         try:
             return subprocess.run(
                 cmd, input=input, stdin=stdin, capture_output=True, text=True,
-                cwd=cwd, env=env, timeout=llm.timeout, check=False,
+                cwd=cwd, env=env, timeout=timeout, check=False,
             )
         except FileNotFoundError:
             raise RuntimeError(
@@ -66,9 +70,19 @@ class CliHarness(Harness):
             ) from None
         except subprocess.TimeoutExpired:
             raise RuntimeError(
-                f"{self.binary} CLI timed out after {llm.timeout}s "
+                f"{self.binary} CLI timed out after {timeout}s "
                 "(raise llm.timeout if expected)"
             ) from None
+
+
+def stderr_tail(proc: subprocess.CompletedProcess[str], chars: int = 500) -> str:
+    """The last `chars` of a CLI's stderr — enough for an error message."""
+    return (proc.stderr or "")[-chars:]
+
+
+def schema_json(output_schema: type[BaseModel]) -> str:
+    """The output model's JSON Schema as one string (CLI flag or prompt suffix)."""
+    return json.dumps(output_schema.model_json_schema())
 
 
 _OUTPUT_CONTRACT = (
@@ -81,7 +95,7 @@ _OUTPUT_CONTRACT = (
 def schema_contract(output_schema: type[BaseModel]) -> str:
     """Prompt suffix for CLIs without a native schema flag (pi): the
     JSON Schema the reply must validate against — `parse_json_reply` checks it."""
-    return f"{_OUTPUT_CONTRACT}{json.dumps(output_schema.model_json_schema())}"
+    return f"{_OUTPUT_CONTRACT}{schema_json(output_schema)}"
 
 
 def parse_json_reply(text: str, output_schema: type[BaseModel], *, source: str) -> BaseModel:

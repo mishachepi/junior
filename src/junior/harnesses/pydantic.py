@@ -263,11 +263,9 @@ class PydanticHarness(Harness):
                 raise friendly from e
             raise
         u = result.usage
-        input_t = u.input_tokens or 0
-        output_t = u.output_tokens or 0
         return LLMResult(
             output=result.output,
-            usage=Usage(input_tokens=input_t, output_tokens=output_t, total_tokens=input_t + output_t),
+            usage=Usage.from_io(input_tokens=u.input_tokens or 0, output_tokens=u.output_tokens or 0),
         )
 
 

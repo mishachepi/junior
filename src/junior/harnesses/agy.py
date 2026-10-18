@@ -25,13 +25,14 @@ repository files on its own for context beyond the diff.
 """
 
 import json
+import subprocess
 from pathlib import Path
 
 import structlog
 from pydantic import BaseModel
 
 from junior.config import LLMSettings
-from junior.harnesses._shared import CliHarness, parse_json_reply
+from junior.harnesses._shared import CliHarness, parse_json_reply, schema_json, stderr_tail
 from junior.runbook.base import LLMResult, Usage
 
 logger = structlog.get_logger()
@@ -65,8 +66,6 @@ class AgyHarness(CliHarness):
         project_dir: Path,
     ) -> LLMResult:
         prompt = f"{system_prompt}\n\n{_HEADLESS_NOTE}\n\n---\n\n{user_message}"
-        schema_json = json.dumps(output_schema.model_json_schema())
-
         logger.debug(
             "invoking agy CLI",
             model=llm.model or "(agy default)",
@@ -76,17 +75,17 @@ class AgyHarness(CliHarness):
         # `--print=<prompt>`: the `=` form keeps a prompt that starts with `-`
         # (or any following flag) from being eaten by Go's flag parser.
         cmd = [
-            "agy",
+            self.binary,
             f"--print={prompt}",
             "--output-format", "json",
-            "--json-schema", schema_json,
+            "--json-schema", schema_json(output_schema),
         ]
         if llm.model:
             cmd.extend(["--model", llm.model])
 
         proc = self.run_cli(cmd, llm, cwd=str(project_dir))
 
-        data = _parse_envelope(proc.stdout, proc.returncode, proc.stderr)
+        data = _parse_envelope(proc)
         output = _extract_output(data, output_schema)
         return LLMResult(output=output, usage=_usage(data.get("usage")))
 
@@ -97,18 +96,17 @@ HARNESS = AgyHarness()
 # --- Output parsing ---
 
 
-def _parse_envelope(stdout: str, returncode: int, stderr: str) -> dict:
+def _parse_envelope(proc: subprocess.CompletedProcess[str]) -> dict:
     """Decode `agy --output-format json` and fail on anything but a successful turn.
 
     The envelope is one object: ``{status, response, error?, usage,
     structured_output?, denied_actions?}``. A non-SUCCESS status or an `error`
     surfaces as RuntimeError so the runner reports it like every other harness.
     """
-    raw = (stdout or "").strip()
+    returncode = proc.returncode
+    raw = (proc.stdout or "").strip()
     if not raw:
-        raise RuntimeError(
-            f"agy CLI returned empty output (exit {returncode}): {(stderr or '')[-500:]}"
-        )
+        raise RuntimeError(f"agy CLI returned empty output (exit {returncode}): {stderr_tail(proc)}")
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
@@ -120,7 +118,7 @@ def _parse_envelope(stdout: str, returncode: int, stderr: str) -> dict:
     status = data.get("status")
     error = data.get("error")
     if error or (status and status != "SUCCESS"):
-        detail = _error_detail(error) or (stderr or "")[-500:]
+        detail = _error_detail(error) or stderr_tail(proc)
         raise RuntimeError(f"agy CLI failed (status {status}, exit {returncode}): {detail}")
     return data
 
