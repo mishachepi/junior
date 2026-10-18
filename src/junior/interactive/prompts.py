@@ -69,11 +69,11 @@ def ask_publish(default: bool = False) -> bool | None:
 
 def ask_harness(default: str | None = None) -> str | None:
     """Pick the LLM harness. Returns short name or None on cancel."""
+    from junior.runbook.registry import HARNESS_META
+
     choices = [
-        questionary.Choice("claudecode — uses local Claude CLI (no API key needed)", value="claudecode"),
-        questionary.Choice("pydantic — single structured call via OpenAI/Anthropic API", value="pydantic"),
-        questionary.Choice("codex — uses local Codex CLI", value="codex"),
-        questionary.Choice("pi — pi CLI; local models via ~/.pi/agent/models.json", value="pi"),
+        questionary.Choice(f"{kind.name.lower()} — {desc}", value=kind.name.lower())
+        for kind, (desc, _extra, _probe) in HARNESS_META.items()
     ]
     return questionary.select(
         "Harness (which AI runs the review):",
@@ -86,12 +86,14 @@ def ask_model(default: str | None, harness: str) -> str | None:
     """Pick model spec.
 
     Accepts either bare model name (provider inferred from API key) or
-    provider-prefixed `provider:model`. Empty allowed for codex/claudecode.
+    provider-prefixed `provider:model`. Empty allowed for the CLI harnesses.
     """
     hint = {
         "pydantic": "e.g. anthropic:claude-opus-4-6, gpt-5.4-mini",
         "claudecode": "leave empty to let the CLI choose",
         "codex": "ignored — codex CLI picks its own model",
+        "pi": "provider/id from pi, e.g. omlx/gemma-4-12B — empty = pi default",
+        "agy": "leave empty to let the CLI choose",
     }.get(harness, "")
     return questionary.text(
         f"Model spec ({hint}):" if hint else "Model spec:",

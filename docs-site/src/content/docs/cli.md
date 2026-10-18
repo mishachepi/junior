@@ -311,7 +311,7 @@ Interactive setup wizard (also available as the top-level alias `junior init`). 
 
 1. **Config location** — save to the **global** config (`~/.config/junior/settings.yaml`, your default everywhere) or a **local** project config (`./.junior.yaml`, this repo only — commit it to share with your team).
 2. **Runbook** — `local_review` (diff → stdout/file), `github_pr_review` (PR → comments), `gitlab_pr_review` (MR → note), `bitbucket_pr_review` (PR → comments), or any installed plugin.
-3. **Harness** — claudecode / codex (local CLI, no key) or pydantic (LLM API, key from env).
+3. **Harness** — pydantic (LLM API, key from env) or claudecode / codex / pi / agy (local CLI, its own login).
 4. **Model** — only for API harnesses; accepts `provider:model` or a bare model name.
 5. **Publish** — only for platform runbooks: post the review automatically (default off).
 6. **Output file** (optional) — write the review to a file instead of stdout (empty = stdout).

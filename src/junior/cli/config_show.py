@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings
 
 from junior.cli.console import console, err_console, print_content
 from junior.config import (
+    HARNESS_NAMES,
     ContextSettings,
     HarnessKind,
     LLMSettings,
@@ -26,7 +27,7 @@ _UNIVERSAL = {
 }
 _HINTS = {
     "runbook": "which runbook to run — see: junior list",
-    "harness": "pydantic | claudecode | codex | pi | agy",
+    "harness": HARNESS_NAMES.replace(", ", " | "),
     "model": "provider:model (pydantic/pi; CLI harnesses use their own)",
     "publish": "run the runbook's publish; else raw output to stdout/-o",
     "output_file": "write the review to a file (empty = stdout)",
