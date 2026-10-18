@@ -8,6 +8,7 @@ to exit-code with all three phases mocked at the module-attribute level —
 this catches CLI/runbook plumbing regressions that unit tests miss.
 """
 
+import pytest
 from typer.testing import CliRunner
 
 from junior import __version__
@@ -932,6 +933,53 @@ def test_run_publish_file_skips_collect_and_review(monkeypatch, tmp_path):
 
     assert result.exit_code == 0, result.stdout + result.stderr
     assert posted["pre_formatted"] == "# review\n\nBody."
+
+
+def test_run_publish_file_needs_a_code_review_runbook(tmp_path):
+    """A runbook without `publish_prepared` is a config error (2), caught before reading."""
+    review_md = tmp_path / "review.md"
+    review_md.write_text("# review", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        ["run", "--runbook", "weather_advice", "--publish-file", str(review_md),
+         "--project-dir", str(tmp_path)],
+    )
+
+    assert result.exit_code == 2, result.stdout + result.stderr
+    assert "needs a code-review runbook" in result.stderr
+
+
+def test_run_publish_file_unreadable_is_exit_2(tmp_path):
+    """A directory (or any unreadable path) given as --publish-file is exit 2, not a crash."""
+    result = runner.invoke(
+        app,
+        ["run", "--runbook", "gitlab_pr_review", "--publish-file", str(tmp_path),
+         "--project-dir", str(tmp_path)],
+        env={"GITLAB_TOKEN": "glpat-test", "CI_PROJECT_ID": "1", "CI_MERGE_REQUEST_IID": "1"},
+    )
+
+    assert result.exit_code == 2, result.stdout + result.stderr
+
+
+def test_main_maps_escaped_errors_to_exit_3(monkeypatch, capsys):
+    """An exception escaping a command is exit 3 — never Python's 1 ("blocking issues")."""
+    import sys
+
+    app_mod = sys.modules["junior.cli.app"]  # `junior.cli.app` the name is the Typer object
+
+    def raise_os():
+        raise PermissionError(13, "Permission denied", "out.json")
+
+    def raise_bug():
+        raise KeyError("boom")
+
+    for fn in (raise_os, raise_bug):
+        monkeypatch.setattr(app_mod, "app", fn)
+        with pytest.raises(SystemExit) as exc:
+            app_mod.main()
+        assert exc.value.code == 3
+    assert "Permission denied" in capsys.readouterr().err
 
 
 def test_run_blocking_review_returns_exit_code_1(monkeypatch, tmp_path):
