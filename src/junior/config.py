@@ -26,7 +26,6 @@ import sys
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
 
 import structlog
 import yaml
@@ -661,12 +660,9 @@ def _resolve_prompt_uris(cfg: dict, base_dir: Path) -> dict:
 def _resolve_one_prompt_entry(entry: str, base_dir: Path) -> str:
     if not entry.startswith("file://"):
         return entry
-    parsed = urlparse(entry)
-    path = unquote(parsed.path)
-    if parsed.netloc and parsed.netloc not in ("", "localhost"):
-        # Treat `file://relative/path` (no leading `/`) as a relative path.
-        path = parsed.netloc + path
-    p = Path(path)
+    from junior.prompt_loader import file_uri_path
+
+    p = file_uri_path(entry)
     if not p.is_absolute():
         p = (base_dir / p).resolve()
     return f"file://{p}"

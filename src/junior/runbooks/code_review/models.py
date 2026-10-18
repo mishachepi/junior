@@ -53,6 +53,13 @@ class ChangedFile(BaseModel):
     diff: str
     content: str | None = None  # full new content (None if deleted)
 
+    def line_counts(self) -> tuple[int, int]:
+        """(added, removed) lines in this file's diff, file headers excluded."""
+        lines = self.diff.splitlines()
+        added = sum(1 for ln in lines if ln.startswith("+") and not ln.startswith("+++"))
+        removed = sum(1 for ln in lines if ln.startswith("-") and not ln.startswith("---"))
+        return added, removed
+
 
 class MRComment(BaseModel):
     """A single comment/note on an MR or PR.

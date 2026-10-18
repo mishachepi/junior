@@ -111,9 +111,8 @@ def build_user_message(
         if include_diff:
             parts.append(f"- `{f.path}` ({f.status.value})")
         else:
-            lines_added = sum(1 for line in f.diff.splitlines() if line.startswith("+") and not line.startswith("+++")) if f.diff else 0
-            lines_removed = sum(1 for line in f.diff.splitlines() if line.startswith("-") and not line.startswith("---")) if f.diff else 0
-            parts.append(f"- `{f.path}` ({f.status.value}) +{lines_added}/-{lines_removed}")
+            added, removed = f.line_counts()
+            parts.append(f"- `{f.path}` ({f.status.value}) +{added}/-{removed}")
     parts.append("")
 
     if include_diff:
