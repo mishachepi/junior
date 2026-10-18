@@ -160,6 +160,9 @@ jobs:
 a standard Actions variable (listed for clarity); `GITHUB_EVENT_NUMBER` and
 `GITHUB_EVENT_BEFORE` must be mapped from the event payload — the latter lets Junior
 diff only the new commits on a push.
+Inline comments are posted as one PR review anchored to the PR's latest commit — no
+SHA variable is needed; a finding on a line outside the diff falls back to a plain PR
+comment.
 
 > [!TIP]
 > For a **manual-only** GitHub equivalent of the GitLab button, trigger on

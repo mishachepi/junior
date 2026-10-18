@@ -27,13 +27,11 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
     _post_comment(owner, repo, pr_number, token, summary)
     logger.info("posted PR comment", repo=settings.output.github_repository, pr=pr_number)
 
-    # Post inline comments as PR review (requires commit SHA)
-    if settings.output.ci_commit_sha:
-        inline_comments = [c for c in result.output.comments if c.file_path and c.line_number]
-        if inline_comments:
-            _post_review_comments(owner, repo, pr_number, token, inline_comments, settings)
-    else:
-        logger.info("no commit SHA available, skipping inline comments")
+    # Inline comments as one PR review. GitHub anchors them to the PR's head
+    # commit unless `commit_id` pins another one — so no SHA env var is needed.
+    inline_comments = [c for c in result.output.comments if c.file_path and c.line_number]
+    if inline_comments:
+        _post_review_comments(owner, repo, pr_number, token, inline_comments, settings)
 
 
 def _post_comment(owner: str, repo: str, pr_number: int, token: str, body: str) -> None:
@@ -76,7 +74,8 @@ def _post_review_comments(
             "body": "Junior AI review — inline comments below.",
             "event": "COMMENT",
             "comments": review_comments,
-            "commit_id": settings.output.ci_commit_sha,
+            # optional: without it GitHub uses the PR's latest commit
+            **({"commit_id": sha} if (sha := settings.output.ci_commit_sha) else {}),
         },
         timeout=30,
     )
