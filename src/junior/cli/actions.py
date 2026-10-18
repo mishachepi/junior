@@ -18,8 +18,8 @@ from junior.config import Settings
 def resolve_runbook(settings: Settings):
     """Look up the selected runbook. Exits on a bad name.
 
-    When `settings.local_runbooks` is on, repo-local runbooks from
-    `<project>/.junior/runbooks/` are loaded first (opt-in; executes repo code).
+    When `settings.local_runbooks` is on (the default), repo-local runbooks from
+    `<project>/.junior/runbooks/` are loaded first — this executes repo code.
     """
     from junior.runbook.registry import get_runbook
 

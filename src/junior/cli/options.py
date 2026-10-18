@@ -247,7 +247,8 @@ RunbookOpt = Annotated[
         "--runbook",
         help=(
             "Runbook (module) to run: local_review, github_pr_review, "
-            "gitlab_pr_review, bitbucket_pr_review, or 'pkg.module:ClassName'. "
+            "gitlab_pr_review, bitbucket_pr_review, weather_advice, a repo-local "
+            "or script runbook name, or 'pkg.module:ClassName'. "
             "env: RUNBOOK"
         ),
         rich_help_panel=REVIEW_PANEL,

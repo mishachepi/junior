@@ -8,8 +8,7 @@ Config priority (highest wins): CLI flags → env vars → --config FILE → pro
 
 Config files are **YAML only** (`--config -` reads YAML from stdin too). The same
 config shape is used for project-level files, the global file, and ad-hoc
-"presets" — copy `docs-site/src/content/docs/examples/configs/security.yaml` somewhere and pass
-`--config FILE`. (Data dumps like `junior dry-run -o ctx.json` and run records
+"presets" — keep one somewhere and pass `--config FILE`. (Data dumps like `junior dry-run -o ctx.json` and run records
 stay JSON — those are machine artifacts, not configs.)
 
 Most keys nest under their group (`context:` / `llm:` / `output:`), but the

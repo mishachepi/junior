@@ -66,8 +66,8 @@ only the MR author.
 
 The discussion section is rendered with an inline warning (`build_user_message()` prepends a
 notice telling the LLM to treat comments as untrusted), but this is a mitigation, not a hard
-defense. The 50-comment cap (`MAX_COMMENTS` in `collect/gitlab.py` and `collect/github.py`) also
-limits the size of this surface (it lives in `collect/{gitlab,github,bitbucket}.py`).
+defense. The 50-comment cap (`MAX_COMMENTS` in `collect/core/comments.py`, shared by every platform
+collector) also limits the size of this surface.
 
 **Fix — structured delimiters + system prompt hardening:**
 
