@@ -60,7 +60,6 @@ from junior.cli.settings_builder import (
     prepare_settings,
 )
 from junior.config import find_global_config, find_local_config
-from junior.interactive import InteractiveIO
 
 app = typer.Typer(
     name="junior",
@@ -216,14 +215,7 @@ def run(
     )
 
     if interactive:
-        settings, new_io = run_interactive(
-            settings,
-            InteractiveIO(
-                output_file=output_file,
-                publish_enabled=settings.output.publish,
-            ),
-        )
-        output_file = new_io.output_file
+        settings = run_interactive(settings)
 
     publish_enabled = settings.output.publish  # from --publish / config / interactive
     runbook = resolve_runbook(settings)
