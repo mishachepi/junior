@@ -46,7 +46,7 @@ from typing import Literal, Optional
 import structlog
 from pydantic import BaseModel, Field, create_model
 
-from junior.config import Settings
+from junior.config import Settings, stdin_consumed_by_config
 from junior.runbook.base import Runbook, Usage
 from junior.runbook.registry import register_runbook
 
@@ -137,6 +137,12 @@ class ScriptRunbook(Runbook[ScriptContext, BaseModel]):
             # (the chaining mode: `junior run | junior run`).
             if settings.context.input_text:
                 return ScriptContext(payload=settings.context.input_text)
+            if stdin_consumed_by_config():
+                raise ValueError(
+                    "stdin was already read by `--config -`, but this runbook has no "
+                    "`collect` command and takes its input from stdin. Pass the input "
+                    "as the positional INPUT argument, or use `--config FILE`."
+                )
             return ScriptContext(payload=_read_stdin())
         out = self._run(cmd, settings, capture=True)
         return ScriptContext(payload=out)

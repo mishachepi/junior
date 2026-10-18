@@ -17,30 +17,25 @@ prompt templates / context files — Junior's runbook supplies the whole prompt.
 
 import json
 import os
-import shutil
-import subprocess
+from pathlib import Path
 
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
-from junior.harnesses._shared import parse_json_reply
-from junior.runbook.base import EnvVar, Harness, LLMResult, Usage
+from junior.config import LLMSettings
+from junior.harnesses._shared import CliHarness, parse_json_reply, schema_contract
+from junior.runbook.base import EnvVar, LLMResult, Usage
 
 logger = structlog.get_logger()
 
 #: read-only file tools; no bash/edit/write — review must not mutate the repo.
 _TOOLS = "read,grep,find,ls"
 
-_OUTPUT_CONTRACT = (
-    "## Output format\n"
-    "When you are done, reply with ONLY one JSON object — no prose, no markdown "
-    "fences — that validates against this JSON Schema:\n"
-)
 
-
-class PiHarness(Harness):
+class PiHarness(CliHarness):
     name = "pi"
+    binary = "pi"
+    install_hint = "npm install -g @earendil-works/pi-coding-agent"
     file_access = True  # reads repo files via its own read/grep/find/ls tools
     config_fields = ("model", "timeout")
     env_vars = (
@@ -56,23 +51,20 @@ class PiHarness(Harness):
         "(Ollama/LM Studio/vLLM) or authenticate a provider once."
     )
 
-    def is_ready(self) -> str:
-        return "ready" if shutil.which("pi") else "not ready: `pi` CLI not found on PATH"
-
     def complete(
         self,
         *,
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
-        schema_json = json.dumps(output_schema.model_json_schema())
-        full_system = f"{system_prompt}\n\n{_OUTPUT_CONTRACT}{schema_json}"
+        full_system = f"{system_prompt}\n\n{schema_contract(output_schema)}"
 
         logger.debug(
             "invoking pi CLI",
-            model=settings.llm.model or "(pi default)",
+            model=llm.model or "(pi default)",
             schema=output_schema.__name__,
         )
 
@@ -83,27 +75,14 @@ class PiHarness(Harness):
             "--tools", _TOOLS,
             "--system-prompt", full_system,
         ]
-        if settings.llm.model:
-            cmd.extend(["--model", settings.llm.model])
+        if llm.model:
+            cmd.extend(["--model", llm.model])
         cmd.append(user_message)  # the positional message goes last
 
         env = dict(os.environ)
         env["PI_OFFLINE"] = "1"  # no startup update checks/telemetry
 
-        try:
-            proc = subprocess.run(
-                cmd, capture_output=True, text=True,
-                cwd=str(settings.context.project_dir), env=env, timeout=settings.llm.timeout,
-            )
-        except FileNotFoundError:
-            raise RuntimeError(
-                "pi CLI not found — install with: "
-                "npm install -g @earendil-works/pi-coding-agent"
-            )
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                f"pi CLI timed out after {settings.llm.timeout}s (raise llm.timeout if expected)"
-            )
+        proc = self.run_cli(cmd, llm, cwd=str(project_dir), env=env)
 
         text, usage = _last_assistant(proc.stdout)
         if proc.returncode != 0 and not text:
@@ -115,7 +94,7 @@ class PiHarness(Harness):
                 f"pi returned no assistant message: {(proc.stderr or '')[-500:]}"
             )
 
-        output = _parse_response(text, output_schema)
+        output = parse_json_reply(text, output_schema, source="pi")
         return LLMResult(output=output, usage=usage)
 
 
@@ -162,8 +141,3 @@ def _last_assistant(stdout: str) -> tuple[str, Usage]:
         )
         output_t += int(usage.get("output") or 0)
     return text, Usage.from_io(input_tokens=input_t, output_tokens=output_t)
-
-
-def _parse_response(text: str, output_schema: type[BaseModel]) -> BaseModel:
-    """Parse the assistant's reply into an instance of `output_schema`."""
-    return parse_json_reply(text, output_schema, source="pi")

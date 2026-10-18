@@ -10,9 +10,10 @@ import json
 import pytest
 
 from junior.config import LLMSettings, Settings
+from junior.harnesses import _shared as shared
 from junior.harnesses import claudecode as cc
 from junior.harnesses.claudecode import _extract_output
-from junior.runbooks.code_review.models import ReviewOutput, Recommendation
+from junior.runbooks.code_review.models import Recommendation, ReviewOutput
 
 
 def test_extract_from_structured_output_tool_use():
@@ -86,10 +87,10 @@ def _run_and_capture(monkeypatch, settings) -> list[str]:
         captured["cmd"] = cmd
         return _FakeProc()
 
-    monkeypatch.setattr(cc.subprocess, "run", fake_run)
+    monkeypatch.setattr(shared.subprocess, "run", fake_run)
     cc.HARNESS.complete(
         system_prompt="sys", user_message="usr",
-        output_schema=ReviewOutput, settings=settings,
+        output_schema=ReviewOutput, llm=settings.llm, project_dir=settings.context.project_dir,
     )
     return captured["cmd"]
 

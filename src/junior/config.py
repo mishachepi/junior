@@ -20,6 +20,7 @@ root as shorthand (`harness: codex` == `llm: {harness: codex}`).
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import sys
 from enum import StrEnum
@@ -31,7 +32,6 @@ import structlog
 import yaml
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 # --- Config file paths ---
 
@@ -87,9 +87,30 @@ class HarnessKind(_ModulePathEnum):
     PYDANTIC = "junior.harnesses.pydantic"
     CODEX = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
-    DEEPAGENTS = "junior.harnesses.deepagents"
     PI = "junior.harnesses.pi"
-    GEMINI = "junior.harnesses.gemini"
+    AGY = "junior.harnesses.agy"
+
+
+def harness_ref(value: str) -> HarnessKind | str:
+    """Resolve a `--harness` value: built-in short name (or its module path) →
+    HarnessKind; the import path of any other module → returned as-is for the
+    registry (it must expose a module-level `HARNESS`). `find_spec` only
+    locates the module, so a typo is caught here without importing anything,
+    and the error lists the built-ins, not their module paths."""
+    if not value:
+        return value
+    if value in {m.value for m in HarnessKind} or HarnessKind._missing_(value) is not None:
+        return HarnessKind(value)
+    try:
+        if importlib.util.find_spec(value) is not None:
+            return value
+    except (ImportError, ValueError):
+        pass
+    known = ", ".join(m.name.lower() for m in HarnessKind)
+    raise ValueError(
+        f"unknown harness '{value}'. Known: {known} — or the import path of a "
+        "module exposing HARNESS (e.g. 'mypkg.my_harness')"
+    )
 
 
 class SourceMode(_CaseInsensitiveStrEnum):
@@ -223,27 +244,15 @@ class LLMSettings(BaseSettings):
 
     model_config = _BASE_CONFIG
 
-    # The LLM driver. `harness`/`HARNESS` is canonical; `backend`/`BACKEND` is a
-    # deprecated alias kept for one version so existing configs/CI keep working.
-    harness: HarnessKind = Field(
-        default=HarnessKind.CLAUDECODE,
-        validation_alias=AliasChoices("harness", "backend"),
-    )
+    # The LLM driver: `--harness` / `HARNESS` / config `harness:`. A built-in
+    # short name (HarnessKind), or the dotted path of any module exposing a
+    # `HARNESS` instance — a custom harness needs no fork (see `harness_ref`).
+    harness: HarnessKind | str = HarnessKind.PYDANTIC
 
     @field_validator("harness", mode="before")
     @classmethod
     def harness_by_name(cls, v: Any) -> Any:
-        """A human error message: pydantic's default for a bad enum value lists
-        the module paths (`junior.harnesses.…`), which mean nothing to a user."""
-        if (
-            isinstance(v, str)
-            and v
-            and v not in {m.value for m in HarnessKind}  # full module path is valid too
-            and HarnessKind._missing_(v) is None
-        ):
-            known = ", ".join(m.name.lower() for m in HarnessKind)
-            raise ValueError(f"unknown harness '{v}'. Known: {known}")
-        return v
+        return harness_ref(v) if isinstance(v, str) else v
 
     # Accepts "provider:model" or just "model". Provider is inferred from
     # the prefix, falling back to whichever API key is set.
@@ -254,7 +263,7 @@ class LLMSettings(BaseSettings):
     max_tokens_per_agent: int = 0
     # collection + pydantic file tools: skip files larger than this (bytes).
     max_file_size: int = 100_000
-    # CLI harnesses (claudecode/codex/pi/gemini): kill the subprocess after this
+    # CLI harnesses (claudecode/codex/pi/agy): kill the subprocess after this
     # many seconds. Lower it to fail fast on a stuck/runaway agent.
     timeout: int = 600
     # claudecode-only knobs (nested under `llm.claudecode`); other harnesses ignore it.
@@ -284,7 +293,7 @@ class LLMSettings(BaseSettings):
         if ":" in v:
             head = v.partition(":")[0].strip().lower()
             # A "provider:model" prefix names one of our SDK providers. CLI
-            # engines like pi/gemini use "provider/id:tag", where the ':' is a
+            # engines like pi use "provider/id:tag", where the ':' is a
             # model version tag, not our separator — the '/' marks that path
             # form, so its head must not be validated as a provider.
             if "/" not in head and head not in _SUPPORTED_PROVIDERS:
@@ -296,8 +305,11 @@ class LLMSettings(BaseSettings):
 
     @property
     def harness_name(self) -> str:
-        """The harness's short name (e.g. "claudecode") — its registry/UI label."""
-        return self.harness.name.lower()
+        """The harness's label: a built-in's short name (e.g. "claudecode") or
+        a custom harness's module path."""
+        if isinstance(self.harness, HarnessKind):
+            return self.harness.name.lower()
+        return self.harness
 
     @property
     def resolved_provider(self) -> str:
@@ -328,14 +340,14 @@ class LLMSettings(BaseSettings):
     def display_model(self) -> str:
         """Model name safe to surface in logs/UI for the active harness.
 
-        - pydantic/deepagents: SDK actually receives resolved_model.
-        - claudecode/gemini: only show when model is explicitly set (the CLI defaults otherwise).
+        - pydantic: SDK actually receives resolved_model.
+        - claudecode/agy: only show when model is explicitly set (the CLI defaults otherwise).
         - pi: passes the raw `--model provider/id` through; show it when set.
         - codex: the CLI picks its own model — don't claim one.
         """
-        if self.harness in (HarnessKind.PYDANTIC, HarnessKind.DEEPAGENTS):
+        if self.harness == HarnessKind.PYDANTIC:
             return self.resolved_model
-        if self.harness in (HarnessKind.CLAUDECODE, HarnessKind.GEMINI):
+        if self.harness in (HarnessKind.CLAUDECODE, HarnessKind.AGY):
             return self.resolved_model if self.model else ""
         if self.harness == HarnessKind.PI:
             return self.model  # raw, e.g. "ollama/qwen3" — not provider:model
@@ -488,8 +500,11 @@ class Settings(BaseSettings):
 
     def _validate_review(self) -> list[str]:
         harness = self.llm.harness
-        # CLI-driven harnesses manage their own auth/model.
-        if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI, HarnessKind.GEMINI):
+        # CLI-driven harnesses manage their own auth/model; a custom harness
+        # (module path) checks its own environment in `is_ready()`.
+        if not isinstance(harness, HarnessKind):
+            return []
+        if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI, HarnessKind.AGY):
             return []
 
         errors: list[str] = []
@@ -498,7 +513,8 @@ class Settings(BaseSettings):
             errors.append(
                 "MODEL provider is required. Pass --model 'openai:gpt-...' or "
                 "'anthropic:claude-...', or set OPENAI_API_KEY / ANTHROPIC_API_KEY "
-                "for auto-detection."
+                "for auto-detection — or use a CLI agent instead: "
+                "--harness claudecode|codex|pi|agy."
             )
             return errors
 
@@ -664,9 +680,23 @@ def load_config_file(path: Path) -> dict:
     return _resolve_prompt_uris(_promote_shorthands(data), path.parent.resolve())
 
 
+_STDIN_CONSUMED_BY_CONFIG = False
+
+
+def stdin_consumed_by_config() -> bool:
+    """True once `--config -` has drained stdin in this process.
+
+    A runbook that reads its user message from stdin (script runbook without a
+    `collect` command) must check this: after `--config -` the stream is at EOF
+    and would silently yield an empty message."""
+    return _STDIN_CONSUMED_BY_CONFIG
+
+
 def load_config_stdin() -> dict:
     """Load YAML config from stdin. Relative file:// URIs resolve against CWD."""
+    global _STDIN_CONSUMED_BY_CONFIG
     text = sys.stdin.read()
+    _STDIN_CONSUMED_BY_CONFIG = True
     try:
         data = _parse_config_text(text)
     except yaml.YAMLError as e:

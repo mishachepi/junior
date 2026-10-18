@@ -10,16 +10,16 @@ result model.
 import json
 import os
 import re
-import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
-from junior.harnesses._shared import parse_json_reply
-from junior.runbook.base import Harness, LLMResult, Usage
+from junior.config import LLMSettings
+from junior.harnesses._shared import CliHarness, parse_json_reply
+from junior.runbook.base import LLMResult, Usage
 
 logger = structlog.get_logger()
 
@@ -31,7 +31,7 @@ def _build_output_schema(output_schema: type[BaseModel]) -> dict:
     return to_strict_json_schema(output_schema)
 
 
-def _ensure_codex_auth(settings: Settings) -> None:
+def _ensure_codex_auth(llm: LLMSettings) -> None:
     """Ensure codex CLI is authenticated. Uses existing OAuth or OPENAI_API_KEY."""
     try:
         result = subprocess.run(
@@ -46,7 +46,7 @@ def _ensure_codex_auth(settings: Settings) -> None:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         raise RuntimeError("codex CLI not found — install with: npm install -g @openai/codex")
 
-    api_key = settings.llm.openai_api_key
+    api_key = llm.openai_api_key
     if not api_key:
         raise RuntimeError(
             "codex is not authenticated. Either run 'codex login' or set OPENAI_API_KEY."
@@ -68,14 +68,13 @@ def _ensure_codex_auth(settings: Settings) -> None:
         raise RuntimeError("codex login timed out")
 
 
-class CodexHarness(Harness):
+class CodexHarness(CliHarness):
     name = "codex"
+    binary = "codex"
+    install_hint = "npm install -g @openai/codex"
     file_access = True  # reads repo files via its own sandbox
     config_fields = ("model", "timeout")
     setup_note = "Uses the local `codex` CLI — authenticate it once (no env var)."
-
-    def is_ready(self) -> str:
-        return "ready" if shutil.which("codex") else "not ready: `codex` CLI not found on PATH"
 
     def complete(
         self,
@@ -83,9 +82,10 @@ class CodexHarness(Harness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
-        _ensure_codex_auth(settings)
+        _ensure_codex_auth(llm)
         prompt = f"{system_prompt}\n---\n\n{user_message}"
 
         logger.debug("invoking codex CLI", schema=output_schema.__name__, prompt_size=len(prompt))
@@ -104,22 +104,13 @@ class CodexHarness(Harness):
                 "codex", "exec",
                 "--output-schema", schema_path,
                 "-o", output_path,
-                "-C", str(settings.context.project_dir),
+                "-C", str(project_dir),
                 "--ephemeral",
                 "--skip-git-repo-check",
                 prompt,
             ]
 
-            try:
-                result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=settings.llm.timeout
-                )
-            except FileNotFoundError:
-                raise RuntimeError("codex CLI not found — install with: npm install -g @openai/codex")
-            except subprocess.TimeoutExpired:
-                raise RuntimeError(
-                    f"codex CLI timed out after {settings.llm.timeout}s (raise llm.timeout if expected)"
-                )
+            result = self.run_cli(cmd, llm)
 
             if result.returncode != 0:
                 logger.error(
@@ -141,7 +132,7 @@ class CodexHarness(Harness):
             if not raw_output:
                 raise RuntimeError("codex returned empty output")
 
-            output = _parse_response(raw_output, output_schema)
+            output = parse_json_reply(raw_output, output_schema, source="codex")
             total = _parse_token_usage(result.stderr)
             return LLMResult(output=output, usage=Usage(total_tokens=total))
         finally:
@@ -152,11 +143,6 @@ class CodexHarness(Harness):
 
 
 HARNESS = CodexHarness()
-
-
-def _parse_response(output: str, output_schema: type[BaseModel]) -> BaseModel:
-    """Parse codex CLI output into an instance of `output_schema`."""
-    return parse_json_reply(output, output_schema, source="codex")
 
 
 def _parse_token_usage(stderr: str) -> int:

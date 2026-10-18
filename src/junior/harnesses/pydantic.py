@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 import structlog
 from pydantic import BaseModel
 
-from junior.config import Settings
+from junior.config import LLMSettings
 from junior.runbook.base import EnvVar, Harness, LLMResult, Usage
 
 if TYPE_CHECKING:
@@ -210,16 +210,18 @@ class PydanticHarness(Harness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
-        return asyncio.run(self._run(system_prompt, user_message, output_schema, settings))
+        return asyncio.run(self._run(system_prompt, user_message, output_schema, llm, project_dir))
 
     async def _run(
         self,
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,
+        project_dir: Path,
     ) -> LLMResult:
         from pydantic_ai import Agent, RunContext
         from pydantic_ai.usage import UsageLimits
@@ -233,14 +235,14 @@ class PydanticHarness(Harness):
         # schema generation raises `NameError: name 'RunContext' is not defined`.
         globals()["RunContext"] = RunContext
 
-        model_str = settings.llm.model_string
+        model_str = llm.model_string
         deps = ReviewDeps(
-            project_dir=str(settings.context.project_dir),
-            max_file_size=settings.llm.max_file_size,
+            project_dir=str(project_dir),
+            max_file_size=llm.max_file_size,
         )
         usage_limits = (
-            UsageLimits(output_tokens_limit=settings.llm.max_tokens_per_agent)
-            if settings.llm.max_tokens_per_agent
+            UsageLimits(output_tokens_limit=llm.max_tokens_per_agent)
+            if llm.max_tokens_per_agent
             else None
         )
 

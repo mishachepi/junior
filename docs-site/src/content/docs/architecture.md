@@ -30,9 +30,8 @@ flowchart LR
         E1["claudecode"]
         E2["codex"]
         E3["pydantic"]
-        E4["deepagents"]
         E5["pi"]
-        E6["gemini"]
+        E6["agy"]
     end
 
     A1 -->|"render → output_schema"| A2
@@ -64,10 +63,9 @@ flowchart TD
         ENG -->|claudecode| Q2["claude -p subprocess\n--json-schema=output_schema"]
         ENG -->|codex| Q["codex exec subprocess\nstrict schema from output_schema"]
         ENG -->|pydantic| P["pydantic-ai\noutput_type=output_schema"]
-        ENG -->|deepagents| D["LangChain agent\nsubmit_tool=output_schema"]
         ENG -->|pi| PI["pi --mode json subprocess\nschema embedded in prompt"]
-        ENG -->|gemini| GM["gemini --output-format json subprocess\nschema embedded in prompt (read-only)"]
-        Q2 & Q & P & D & PI & GM --> LR([LLMResult\n.output / .usage / .errors])
+        ENG -->|agy| GM["agy --print --output-format json subprocess\n--json-schema → structured_output"]
+        Q2 & Q & P & PI & GM --> LR([LLMResult\n.output / .usage / .errors])
     end
 
     LR --> OUT
@@ -108,13 +106,14 @@ class Harness(ABC):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],   # ← the runbook's result_model
-        settings: Settings,
+        llm: LLMSettings,                 # ← LLM-side config only, not the whole Settings
+        project_dir: Path,
     ) -> LLMResult: ...
 ```
 
-`LLMResult` is an envelope: `.output` (validated `output_schema` instance), `.usage` (`Usage` token counts), `.errors` (partial-failure notes, e.g. one sub-agent died). The only schema plumbing differs per harness — claudecode passes the schema via `--json-schema`, codex builds a strict JSON schema with openai's `to_strict_json_schema`, pydantic-ai uses `output_type=`, deepagents builds a submit tool from it, pi and gemini embed the schema in the prompt and validate the reply.
+`LLMResult` is an envelope: `.output` (validated `output_schema` instance), `.usage` (`Usage` token counts), `.errors` (partial-failure notes, e.g. one sub-agent died). The only schema plumbing differs per harness — claudecode and agy pass the schema via `--json-schema`, codex builds a strict JSON schema with openai's `to_strict_json_schema`, pydantic-ai uses `output_type=`, pi embeds the schema in the prompt and validates the reply.
 
-`file_access` lets a runbook avoid inlining a full diff for harnesses that read files themselves (`claudecode`, `codex`, `pi`, `gemini` → `True`; `pydantic`, `deepagents` get the diff inline → `False`).
+`file_access` lets a runbook avoid inlining a full diff for harnesses that read files themselves (`claudecode`, `codex`, `pi` → `True`; `pydantic` and `agy` get the diff inline → `False`).
 
 ### Runbook
 
@@ -149,9 +148,8 @@ class HarnessKind(_ModulePathEnum):
     PYDANTIC   = "junior.harnesses.pydantic"
     CODEX      = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
-    DEEPAGENTS = "junior.harnesses.deepagents"
     PI = "junior.harnesses.pi"
-    GEMINI = "junior.harnesses.gemini"
+    AGY = "junior.harnesses.agy"
 
 # registry.py — import the module, read its HARNESS instance
 def get_harness(kind: HarnessKind) -> Harness:
@@ -234,9 +232,8 @@ src/junior/
     claudecode.py       ← claude -p subprocess, --json-schema
     codex.py            ← codex exec subprocess, strict JSON schema
     pydantic.py         ← pydantic-ai, single structured call (output_type)
-    deepagents.py       ← LangChain agent, submit_tool from output_schema
     pi.py               ← pi --mode json subprocess, schema embedded in prompt
-    gemini.py           ← gemini --output-format json subprocess (read-only), schema in prompt
+    agy.py              ← agy --print --output-format json subprocess, native --json-schema
 
   runbooks/            ← built-in runbooks (auto-discovered)
     code_review/

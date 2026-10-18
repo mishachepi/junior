@@ -5,7 +5,7 @@ title: "Harness: Claude Code CLI"
 # Harness: Claude Code CLI
 
 **File:** `src/junior/harnesses/claudecode.py`
-**Env var:** `HARNESS=claudecode` (default; `BACKEND` is a deprecated alias)
+**Env var:** `HARNESS=claudecode`
 **Dependencies:** `claude` CLI (`npm install -g @anthropic-ai/claude-code`)
 **Auth:** Claude Code subscription or `ANTHROPIC_API_KEY` (enables `--bare` API mode)
 

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from junior.config import Settings
-from junior.runbooks.code_review.models import ReviewContext, ReviewResult
 from junior.runbook.registry import register_runbook
 from junior.runbooks.code_review.base import CodeReviewRunbook
+from junior.runbooks.code_review.models import ReviewContext, ReviewResult
 
 
 @register_runbook

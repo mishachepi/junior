@@ -25,27 +25,26 @@ from junior.interactive.prompts import (
     ask_model,
     ask_output_file,
     ask_output_mode,
-    ask_runbook,
     ask_publish,
+    ask_runbook,
     ask_source,
     ask_target_branch,
     confirm_run,
 )
 
-
 __all__ = [
     "InteractiveIO",
-    "interactive_run",
     "ask_config_target",
     "ask_harness",
     "ask_model",
     "ask_output_file",
     "ask_output_mode",
-    "ask_runbook",
     "ask_publish",
+    "ask_runbook",
     "ask_source",
     "ask_target_branch",
     "confirm_run",
+    "interactive_run",
 ]
 
 
@@ -182,7 +181,7 @@ def _format_summary(settings: Settings, io: InteractiveIO, mode: str) -> str:
     else:
         lines.append("  Output   : stdout")
 
-    if harness in ("pydantic", "deepagents"):
+    if harness == "pydantic":
         provider = settings.llm.resolved_provider
         if provider:
             env_var = f"{provider.upper()}_API_KEY"

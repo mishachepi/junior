@@ -5,12 +5,14 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import structlog
 import typer
 from pydantic import ValidationError
 
+from junior.cli.console import err_console, error
+from junior.cli.observability import log_startup, setup_logging
+from junior.cli.options import parse_kv
 from junior.config import (
     Settings,
     SourceMode,
@@ -20,16 +22,12 @@ from junior.config import (
     load_configs,
 )
 
-from junior.cli.console import err_console, error
-from junior.cli.observability import log_startup, setup_logging
-from junior.cli.options import parse_kv
-
 
 @dataclass(frozen=True)
 class GlobalOpts:
     """Options on the parent command — apply to every subcommand."""
 
-    config: Optional[str] = None  # path, or "-" for stdin
+    config: str | None = None  # path, or "-" for stdin
     verbose: bool = False
 
 
@@ -49,22 +47,22 @@ def used_config_files(globals_: GlobalOpts) -> list[Path]:
 
 def build_settings(
     *,
-    config: Optional[str] = None,
-    harness: Optional[str] = None,
-    model: Optional[str] = None,
-    source: Optional[SourceMode] = None,
-    base_sha: Optional[str] = None,
-    project_dir: Optional[Path] = None,
-    target_branch: Optional[str] = None,
-    prompts: Optional[list[str]] = None,
-    prompt_files: Optional[list[str]] = None,
-    context: Optional[dict[str, str]] = None,
-    context_files: Optional[dict[str, str]] = None,
-    input_text: Optional[str] = None,
-    output_file: Optional[Path] = None,
-    publish: Optional[bool] = None,
+    config: str | None = None,
+    harness: str | None = None,
+    model: str | None = None,
+    source: SourceMode | None = None,
+    base_sha: str | None = None,
+    project_dir: Path | None = None,
+    target_branch: str | None = None,
+    prompts: list[str] | None = None,
+    prompt_files: list[str] | None = None,
+    context: dict[str, str] | None = None,
+    context_files: dict[str, str] | None = None,
+    input_text: str | None = None,
+    output_file: Path | None = None,
+    publish: bool | None = None,
     no_record: bool = False,
-    runbook: Optional[str] = None,
+    runbook: str | None = None,
 ) -> Settings:
     """Merge config files + CLI overrides into a frozen Settings. Exits on error.
 
@@ -84,7 +82,7 @@ def build_settings(
     - Additive flags (--prompt / --context / --context-file) stay merge layers:
       a single env var can't express "append to what the config already has".
     """
-    flag_env: dict[str, Optional[str]] = {
+    flag_env: dict[str, str | None] = {
         "MODEL": model or None,
         "SOURCE": source.value if source is not None else None,
         "BASE_SHA": base_sha or None,
@@ -145,7 +143,7 @@ def build_settings(
         raise typer.Exit(code=2)
 
 
-def apply_env(pairs: Optional[list[str]]) -> None:
+def apply_env(pairs: list[str] | None) -> None:
     """Apply `--env KEY=VALUE` pairs to the process environment.
 
     Must run before Settings are built: the vars then carry normal env
@@ -164,9 +162,9 @@ def prepare_settings(
     globals_: GlobalOpts,
     *,
     verbose: bool = False,
-    env: Optional[list[str]] = None,
+    env: list[str] | None = None,
     **build_kwargs,
-) -> tuple[Settings, "structlog.BoundLogger"]:
+) -> tuple[Settings, structlog.BoundLogger]:
     """Build settings, set up logging, return (settings, logger). Exits on error.
 
     `verbose` is the per-subcommand `-v` flag; it's OR'd with the parent `-v` so

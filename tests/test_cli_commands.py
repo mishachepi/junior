@@ -10,15 +10,14 @@ this catches CLI/runbook plumbing regressions that unit tests miss.
 
 from typer.testing import CliRunner
 
-from junior.cli import app
 from junior import __version__
+from junior.cli import app
 from junior.runbooks.code_review.models import (
     ChangedFile,
     FileStatus,
     Recommendation,
     ReviewContext,
 )
-
 
 runner = CliRunner()
 
@@ -236,7 +235,7 @@ def _isolate_config(monkeypatch):
     for mod in (cfg, sb):
         monkeypatch.setattr(mod, "find_global_config", lambda: None)
         monkeypatch.setattr(mod, "find_local_config", lambda: None)
-    for var in ("HARNESS", "RUNBOOK", "BACKEND", "MODEL", "PUBLISH"):
+    for var in ("HARNESS", "RUNBOOK", "MODEL", "PUBLISH"):
         monkeypatch.delenv(var, raising=False)
 
 
@@ -249,13 +248,13 @@ def test_config_show_reflects_effective_setup(monkeypatch):
     parsed = yaml.safe_load(result.stdout)  # header is comments → still valid YAML
     # effective shorthands (defaults when no config is present)
     assert parsed["runbook"] == ""  # no implicit default — must be chosen explicitly
-    assert parsed["harness"] == "claudecode"
+    assert parsed["harness"] == "pydantic"
     assert parsed["publish"] is False
     # with no runbook configured, its specific fields are hidden (nothing to introspect)
     assert "source" not in (parsed.get("context") or {})
     assert parsed["output"]["record"] is True
     # status header present (labels padded to a fixed width so values align)
-    assert "# harness: claudecode" in result.stdout
+    assert "# harness: pydantic" in result.stdout
     assert "# runbook: (none" in result.stdout
     assert "# source:  defaults (no config file)" in result.stdout
 
@@ -311,7 +310,7 @@ def test_config_path_prints_global_and_local():
 
 def _fake_tty(monkeypatch):
     """CliRunner's stdin is not a TTY; pretend it is so wizards proceed."""
-    import junior.cli.actions as actions
+    from junior.cli import actions
 
     monkeypatch.setattr(actions, "ensure_interactive_tty", lambda what: None)
 
@@ -377,7 +376,7 @@ def test_list_shows_runbooks_and_harnesses():
     assert "Runbooks" in out and "Harnesses" in out
     for name in ("local_review", "github_pr_review", "gitlab_pr_review"):
         assert name in out
-    for name in ("claudecode", "codex", "pydantic", "deepagents"):
+    for name in ("claudecode", "codex", "pydantic", "pi", "agy"):
         assert name in out
     assert "configured default" in out  # the `*` footer
 
@@ -408,7 +407,7 @@ def test_config_list_is_canonical_and_list_is_alias():
     assert canonical.exit_code == 0 and alias.exit_code == 0
     assert "Harnesses" in canonical.stdout
     # both list the same harness names
-    for name in ("claudecode", "codex", "pydantic", "deepagents"):
+    for name in ("claudecode", "codex", "pydantic", "pi", "agy"):
         assert name in canonical.stdout and name in alias.stdout
 
 
@@ -430,16 +429,16 @@ def test_harness_is_ready_reflects_env(monkeypatch):
     assert HARNESS.is_ready() == "ready"
 
 
-def test_deepagents_import_stays_lazy():
-    """Importing the harness module must NOT pull LangChain (kept lazy for `list`)."""
+def test_pydantic_import_stays_lazy():
+    """Importing the harness module must NOT pull pydantic-ai (kept lazy for `list`)."""
     import subprocess
     import sys
 
     code = (
-        "import sys, junior.harnesses.deepagents; "
-        "sys.exit(1 if 'langchain_core' in sys.modules else 0)"
+        "import sys, junior.harnesses.pydantic; "
+        "sys.exit(1 if 'pydantic_ai' in sys.modules else 0)"
     )
-    assert subprocess.run([sys.executable, "-c", code]).returncode == 0
+    assert subprocess.run([sys.executable, "-c", code], check=False).returncode == 0
 
 
 # --- KV parser via Typer ---
@@ -509,7 +508,7 @@ def _fake_llm_output():
 
 def _patch_engine(monkeypatch, complete_fn):
     """Replace registry.get_harness with a fake engine driving `complete_fn`."""
-    import junior.runbook.registry as registry
+    from junior.runbook import registry
 
     class _FakeEngine:
         file_access = True
@@ -537,7 +536,7 @@ def test_run_default_emits_raw_json_no_publish(monkeypatch, tmp_path):
         assert settings.context.project_dir == tmp_path
         return _fake_context()
 
-    def fake_complete(*, system_prompt, user_message, output_schema, settings):
+    def fake_complete(*, system_prompt, user_message, output_schema, llm, project_dir):
         calls.append("review")
         assert "feat: add hello" in user_message
         assert "Check security" in system_prompt, (
@@ -622,8 +621,8 @@ def test_run_raw_output_hints_publish_on_tty_only(monkeypatch, tmp_path):
     """Raw stdout output adds a stderr --publish hint for humans (TTY), and
     stays hint-free in pipes/CI. The stdout bytes are identical either way."""
     _make_git_repo(tmp_path)
-    import junior.cli.actions as actions
     import junior.collect.local
+    from junior.cli import actions
     from junior.runbook.base import LLMResult, Usage
 
     monkeypatch.setattr(junior.collect.local, "collect", lambda s: _fake_context())

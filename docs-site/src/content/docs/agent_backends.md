@@ -7,18 +7,17 @@ title: "Choosing a harness"
 A **harness** is the LLM driver — one way of calling a model. Every harness serves every
 runbook (the output schema is a parameter), so picking one is purely about *how you want
 the model to run*: which CLI/SDK, which auth, cloud or local. Select with `--harness`,
-env `HARNESS`, or config `harness:`; default `claudecode`.
+env `HARNESS`, or config `harness:`; default `pydantic`.
 
 ## Quick answer
 
 | You want… | Pick | Why |
 |----------|---------|-----|
-| Zero-setup local reviews (default) | `claudecode` | Drives your `claude` CLI — subscription auth, git tools, explores beyond the diff |
-| Predictable CI cost | `pydantic` | One structured API call, no agentic wandering |
+| Zero-setup local reviews | `claudecode` | Drives your `claude` CLI — subscription auth, git tools, explores beyond the diff |
+| Predictable cost, deterministic runs (default) | `pydantic` | One structured API call, no agentic wandering |
 | The OpenAI/Codex stack | `codex` | `codex exec` in a sandbox, OAuth or API key |
 | **Local / offline models** | `pi` | Ollama / LM Studio / vLLM via `~/.pi/agent/models.json` — no API key, nothing leaves the machine |
-| The Google / Gemini stack | `gemini` | Drives your `gemini` CLI read-only (`plan` mode) — `GEMINI_API_KEY` or its own auth, explores beyond the diff |
-| ~~To experiment with orchestration~~ | `deepagents` | **Deprecated** — LangChain orchestrator, unreliable (may skip the submit tool). Use `pydantic` instead |
+| The Google / Antigravity stack | `agy` | Drives your `agy` CLI headlessly — its own login, native `--json-schema`, reads files beyond the inlined diff |
 
 ## Comparison
 
@@ -27,9 +26,8 @@ env `HARNESS`, or config `harness:`; default `claudecode`.
 | `claudecode` | *(core)* | single `claude -p` subprocess | subscription or `ANTHROPIC_API_KEY` | stable |
 | `codex` | `junior[codex]` | single `codex exec` in sandbox | OAuth or `OPENAI_API_KEY` | stable |
 | `pydantic` | `junior[pydantic]` | single structured pydantic-ai call | API key **required** | stable |
-| `deepagents` | `junior[deepagents]` | LangChain orchestrator + subagents | API key **required** | **deprecated** |
 | `pi` | *(core)* | single `pi --mode json` subprocess | provider key, `auth.json`, or **none (local models)** | stable |
-| `gemini` | *(core)* | single `gemini --output-format json` subprocess (read-only `plan` mode) | `GEMINI_API_KEY` or the CLI's own auth | stable |
+| `agy` | *(core)* | single `agy --print --output-format json --json-schema` subprocess | the CLI's own login | new |
 
 `junior config list harnesses` shows what's installed and ready on your machine;
 `junior config env --harness X` lists the exact env vars one needs.
@@ -40,10 +38,10 @@ Every harness does a **single structured call** and returns a validated instance
 runbook's output schema. They differ in how the schema is enforced and whether the model
 can read repository files itself (`file_access` — see [Glossary](glossary.md#harness)):
 
-| | pydantic | claudecode | codex | deepagents | pi | gemini |
+| | pydantic | claudecode | codex | pi | agy |
 |--|----------|-----------|-------|------------|----|--------|
 | **`file_access`** | `False` | `True` | `True` | `False` | `True` | `True` (read-only) |
-| **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git…)` (built-in) | Sandbox filesystem access | `read_file`, `ls`, `grep`, `glob` (via deepagents) | `read`, `grep`, `find`, `ls` (read-only) | built-in read tools (`plan` mode — no edits/shell) |
+| **File tools** | `read_file`, `list_dir`, `grep` (Python) | `Read`, `Grep`, `Glob`, `Bash(git…)` (built-in) | Sandbox filesystem access | `read`, `grep`, `find`, `ls` (read-only) | built-in read tools (`plan` mode — no edits/shell) |
 | **Output contract** | Returns the schema instance directly | via `--json-schema` | via `--output-schema` | `submit_review` tool | Schema in system prompt + validated reply | Schema in prompt + validated reply |
 
 The diff is inlined into the user message for **every** harness while it's small
@@ -51,14 +49,10 @@ The diff is inlined into the user message for **every** harness while it's small
 file tools for context beyond the diff, and for oversized diffs they read the files
 themselves instead.
 
-> [!NOTE]
-> `--harness` / `HARNESS` / config `harness:` is canonical. The old `--backend` /
-> `BACKEND` / `backend:` is kept as a deprecated alias for one version.
-
 ## Going deeper
 
 Per-harness internals (subprocess flags, event parsing, error handling):
 [Claude Code](agent_backends/claudecode.md) · [Codex](agent_backends/codex.md) ·
-[Pydantic AI](agent_backends/pydantic.md) · [DeepAgents](agent_backends/deepagents.md) ·
-[Pi](agent_backends/pi.md) · [Gemini](agent_backends/gemini.md). Writing your own is one file —
+[Pydantic AI](agent_backends/pydantic.md) ·
+[Pi](agent_backends/pi.md) · [Antigravity CLI](agent_backends/agy.md). Writing your own is one file —
 [Adding a harness](adding_harnesses.md).

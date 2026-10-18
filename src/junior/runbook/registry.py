@@ -17,8 +17,9 @@ Runbooks come from four sources, all merged into one registry:
    since 0.2.4) — it executes code shipped in the reviewed repository, same
    trust model as the repo's Makefile or git hooks; disable for untrusted repos.
 
-Harnesses are resolved lazily via the `HarnessKind` enum, whose value is the
-harness module path; each such module exposes a module-level `HARNESS` instance.
+Harnesses are resolved lazily by module path — a `HarnessKind` member (value =
+the built-in's module path) or any dotted path the user passed to `--harness`;
+the module exposes a module-level `HARNESS` instance.
 """
 
 from __future__ import annotations
@@ -213,43 +214,45 @@ def available_runbooks_meta() -> list[tuple[str, str]]:
 # that may fail to import. The pip extra usually equals the short name ("" =
 # ships in the core install). The probe is the third-party package the extra
 # pulls — checked with `find_spec` (locates without executing, so listing never
-# triggers a heavy import like LangChain); "" means nothing to probe (core).
+# triggers a heavy import like pydantic-ai); "" means nothing to probe (core).
 HARNESS_META: dict[HarnessKind, tuple[str, str, str]] = {
     HarnessKind.CLAUDECODE: ("claude CLI subprocess (no API key)", "", ""),
     HarnessKind.CODEX: ("codex CLI subprocess", "codex", "openai"),
-    HarnessKind.PYDANTIC: ("single structured call via pydantic-ai", "pydantic", "pydantic_ai"),
-    HarnessKind.DEEPAGENTS: (
-        "LangChain orchestrator — DEPRECATED (unreliable; use pydantic)",
-        "deepagents",
-        "deepagents",
-    ),
+    HarnessKind.PYDANTIC: ("single structured call via pydantic-ai (default)", "", ""),
     HarnessKind.PI: ("pi CLI subprocess — incl. local models (models.json)", "", ""),
-    HarnessKind.GEMINI: ("gemini CLI subprocess (Google; GEMINI_API_KEY or its own auth)", "", ""),
+    HarnessKind.AGY: ("agy CLI subprocess (Google Antigravity; its own login)", "", ""),
 }
 
 
-def harness_available(kind: HarnessKind) -> bool:
+def _harness_module(kind: HarnessKind | str) -> str:
+    return kind.value if isinstance(kind, HarnessKind) else kind
+
+
+def harness_available(kind: HarnessKind | str) -> bool:
     """True if the harness's extra is installed — without importing it.
 
-    Uses `find_spec` on the harness's probe package, which only *locates* the
-    module (no execution), so calling this for every harness can't hang on a
-    slow top-level import.
+    Uses `find_spec` on the harness's probe package (for a custom module path:
+    the module itself), which only *locates* the module (no execution), so
+    calling this for every harness can't hang on a slow top-level import.
     """
-    _, _, probe = HARNESS_META[kind]
-    if not probe:
-        return True  # core harness, no extra to install
+    if isinstance(kind, HarnessKind):
+        _, _, probe = HARNESS_META[kind]
+        if not probe:
+            return True  # core harness, no extra to install
+    else:
+        probe = kind
     try:
         return importlib.util.find_spec(probe) is not None
     except (ImportError, ValueError):
         return False
 
 
-def get_harness(kind: HarnessKind) -> Harness:
-    """Resolve the LLM harness for a HarnessKind enum (value = module path)."""
-    module = importlib.import_module(kind.value)
+def get_harness(kind: HarnessKind | str) -> Harness:
+    """Resolve the LLM harness: a HarnessKind member or a custom module path;
+    the module must expose a module-level `HARNESS` instance."""
+    path = _harness_module(kind)
+    module = importlib.import_module(path)
     harness = getattr(module, "HARNESS", None)
     if not isinstance(harness, Harness):
-        raise RuntimeError(
-            f"harness module '{kind.value}' does not expose a HARNESS instance"
-        )
+        raise RuntimeError(f"harness module '{path}' does not expose a HARNESS instance")
     return harness

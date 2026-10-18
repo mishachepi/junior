@@ -15,6 +15,7 @@ from junior.config import (
     LLMSettings,
     OutputSettings,
     Settings,
+    harness_ref,
 )
 
 # Group fields that apply to every run (shown in detailed mode regardless of choice).
@@ -25,8 +26,8 @@ _UNIVERSAL = {
 }
 _HINTS = {
     "runbook": "which runbook to run — see: junior list",
-    "harness": "claudecode | codex | pydantic | deepagents | pi | gemini",
-    "model": "provider:model (pydantic/deepagents/pi/gemini; CLI harnesses use their own)",
+    "harness": "pydantic | claudecode | codex | pi | agy",
+    "model": "provider:model (pydantic/pi; CLI harnesses use their own)",
     "publish": "run the runbook's publish; else raw output to stdout/-o",
     "output_file": "write the review to a file (empty = stdout)",
     "log_level": "DEBUG | INFO | WARNING | ERROR",
@@ -36,7 +37,7 @@ _HINTS = {
     "prompts": "task instructions — inline text or file://./path.md",
     "context_files": "extra files for the prompt (key: path)",
     "max_tokens_per_agent": "pydantic: cap response tokens (0 = none)",
-    "timeout": "CLI harnesses (claudecode/codex/pi/gemini): kill the subprocess after N seconds",
+    "timeout": "CLI harnesses (claudecode/codex/pi/agy): kill the subprocess after N seconds",
     "permission_mode": "claude CLI: default | acceptEdits | plan | bypassPermissions",
     "max_file_size": "skip files larger than this many bytes",
     "max_diff_chars": "hard cap on inlined diff chars (0 = no limit)",
@@ -74,7 +75,7 @@ def _line(field: str, value, indent: int = 0) -> str:
 def _harness_obj(name: str):
     from junior.runbook.registry import get_harness
 
-    return get_harness(HarnessKind(name))
+    return get_harness(harness_ref(name))
 
 
 def _runbook_obj(name: str):
@@ -83,7 +84,7 @@ def _runbook_obj(name: str):
     return get_runbook(name)
 
 
-def _readiness(kind: HarnessKind) -> str:
+def _readiness(kind: HarnessKind | str) -> str:
     """Short live-status of the resolved harness, for the header comment."""
     from junior.runbook.registry import get_harness, harness_available
 

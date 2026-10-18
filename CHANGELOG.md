@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.3.0 — 2026-09-30
+
+- **Breaking (harness API):** `Harness.complete()` takes `llm: LLMSettings` and `project_dir: Path` instead of the whole `Settings` (same for `CliHarness.run_cli(cmd, llm, …)`). A harness only ever needed the LLM-side config and a working directory; passing exactly that is what lets a future workflow give each step its own harness/model. Custom harnesses (`--harness pkg.module`) update the two parameter names.
+- `--harness` (and `HARNESS` / `harness:`) accepts the import path of any module exposing a `HARNESS` instance — a custom harness no longer needs a fork or an enum entry, mirroring `--runbook pkg.module:Class`. `config.harness_ref()` resolves the value; `junior config show --harness pkg.x` reports its readiness.
+- **Breaking:** `pydantic` is now the default harness (was `claudecode`) and `pydantic-ai-slim[anthropic,openai]` ships in the core install; `junior[pydantic]` is kept as an empty extra so existing installs keep working. `claudecode`/`codex`/`pi` are unchanged — select them with `--harness`.
+- **Breaking:** the `deepagents` harness (deprecated since 0.2.1) is removed, along with the `junior[deepagents]` extra and its docs page. `pydantic` covers the same API-only use case with a single structured call.
+- **Breaking:** the one-version shims from 0.2.0 are gone — `junior.models` (import from `junior.runbooks.code_review.models`; `CollectedContext`/`LLMReviewOutput` are `ReviewContext`/`ReviewOutput`) and the `--backend` / `BACKEND` / `backend:` alias (use `--harness` / `HARNESS` / `harness:`).
+- **New harness: `agy`** — Google's Antigravity CLI (`HARNESS=agy` / `--harness agy`). One headless `agy --print … --output-format json --json-schema …` subprocess; the CLI validates the answer itself and the harness reads it from the envelope's `structured_output` (text-reply fallback). No env var — the CLI's own login. `file_access = False`: the diff is always inlined, because headless agy denies the shell `git` it would need to fetch it. A headless auto-deny (empty answer + `denied_actions`) fails the run naming the denied action instead of surfacing as a validation error.
+- **Breaking:** the `gemini` harness is removed — Google shut down Gemini CLI on 2026-06-18, so it drove a dead binary; `agy` is its replacement (`--harness gemini` now fails with the list of known harnesses).
+- Harness internals: the four CLI-driven harnesses (claudecode, codex, pi, agy) share one `CliHarness` base (`harnesses/_shared.py`) — PATH check, subprocess run, missing-binary/timeout errors and the schema-in-prompt contract live in one place. No behaviour or message changes.
+- CLI harnesses never inherit Junior's stdin: `CliHarness.run_cli` gives the child `/dev/null` unless it passes `input`. Previously codex/pi inherited whatever stdin Junior had — in CI or a pipe chain an idle open stdin made codex «read additional input from stdin» and fail (`EAGAIN`) or block until `llm.timeout`.
+- Pipeline safety: `--config -` combined with a stdin-fed script runbook (no `collect`) now fails loudly instead of sending the LLM an empty message. New `tests/test_pipe_contract.py` locks the `junior run | junior run` contract (one JSON on stdout, diagnostics on stderr, stdin hand-off, non-zero exit with empty stdout on failure).
+
 ## 0.2.5 — 2026-09-22
 
 - **`pydantic` harness: provider errors are now actionable.** A failed

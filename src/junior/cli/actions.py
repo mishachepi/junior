@@ -8,7 +8,6 @@ command bodies in `cli.app` are thin wrappers around these.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -87,7 +86,7 @@ def load_prompts(settings: Settings, logger, runbook_name: str = "") -> list:
 def load_or_collect_context(
     runbook,
     settings: Settings,
-    from_file: Optional[Path],
+    from_file: Path | None,
     logger,
 ):
     """Phase 1: load the runbook's context from --from-file JSON, or collect it."""

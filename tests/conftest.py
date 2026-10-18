@@ -56,7 +56,7 @@ def _hermetic_ambient_config(request, monkeypatch):
     # without this per-test cleanup — including the self-managed files, which
     # set the env they need explicitly.
     for var in (
-        "HARNESS", "MODEL", "PUBLISH", "RUNBOOK", "BACKEND", "OUTPUT_FILE",
+        "HARNESS", "MODEL", "PUBLISH", "RUNBOOK", "OUTPUT_FILE",
         "LOCAL_RUNBOOKS", "SOURCE", "TARGET_BRANCH", "LOG_LEVEL",
         "BASE_SHA", "PROJECT_DIR", "RECORD",
     ):
@@ -74,9 +74,13 @@ def _hermetic_ambient_config(request, monkeypatch):
     ):
         monkeypatch.delenv(var, raising=False)
 
-    if request.node.fspath.basename in _SELF_MANAGED:
-        return
     import junior.config as cfg
 
+    # `--config -` flips a process-wide "stdin drained" flag; CliRunner tests
+    # share one process, so reset it per test.
+    monkeypatch.setattr(cfg, "_STDIN_CONSUMED_BY_CONFIG", False, raising=False)
+
+    if request.node.fspath.basename in _SELF_MANAGED:
+        return
     monkeypatch.setattr(cfg, "GLOBAL_CONFIG_CANDIDATES", (), raising=False)
     monkeypatch.setattr(cfg, "LOCAL_CONFIG_CANDIDATES", (), raising=False)

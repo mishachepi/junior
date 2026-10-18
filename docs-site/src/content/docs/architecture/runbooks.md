@@ -44,7 +44,7 @@ local) is folded into a runbook's own `collect`/`publish`.
   │ local_review              │        │ claudecode                │
   │ github_pr_review          │  uses  │ codex                     │
   │ gitlab_pr_review          │ ─────► │ pydantic                  │
-  │ …a fork's runbook        │        │ deepagents                │
+  │ …a fork's runbook        │        │ pi / agy                  │
   └───────────────────────────┘        └───────────────────────────┘
   brings its own Context + Result      schema-agnostic: takes the
   schemas, collect/render/publish      output_schema as a parameter
@@ -119,7 +119,7 @@ class Harness(ABC):
         instance of output_schema."""
 ```
 
-The six harnesses (`junior.harnesses.{claudecode,codex,pydantic,deepagents,pi,gemini}`) each
+The five harnesses (`junior.harnesses.{claudecode,codex,pydantic,pi,agy}`) each
 implement `complete` and expose a module-level `HARNESS` instance. The schema is
 passed in, never hard-coded, and each harness wires it through its own mechanism:
 
@@ -128,12 +128,10 @@ passed in, never hard-coded, and each harness wires it through its own mechanism
 | `claudecode` | `True` | `claude -p … --json-schema <schema>` |
 | `codex` | `True` | strict JSON schema via openai's `to_strict_json_schema` |
 | `pydantic` | `False` | a single structured call with `output_type=output_schema` |
-| `deepagents` | `False` | a submit tool whose `args_schema=output_schema` |
 | `pi` | `True` | schema embedded in the system prompt, reply validated with `model_validate` |
 
 > [!NOTE]
-> `pydantic` and `deepagents` make a **single structured call** for the requested
-> schema — not the old per-prompt sub-agent fan-out. `file_access` lets a runbook
+> `pydantic` makes a **single structured call** for the requested schema. `file_access` lets a runbook
 > skip inlining a full diff for harnesses that read files themselves.
 
 Harnesses are resolved by the `HarnessKind` enum, whose value is the harness module
@@ -144,7 +142,6 @@ class HarnessKind(_ModulePathEnum):
     PYDANTIC   = "junior.harnesses.pydantic"
     CODEX      = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
-    DEEPAGENTS = "junior.harnesses.deepagents"
     PI         = "junior.harnesses.pi"
 ```
 
@@ -216,7 +213,8 @@ def run_runbook(runbook, harness, context, settings, *, publish_enabled) -> LLMR
         system_prompt=runbook.system_prompt(settings),   # SYSTEM_PROMPT role + --prompts
         user_message=runbook.render(context, settings, file_access=harness.file_access),
         output_schema=runbook.result_model,         # ← R schema
-        settings=settings,
+        llm=settings.llm,                           # ← per-call LLM config + cwd,
+        project_dir=settings.context.project_dir,   #   not the whole Settings
     )
     if publish_enabled:                              # custom publish only with --publish;
         runbook.publish(                            # otherwise the CLI writes render_output()
@@ -243,7 +241,6 @@ class LLMSettings(BaseSettings):
 
 > [!NOTE]
 > `llm.harness` (env `HARNESS`, flag `--harness`) is canonical. The old
-> `llm.backend` / `BACKEND` / `--backend` is kept as a deprecated alias.
 
 The system prompt is the runbook's own: its one-line `SYSTEM_PROMPT` role merged
 with the user's `context.prompts` (`--prompt` / `--prompt-file`) via the shared
@@ -452,7 +449,7 @@ src/junior/
     runner.py               ← run_runbook()
     registry.py             ← get_runbook (built-in + entry-point + path + repo-local), get_harness
   harnesses/                ← shared LLM drivers (each exposes HARNESS)
-    claudecode.py  codex.py  pydantic.py  deepagents.py  pi.py
+    claudecode.py  codex.py  pydantic.py  pi.py  agy.py
   runbooks/
     code_review/            ← the built-in runbook family
       base.py               ← CodeReviewRunbook (shared render/prompt/publish)

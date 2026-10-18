@@ -8,9 +8,10 @@ cheap (matching the bitbucket backend).
 import structlog
 
 from junior.config import Settings
-from junior.github_api import API_BASE, headers as github_headers
-from junior.runbooks.code_review.models import ReviewComment, ReviewResult
+from junior.github_api import API_BASE
+from junior.github_api import headers as github_headers
 from junior.publish.core import MAX_INLINE_COMMENTS, format_inline_comment, format_summary
+from junior.runbooks.code_review.models import ReviewComment, ReviewResult
 
 logger = structlog.get_logger()
 

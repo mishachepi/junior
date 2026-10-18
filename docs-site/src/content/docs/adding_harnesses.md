@@ -12,7 +12,7 @@ are ABCs in `src/junior/runbook/base.py`.
 ```
 Harness (driver)
 ----------------
-complete(*, system_prompt, user_message, output_schema, settings) -> LLMResult
+complete(*, system_prompt, user_message, output_schema, llm, project_dir) -> LLMResult
 file_access: ClassVar[bool]
 ```
 
@@ -21,15 +21,32 @@ file_access: ClassVar[bool]
 > should fail loudly at instantiation, not slip past a type checker.
 
 Add a harness to support a new model provider, SDK, or CLI. The whole job is
-**implementing one interface** (`Harness`, two methods — one of them optional) plus two
-one-line registrations; the cross-harness contract tests pick the new harness up
-automatically.
+**implementing one interface** (`Harness`, two methods — one of them optional).
+
+## No fork needed: `--harness pkg.module`
+
+Any importable module that exposes a module-level `HARNESS` instance is a harness:
+
+```bash
+# my_harness.py anywhere on PYTHONPATH (or an installed package)
+junior run --runbook summarize --harness my_harness
+HARNESS=mypkg.review_harness junior run …          # env / config `harness:` work too
+```
+
+The value is a built-in short name or an import path that `find_spec` can locate —
+anything else is reported as a typo. A custom harness is not listed by `junior list` (that table is the
+built-ins), but `junior config show --harness mypkg.x` resolves it and reports `is_ready()`.
+The steps below are for adding a **built-in** harness to Junior itself; a custom one
+needs only Step 1.
 
 > [!TIP]
-> A complete, real worked example is the `pi` harness
-> (`src/junior/harnesses/pi.py`, ~200 lines): a subprocess CLI driver with no native
-> structured-output mode, so it also shows the prompt-embedded-schema pattern and a
-> tolerant JSON parser. It was written exactly by following the steps below.
+> Driving a local agent CLI? Subclass `CliHarness` from `junior.harnesses._shared`
+> instead of `Harness`: set `binary` and `install_hint`, and call
+> `self.run_cli(cmd, llm, input=..., cwd=...)` — it gives you `is_ready()`
+> (PATH check), the missing-binary and timeout errors, and `check=False` semantics.
+> For a CLI without a native output-schema flag, append `schema_contract(output_schema)`
+> to the prompt and validate the reply with `parse_json_reply(...)`. The `pi` harness
+> (`src/junior/harnesses/pi.py`) is the complete worked example of that pattern.
 
 ## Step 1: Create the module
 
@@ -69,7 +86,8 @@ class MyHarness(Harness):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],
-        settings: Settings,
+        llm: LLMSettings,      # model, timeout, API keys, per-CLI knobs
+        project_dir: Path,     # the directory the harness may read
     ) -> LLMResult:
         # Call the model however you like. Return an LLMResult whose `.output`
         # is a *validated instance of output_schema* (not the schema class).
@@ -96,10 +114,10 @@ Key points:
 - Put partial-failure notes in `LLMResult.errors` — runbooks can surface them.
 - **Lazy-import any heavy SDK inside `complete()`**, not at module top level — the
   registry imports every harness module for `junior list` / `config show`, and that
-  must stay cheap (see `pydantic.py` / `deepagents.py`).
+  must stay cheap (see `pydantic.py`).
 - If the engine has no native structured-output mode, embed the schema in the system
-  prompt and validate the reply yourself — `pi.py` shows the pattern
-  (`_OUTPUT_CONTRACT` + `_parse_response`).
+  prompt and validate the reply yourself — `schema_contract()` + `parse_json_reply()`
+  from `_shared.py`; `pi.py` shows the pattern.
 
 ## Step 2: Add the enum member
 
@@ -112,9 +130,8 @@ class HarnessKind(_ModulePathEnum):
     PYDANTIC = "junior.harnesses.pydantic"
     CODEX = "junior.harnesses.codex"
     CLAUDECODE = "junior.harnesses.claudecode"
-    DEEPAGENTS = "junior.harnesses.deepagents"
     PI = "junior.harnesses.pi"
-    GEMINI = "junior.harnesses.gemini"
+    AGY = "junior.harnesses.agy"
     MY_HARNESS = "junior.harnesses.my_harness"   # <-- add
 ```
 
@@ -137,7 +154,7 @@ an API key:
 
 ```python
 if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI,
-               HarnessKind.GEMINI, HarnessKind.MY_HARNESS):
+               HarnessKind.AGY, HarnessKind.MY_HARNESS):
     return []
 ```
 

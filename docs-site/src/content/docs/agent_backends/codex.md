@@ -5,7 +5,7 @@ title: "Harness: Codex CLI"
 # Harness: Codex CLI
 
 **File:** `src/junior/harnesses/codex.py`
-**Env var:** `HARNESS=codex` (`BACKEND` is a deprecated alias)
+**Env var:** `HARNESS=codex`
 **Dependencies:** `codex` CLI (`npm install -g @openai/codex`) + the `codex` extra (pulls in `openai`)
 **Auth:** `codex login` OAuth or `OPENAI_API_KEY` as fallback
 

@@ -33,13 +33,14 @@ class _RecordingHarness(Harness):
         self._result = result
         self.complete_calls: list[dict] = []
 
-    def complete(self, *, system_prompt, user_message, output_schema, settings):
+    def complete(self, *, system_prompt, user_message, output_schema, llm, project_dir):
         self.complete_calls.append(
             {
                 "system_prompt": system_prompt,
                 "user_message": user_message,
                 "output_schema": output_schema,
-                "settings": settings,
+                "llm": llm,
+                "project_dir": project_dir,
             }
         )
         return self._result
@@ -91,7 +92,10 @@ def test_run_runbook_threads_context_through_harness():
     call = harness.complete_calls[0]
     assert call["user_message"] == "rendered-user-message"
     assert call["output_schema"] is _Res
-    assert call["settings"] is settings
+    # the harness gets the LLM-side config + cwd, never the whole Settings
+    assert call["llm"] is settings.llm
+    assert call["project_dir"] == settings.context.project_dir
+    assert "settings" not in call
     assert "you are a test runbook" in call["system_prompt"]
 
 

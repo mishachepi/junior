@@ -6,10 +6,11 @@ so importing this module stays cheap).
 
 import structlog
 
-from junior.bitbucket_api import headers as bitbucket_headers, pr_api_base
+from junior.bitbucket_api import headers as bitbucket_headers
+from junior.bitbucket_api import pr_api_base
 from junior.config import Settings
-from junior.runbooks.code_review.models import ReviewComment, ReviewResult
 from junior.publish.core import MAX_INLINE_COMMENTS, format_inline_comment, format_summary
+from junior.runbooks.code_review.models import ReviewComment, ReviewResult
 
 logger = structlog.get_logger()
 

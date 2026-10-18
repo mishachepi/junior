@@ -1,18 +1,87 @@
-"""Helpers shared by the text-CLI harnesses (codex, pi).
+"""Shared base for the CLI-driven harnesses (claudecode, codex, pi, agy).
 
-These harnesses have no native structured-output mode: the model answers with
-prose that *contains* a JSON object, so Junior strips code fences / surrounding
-text and validates the JSON against the requested schema itself.
+Every one of them is a single `subprocess.run` of a local agent CLI with the
+same failure modes (binary missing, timeout) and — for CLIs without a native
+output-schema flag — the same trick: append the JSON Schema to the prompt and
+validate the reply ourselves. `CliHarness` holds the run; `schema_contract` and
+`parse_json_reply` hold the schema-in-prompt contract.
 """
 
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
+from typing import ClassVar
 
 import structlog
 from pydantic import BaseModel
 
+from junior.config import LLMSettings
+from junior.runbook.base import Harness
+
 logger = structlog.get_logger()
+
+
+class CliHarness(Harness):
+    """A harness that drives one local CLI in one subprocess call."""
+
+    #: executable looked up on PATH (also names the CLI in error messages)
+    binary: ClassVar[str]
+    #: how to install it, shown when the binary is missing
+    install_hint: ClassVar[str]
+
+    def is_ready(self) -> str:
+        if shutil.which(self.binary):
+            return "ready"
+        return f"not ready: `{self.binary}` CLI not found on PATH"
+
+    def run_cli(
+        self,
+        cmd: list[str],
+        llm: LLMSettings,
+        *,
+        input: str | None = None,
+        cwd: str | None = None,
+        env: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        """`subprocess.run` with the two failures every CLI shares turned into
+        the RuntimeError the runner reports. Exit codes are the caller's to
+        judge — some CLIs return non-zero and still print a usable reply.
+
+        The child never inherits Junior's stdin: with no `input` it gets
+        /dev/null. In a `junior run | junior run` chain stdin is the upstream
+        document (already consumed by the runbook), and an idle open stdin makes
+        codex «read additional input from stdin» and hang or fail (EAGAIN).
+        """
+        stdin = subprocess.DEVNULL if input is None else None
+        try:
+            return subprocess.run(
+                cmd, input=input, stdin=stdin, capture_output=True, text=True,
+                cwd=cwd, env=env, timeout=llm.timeout, check=False,
+            )
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"{self.binary} CLI not found — install with: {self.install_hint}"
+            ) from None
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                f"{self.binary} CLI timed out after {llm.timeout}s "
+                "(raise llm.timeout if expected)"
+            ) from None
+
+
+_OUTPUT_CONTRACT = (
+    "## Output format\n"
+    "When you are done, reply with ONLY one JSON object — no prose, no markdown "
+    "fences — that validates against this JSON Schema:\n"
+)
+
+
+def schema_contract(output_schema: type[BaseModel]) -> str:
+    """Prompt suffix for CLIs without a native schema flag (pi): the
+    JSON Schema the reply must validate against — `parse_json_reply` checks it."""
+    return f"{_OUTPUT_CONTRACT}{json.dumps(output_schema.model_json_schema())}"
 
 
 def parse_json_reply(text: str, output_schema: type[BaseModel], *, source: str) -> BaseModel:

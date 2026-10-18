@@ -1,8 +1,9 @@
 """Tests for repo-local runbooks (.junior/runbooks/) and the needs_git gate."""
 
-import junior.runbook.registry as registry
-from junior.cli import app
 from typer.testing import CliRunner
+
+from junior.cli import app
+from junior.runbook import registry
 
 runner = CliRunner()
 

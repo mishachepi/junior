@@ -6,22 +6,21 @@ Code review is the built-in flagship — for GitLab MRs, GitHub PRs, and Bitbuck
 
 A YAML manifest turns any prompt + shell command into a runbook of your own.
 
-Two independent extension points — **runbooks** (`local_review` / `github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`, `weather_advice`, or your own module/YAML) and **harnesses** (`claudecode` / `codex` / `pydantic` / `deepagents` / `pi`, incl. local models) — one config priority chain: flags → env → YAML config.
+Two independent extension points — **runbooks** (`local_review` / `github_pr_review` / `gitlab_pr_review` / `bitbucket_pr_review`, `weather_advice`, or your own module/YAML) and **harnesses** (`pydantic` / `claudecode` / `codex` / `pi` / `agy`, incl. local models) — one config priority chain: flags → env → YAML config.
 
 ## Install
 
-The core install is lean — just the CLI plus the default `claudecode` harness (no LLM
-SDKs, since `claudecode` drives the `claude` CLI). Add an **extra** for every harness or
-platform you actually use; extras compose in one bracket.
+The core install is the CLI plus the default `pydantic` harness — one structured API
+call via pydantic-ai, `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in your env. The CLI-agent
+harnesses (`claudecode`, `codex`, `pi`) need no Python deps, only their CLI on PATH. Add an
+**extra** for every other harness or platform you actually use; extras compose in one bracket.
 
 ```bash
-# Core — runs `junior run` with the default claudecode harness out of the box
+# Core — runs `junior run` with the default pydantic harness (API key in env)
 uv tool install "junior @ git+https://github.com/mishachepi/junior.git"
 
 # Pick what you need (extras compose: junior[gitlab,codex])
 uv tool install "junior[codex]      @ git+https://github.com/mishachepi/junior.git"  # codex harness
-uv tool install "junior[pydantic]   @ git+https://github.com/mishachepi/junior.git"  # pydantic-ai harness
-uv tool install "junior[deepagents] @ git+https://github.com/mishachepi/junior.git"  # LangChain stack
 uv tool install "junior[gitlab]     @ git+https://github.com/mishachepi/junior.git"  # GitLab MR metadata
 uv tool install "junior[github]     @ git+https://github.com/mishachepi/junior.git"  # GitHub PR metadata
 uv tool install "junior[bitbucket]  @ git+https://github.com/mishachepi/junior.git"  # Bitbucket DC PR metadata
@@ -35,19 +34,19 @@ From a local clone: `git clone … && cd junior && uv tool install ".[codex,gitl
 
 ### Try it from Docker (no install)
 
-The published image (`mihchepi/junior` on Docker Hub — the `full` build, every
+The published image (`ghcr.io/mishachepi/junior` on GitHub Container Registry — the `full` build, every
 harness included) runs Junior without installing anything:
 
 ```bash
 # Smoke check — what's inside the image:
-docker run --rm mihchepi/junior:latest junior --version
-docker run --rm mihchepi/junior:latest junior config list harnesses
+docker run --rm ghcr.io/mishachepi/junior:latest junior --version
+docker run --rm ghcr.io/mishachepi/junior:latest junior config list harnesses
 
 # Review your current repo's diff — mount it and pass an API key (export it first):
 docker run --rm \
   -e ANTHROPIC_API_KEY \
   -v "$PWD:/repo" -w /repo \
-  mihchepi/junior:latest \
+  ghcr.io/mishachepi/junior:latest \
   junior run --runbook local_review --harness pydantic --publish
 ```
 
@@ -60,17 +59,15 @@ the project version, e.g. `:0.2.4` (multi-arch — amd64 + arm64).
 
 | Extra | Python deps it adds | Also needs (not pip) |
 |-------|---------------------|----------------------|
-| *(core)* | — | `claude` CLI for the default harness |
+| *(core)* | `pydantic-ai-slim[anthropic,openai]` (default harness) | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
 | `codex` | `openai` (strict-schema helper) | `codex` CLI + auth |
-| `pydantic` | `pydantic-ai-slim[anthropic,openai]` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
-| `deepagents` | `deepagents` + LangChain stack | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` |
+| `claudecode` | — | `claude` CLI + login |
 | `gitlab` | `python-gitlab` | `GITLAB_TOKEN` |
 | `github` | `httpx` | `gh` CLI + `GITHUB_TOKEN` |
 | `bitbucket` | `httpx` | `BITBUCKET_*` env vars (token, url, project, repo, PR id) |
 | `all` | everything above | — |
 
-Install only the harness you run and you skip every other harness's SDK — e.g. a
-`claudecode`-only or `codex`-only setup never pulls the heavy `pydantic-ai` / LangChain trees.
+Install only the platform extras you use; the CLI-agent harnesses add no Python deps.
 
 ## Quick Start
 
@@ -104,8 +101,8 @@ Collect (deterministic)    ->  Harness (the one AI step)  ->  Publish (determini
 git diff + PR metadata        claudecode (CLI)               stdout / file / JSON pipe
 a shell command's stdout      codex (CLI)                    PR / MR comments
 live API data                 pydantic (SDK)                 a terminal panel
-stdin from another junior     deepagents (LangChain)         any shell command
-                              pi (CLI - local models)
+stdin from another junior     pi (CLI - local models)        any shell command
+                              agy (CLI)
 ```
 
 Every run also drops a secret-free JSON record at `.junior/output/{timestamp}.json` (disable with `--no-record`). See the [full documentation](https://junior.mchep.dev) for CLI reference, configuration, CI setup, and more.

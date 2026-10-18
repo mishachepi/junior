@@ -75,7 +75,7 @@ RUN git config --global --add safe.directory '*'
 CMD ["junior"]
 
 
-# ---- full: all backends (pydantic + codex + pi + deepagents, all platforms) ----
+# ---- full: all harnesses (pydantic + codex + pi, all platforms) ----
 FROM base AS full
 
 # Node.js + the two CLI harnesses that need it: codex (@openai/codex) and

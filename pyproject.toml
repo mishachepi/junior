@@ -1,6 +1,6 @@
 [project]
 name = "junior"
-version = "0.2.5"
+version = "0.3.0"
 description = "Deterministic LLM runbook framework like dynamic workflows. Includes built-in AI code review tooling."
 license = "MIT"
 requires-python = ">=3.12"
@@ -12,19 +12,14 @@ dependencies = [
     "typer>=0.27.3",
     "rich>=15.0.0",
     "PyYAML>=6.0",
+    "pydantic-ai-slim[anthropic,openai]>=2.51.0",  # the default harness: one structured API call
 ]
 
 [project.optional-dependencies]
 # --- Agent backends ---
-claudecode = []  # default — drives the `claude` CLI (Node.js), no Python deps
+pydantic = []  # default — ships in core (pydantic-ai); kept so `junior[pydantic]` still installs
+claudecode = []  # drives the `claude` CLI (Node.js), no Python deps
 codex = ["openai>=3.31.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
-pydantic = ["pydantic-ai-slim[anthropic,openai]>=2.51.0"]  # single structured call via API key
-deepagents = [
-    "deepagents>=0.7.25",
-    "langchain>=0.3.0",
-    "langchain-anthropic>=0.3.0",
-    "langchain-openai>=1.7.2",
-]
 
 # --- Built-in platforms for code review collect MR/PR metadata + publish comments ---
 gitlab = ["python-gitlab>=8.6.0"]
@@ -32,7 +27,7 @@ github = ["httpx>=0.28"]  # + `gh` CLI authenticated
 bitbucket = ["httpx>=0.28"]  # Bitbucket Data Center (self-hosted)
 
 # --- Convenience ---
-all = ["junior[gitlab,github,bitbucket,codex,pydantic,deepagents]"]
+all = ["junior[gitlab,github,bitbucket,codex,pydantic]"]
 
 # Dev tooling is a PEP 735 dependency group (not an extra): uv installs the
 # `dev` group by default, so a plain `uv run pytest` works on a fresh clone.

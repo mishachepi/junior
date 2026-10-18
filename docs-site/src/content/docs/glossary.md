@@ -45,7 +45,7 @@ copy for a non-code-review runbook. Full per-runbook settings + env:
 ## Harness
 
 One **LLM driver** — a single way of calling a model. The name fits: `claudecode`,
-`codex`, `pi`, and `gemini` are agentic CLIs, `pydantic` is an SDK driver — Junior
+`codex`, `pi`, and `agy` are agentic CLIs, `pydantic` is an SDK driver — Junior
 *harnesses* them rather than being the inference engine itself. **Schema-agnostic**:
 its one method, `complete(*, system_prompt, user_message, output_schema, settings) →
 LLMResult`, takes the output schema as a *parameter*, so the same harness serves
@@ -59,12 +59,11 @@ Built-in harnesses:
 
 | Harness | Install | `file_access` | API key | Runs via |
 |---------|---------|---------------|---------|----------|
-| `claudecode` (default) | core | ✅ reads files | optional (`ANTHROPIC_API_KEY` → API mode) | the `claude` CLI |
+| `claudecode` | core | ✅ reads files | optional (`ANTHROPIC_API_KEY` → API mode) | the `claude` CLI |
 | `codex` | `junior[codex]` | ✅ reads files | optional (`OPENAI_API_KEY`) | the `codex` CLI |
 | `pydantic` | `junior[pydantic]` | ❌ diff inlined | **required** (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | a single structured pydantic-ai call |
-| `deepagents` ⚠️ deprecated | `junior[deepagents]` | ❌ context inlined | **required** (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | a LangChain orchestrator (unreliable — use `pydantic`) |
 | `pi` | core | ✅ reads files | per provider — or none for local models | the `pi` CLI (incl. Ollama/LM Studio/vLLM) |
-| `gemini` | core | ✅ reads files | optional (`GEMINI_API_KEY` — or its own auth) | the `gemini` CLI (read-only `plan` mode) |
+| `agy` | core | ✅ reads files (diff inlined) | none (the CLI's own login) | the `agy` CLI (Google Antigravity), native `--json-schema` |
 
 **`file_access`** is a `ClassVar[bool]` on the harness: `True` means it explores
 the repository with its own tools, so the runbook doesn't have to inline the full

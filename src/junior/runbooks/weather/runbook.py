@@ -16,7 +16,6 @@ from junior.config import Settings
 from junior.runbook.base import Runbook, Usage
 from junior.runbook.registry import register_runbook
 
-
 # --- context schema (what `collect` produces / the LLM sees) ---
 
 

@@ -30,7 +30,8 @@ def run_runbook(
         system_prompt=runbook.system_prompt(settings),
         user_message=runbook.render(context, settings, file_access=harness.file_access),
         output_schema=runbook.result_model,
-        settings=settings,
+        llm=settings.llm,
+        project_dir=settings.context.project_dir,
     )
     if publish_enabled:
         runbook.publish(settings, result.output, result.usage, errors=result.errors)

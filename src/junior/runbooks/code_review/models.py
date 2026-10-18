@@ -3,7 +3,6 @@
 These are *domain* models — the framework core (`junior.runbook`) is
 domain-agnostic and never imports them. They're shared by the code-review
 runbooks and their helper libs `junior.collect.*` / `junior.publish.*`.
-The old `junior.models` path still works for one version (re-export shim).
 """
 
 from enum import Enum

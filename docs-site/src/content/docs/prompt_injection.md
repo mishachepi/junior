@@ -36,7 +36,7 @@ instructions could achieve full agent takeover — the AI would approve any code
 **Fixed:** the runbook no longer reads project instruction files into the prompt at all.
 Project memory is now the harness's concern, read from *its own* working directory rather
 than the reviewed branch: `claudecode` reads `CLAUDE.md`, `codex` reads `AGENTS.md`. The
-SDK harnesses (`pydantic`/`deepagents`/`pi`) get no project instructions — a deliberate
+SDK harnesses (`pydantic`/`pi`) get no project instructions — a deliberate
 trade-off. Since the harness's cwd is the trusted operator's environment, not the diff's,
 the author of a reviewed branch can no longer rewrite the reviewer's instructions.
 
@@ -100,7 +100,7 @@ review. Two independent bounds apply:
   files with their own tools.
 - **Hard cap** — `context.max_diff_chars` (default 200 000, `0` = no cap) truncates the
   inlined diff with a marker in `build_user_message()` *before* it reaches the model. This
-  applies to **every** harness, including the SDK harnesses (`pydantic`/`deepagents`) that
+  applies to **every** harness, including the SDK harness (`pydantic`) that
   always inline the full diff regardless of size, so a giant MR can no longer be an unbounded
   cost vector. Tune it per repo via `context.max_diff_chars` (a code-review runbook config
   field).

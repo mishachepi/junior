@@ -73,7 +73,6 @@ def ask_harness(default: str | None = None) -> str | None:
         questionary.Choice("claudecode — uses local Claude CLI (no API key needed)", value="claudecode"),
         questionary.Choice("pydantic — single structured call via OpenAI/Anthropic API", value="pydantic"),
         questionary.Choice("codex — uses local Codex CLI", value="codex"),
-        questionary.Choice("deepagents — LangChain orchestrator + subagents", value="deepagents"),
         questionary.Choice("pi — pi CLI; local models via ~/.pi/agent/models.json", value="pi"),
     ]
     return questionary.select(
@@ -91,7 +90,6 @@ def ask_model(default: str | None, harness: str) -> str | None:
     """
     hint = {
         "pydantic": "e.g. anthropic:claude-opus-4-6, gpt-5.4-mini",
-        "deepagents": "e.g. anthropic:claude-opus-4-6, gpt-5.4-mini",
         "claudecode": "leave empty to let the CLI choose",
         "codex": "ignored — codex CLI picks its own model",
     }.get(harness, "")

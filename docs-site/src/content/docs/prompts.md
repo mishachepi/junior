@@ -59,7 +59,7 @@ system prompt — those files live in the reviewed branch's working tree, which 
 author controls, so inlining them would let a PR rewrite the reviewer's instructions. A
 harness that wants project memory reads it itself from its own working directory
 (`claudecode` → `CLAUDE.md`, `codex` → `AGENTS.md`); the SDK harnesses
-(`pydantic`/`deepagents`/`pi`) don't. See [Security](prompt_injection.md).
+(`pydantic`/`pi`) don't. See [Security](prompt_injection.md).
 
 > A YAML or [custom runbook](adding_runbooks.md)'s system prompt is just its own
 > `SYSTEM_PROMPT` plus your `context.prompts` — no review rules. You own it.
@@ -78,7 +78,7 @@ The **collect** step builds it. For code review, in order:
 5. **Changed files** — the list with status (added / modified / deleted).
 6. **The diff** — the full unified diff, inlined while ≤ 50 000 chars. Above that,
    `file_access` harnesses (claudecode/codex/pi) read the changed files with their own tools
-   instead; the SDK harnesses (pydantic/deepagents) still get it inlined. Either way the
+   instead; the SDK harness (pydantic) still gets it inlined. Either way the
    inlined diff is hard-capped at `context.max_diff_chars` (default 200 000, `0` = no cap)
    and truncated with a marker beyond that — a cost/DoS guard that applies to **every**
    harness.

@@ -15,7 +15,6 @@ from junior.runbooks.code_review.models import (
     assemble_review_result,
 )
 
-
 # --- ReviewOutput counting / blocking logic ---
 
 
@@ -151,16 +150,6 @@ def test_review_result_is_frozen():
     result = ReviewResult(output=ReviewOutput(summary="x"))
     with pytest.raises(ValidationError):
         result.pre_formatted = "boom"
-
-
-# --- deprecated shim aliases keep importing ---
-
-
-def test_shim_aliases_resolve_to_renamed_models():
-    from junior.models import CollectedContext, LLMReviewOutput
-
-    assert CollectedContext is ReviewContext
-    assert LLMReviewOutput is ReviewOutput
 
 
 # --- Usage.from_io: shared token-construction convention (claudecode, pi) ---

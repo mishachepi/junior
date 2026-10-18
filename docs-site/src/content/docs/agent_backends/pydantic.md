@@ -5,7 +5,7 @@ title: "Harness: Pydantic AI"
 # Harness: Pydantic AI
 
 **File:** `src/junior/harnesses/pydantic.py`
-**Env var:** `HARNESS=pydantic` (`BACKEND` is a deprecated alias)
+**Env var:** `HARNESS=pydantic` (default)
 **Dependencies:** `pydantic-ai-slim[anthropic,openai]`
 **Auth:** `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 

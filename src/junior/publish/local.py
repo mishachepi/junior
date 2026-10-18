@@ -1,8 +1,8 @@
 """Local publisher backend — renders the review as Markdown to stdout."""
 
 from junior.config import Settings
-from junior.runbooks.code_review.models import ReviewResult
 from junior.publish.core import format_summary
+from junior.runbooks.code_review.models import ReviewResult
 
 
 def post_review(settings: Settings, result: ReviewResult) -> None:
