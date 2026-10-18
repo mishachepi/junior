@@ -216,9 +216,9 @@ def available_runbooks_meta() -> list[tuple[str, str]]:
 # pulls — checked with `find_spec` (locates without executing, so listing never
 # triggers a heavy import like pydantic-ai); "" means nothing to probe (core).
 HARNESS_META: dict[HarnessKind, tuple[str, str, str]] = {
+    HarnessKind.PYDANTIC: ("single structured call via pydantic-ai (default)", "", ""),
     HarnessKind.CLAUDECODE: ("claude CLI subprocess (no API key)", "", ""),
     HarnessKind.CODEX: ("codex CLI subprocess", "codex", "openai"),
-    HarnessKind.PYDANTIC: ("single structured call via pydantic-ai (default)", "", ""),
     HarnessKind.PI: ("pi CLI subprocess — incl. local models (models.json)", "", ""),
     HarnessKind.AGY: ("agy CLI subprocess (Google Antigravity; its own login)", "", ""),
 }

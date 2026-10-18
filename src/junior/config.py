@@ -91,6 +91,10 @@ class HarnessKind(_ModulePathEnum):
     AGY = "junior.harnesses.agy"
 
 
+#: built-in harness short names for help text and errors: "pydantic, codex, …"
+HARNESS_NAMES = ", ".join(k.name.lower() for k in HarnessKind)
+
+
 def harness_ref(value: str) -> HarnessKind | str:
     """Resolve a `--harness` value: built-in short name (or its module path) →
     HarnessKind; the import path of any other module → returned as-is for the
@@ -502,9 +506,7 @@ class Settings(BaseSettings):
         harness = self.llm.harness
         # CLI-driven harnesses manage their own auth/model; a custom harness
         # (module path) checks its own environment in `is_ready()`.
-        if not isinstance(harness, HarnessKind):
-            return []
-        if harness in (HarnessKind.CODEX, HarnessKind.CLAUDECODE, HarnessKind.PI, HarnessKind.AGY):
+        if harness != HarnessKind.PYDANTIC:
             return []
 
         errors: list[str] = []

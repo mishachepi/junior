@@ -68,8 +68,8 @@ def interactive_setup() -> None:
     # --- 3. Harness -------------------------------------------------------
     console.print("\n[bold]3. Harness[/] — which AI engine actually runs the review.")
     console.print(
-        "[dim]  claudecode / codex → drive a local CLI (no API key)\n"
-        "  pydantic → calls an LLM API (key from your env)[/]"
+        "[dim]  pydantic → calls an LLM API (key from your env)\n"
+        "  claudecode / codex / pi / agy → drive a local CLI (its own login)[/]"
     )
     harness = ask_harness(default="pydantic")
     if harness is None:
@@ -99,7 +99,10 @@ def interactive_setup() -> None:
             return
         publish = answer
     else:
-        console.print("\n[dim]4. Publish — skipped (local_review can't publish).[/]")
+        console.print(
+            "\n[dim]4. Publish — skipped (local_review has nothing to post; "
+            "add --publish for a Markdown render).[/]"
+        )
 
     # --- 5. Output file (optional) ---------------------------------------
     console.print("\n[bold]5. Output file[/] (optional) — write the review to a file.")
