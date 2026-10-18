@@ -43,7 +43,9 @@ needs only Step 1.
 > Driving a local agent CLI? Subclass `CliHarness` from `junior.harnesses._shared`
 > instead of `Harness`: set `binary` and `install_hint`, and call
 > `self.run_cli(cmd, llm, input=..., cwd=...)` — it gives you `is_ready()`
-> (PATH check), the missing-binary and timeout errors, and `check=False` semantics.
+> (PATH check), the missing-binary and timeout errors (`llm.timeout`, or `timeout=` for a
+> quick probe), `/dev/null` stdin when there's no `input`, and `check=False` semantics;
+> `stderr_tail(proc)` trims stderr for an error message.
 > For a CLI without a native output-schema flag, append `schema_contract(output_schema)`
 > to the prompt and validate the reply with `parse_json_reply(...)`. The `pi` harness
 > (`src/junior/harnesses/pi.py`) is the complete worked example of that pattern.

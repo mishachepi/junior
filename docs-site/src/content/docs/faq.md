@@ -239,7 +239,7 @@ junior run --runbook github_pr_review --source branch --publish
 
 ### Notes
 
-- **Inline (per-line) comments are skipped locally.** GitLab needs `CI_MERGE_REQUEST_DIFF_BASE_SHA` and `CI_COMMIT_SHA` to anchor each finding to the diff. CI sets them; locally they're empty, so Junior posts a single summary note instead. Set both manually if you want inline comments:
+- **GitLab inline (per-line) comments are skipped locally.** GitHub anchors them to the PR's latest commit on its own; GitLab needs `CI_MERGE_REQUEST_DIFF_BASE_SHA` and `CI_COMMIT_SHA` to anchor each finding to the diff. CI sets them; locally they're empty, so Junior posts a single summary note instead. Set both manually if you want inline comments:
   ```bash
   export CI_COMMIT_SHA=$(git rev-parse HEAD)
   export CI_MERGE_REQUEST_DIFF_BASE_SHA=$(git merge-base origin/master HEAD)

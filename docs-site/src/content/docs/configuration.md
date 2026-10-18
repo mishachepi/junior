@@ -155,7 +155,7 @@ Config key: `llm:`. The `harness` is how the LLM is invoked. The **runbook** (co
 | `ANTHROPIC_API_KEY` | — | — | Anthropic API key |
 | `MAX_TOKENS_PER_AGENT` | — | `0` | Response token cap, 0 = no limit (`pydantic` harness only) |
 | `MAX_FILE_SIZE` | — | `100000` | Skip file content above this size, bytes (collection + `pydantic`) |
-| `TIMEOUT` | — | `600` | Kill the CLI-harness subprocess (`claudecode`/`codex`/`pi`/`agy`) after N seconds |
+| `TIMEOUT` | — | `600` | Kill the CLI-harness subprocess (`claudecode`/`codex`/`pi`/`agy`) after N seconds (≥ 1) |
 
 > [!NOTE]
 
