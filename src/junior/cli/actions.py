@@ -193,14 +193,7 @@ def _print_context_summary(context) -> None:
                         ("-", {"justify": "right", "style": "red"})):
             table.add_column(col, **kw)
         for f in changed:
-            added = sum(
-                1 for line in f.diff.splitlines()
-                if line.startswith("+") and not line.startswith("+++")
-            ) if f.diff else 0
-            removed = sum(
-                1 for line in f.diff.splitlines()
-                if line.startswith("-") and not line.startswith("---")
-            ) if f.diff else 0
+            added, removed = f.line_counts()
             table.add_row(f.status.value, f.path, f"+{added}", f"-{removed}")
         console.print(table)
         return

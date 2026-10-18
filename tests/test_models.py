@@ -165,3 +165,11 @@ def test_usage_from_io_totals_input_plus_output():
 def test_usage_from_io_defaults_to_zero():
     usage = Usage.from_io()
     assert (usage.input_tokens, usage.output_tokens, usage.total_tokens) == (0, 0, 0)
+
+
+def test_changed_file_line_counts_skip_headers():
+    from junior.runbooks.code_review.models import ChangedFile, FileStatus
+
+    diff = "--- a/x\n+++ b/x\n@@ -1 +1,2 @@\n-old\n+new\n+more\n context"
+    assert ChangedFile(path="x", status=FileStatus.MODIFIED, diff=diff).line_counts() == (2, 1)
+    assert ChangedFile(path="x", status=FileStatus.ADDED, diff="").line_counts() == (0, 0)

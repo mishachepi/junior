@@ -73,13 +73,18 @@ def merge_prompts(base: str, entries: list[str]) -> str:
     return "\n\n".join(s.strip() for s in (base, *bodies) if s.strip())
 
 
-def _load_prompt_uri(uri: str) -> Prompt:
-    """Read a `file://...` prompt. The URI must be absolute (resolved upstream)."""
+def file_uri_path(uri: str) -> Path:
+    """The path inside a `file://` URI; `file://rel/path` (a host part) reads as relative."""
     parsed = urlparse(uri)
     raw = unquote(parsed.path)
-    if parsed.netloc and parsed.netloc not in ("", "localhost"):
+    if parsed.netloc and parsed.netloc != "localhost":
         raw = parsed.netloc + raw
-    path = Path(raw)
+    return Path(raw)
+
+
+def _load_prompt_uri(uri: str) -> Prompt:
+    """Read a `file://...` prompt. The URI must be absolute (resolved upstream)."""
+    path = file_uri_path(uri)
     if not path.is_file():
         raise ValueError(f"Prompt file not found: {uri}")
     if path.suffix != ".md":
