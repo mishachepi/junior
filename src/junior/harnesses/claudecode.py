@@ -14,7 +14,7 @@ import structlog
 from pydantic import BaseModel
 
 from junior.config import LLMSettings
-from junior.harnesses._shared import CliHarness
+from junior.harnesses._shared import CliHarness, schema_json, stderr_tail
 from junior.runbook.base import LLMResult, Usage
 
 logger = structlog.get_logger()
@@ -39,8 +39,6 @@ class ClaudeCodeHarness(CliHarness):
         llm: LLMSettings,
         project_dir: Path,
     ) -> LLMResult:
-        project_dir = str(project_dir)
-        schema_json = json.dumps(output_schema.model_json_schema())
 
         logger.debug(
             "invoking claude CLI",
@@ -49,9 +47,9 @@ class ClaudeCodeHarness(CliHarness):
         )
 
         cmd = [
-            "claude", "-p",
+            self.binary, "-p",
             "--output-format", "json",
-            "--json-schema", schema_json,
+            "--json-schema", schema_json(output_schema),
             "--append-system-prompt", system_prompt,
             "--tools", _TOOLS,
             "--permission-mode", llm.claudecode.permission_mode,
@@ -62,16 +60,19 @@ class ClaudeCodeHarness(CliHarness):
         if llm.model:
             cmd.extend(["--model", llm.model])
 
-        proc = self.run_cli(cmd, llm, input=user_message, cwd=project_dir)
+        proc = self.run_cli(cmd, llm, input=user_message, cwd=str(project_dir))
 
         if proc.returncode != 0:
             if not proc.stdout.strip():
-                raise RuntimeError(f"claude CLI failed (exit {proc.returncode}): {(proc.stderr or '')[-500:]}")
-            logger.warning("claude CLI exited with non-zero code", returncode=proc.returncode, stderr=(proc.stderr or '')[-200:])
+                raise RuntimeError(f"claude CLI failed (exit {proc.returncode}): {stderr_tail(proc)}")
+            logger.warning(
+                "claude CLI exited with non-zero code",
+                returncode=proc.returncode, stderr=stderr_tail(proc, 200),
+            )
 
         raw = proc.stdout.strip()
         if not raw:
-            raise RuntimeError(f"claude CLI returned empty output: {(proc.stderr or '')[-500:]}")
+            raise RuntimeError(f"claude CLI returned empty output: {stderr_tail(proc)}")
 
         messages = _parse_messages(raw)
         logger.debug("claude response parsed", messages=len(messages), raw=raw)

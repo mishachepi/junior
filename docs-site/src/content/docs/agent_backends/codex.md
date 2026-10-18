@@ -33,7 +33,7 @@ serves for context beyond the diff. Only an oversized diff is left to the sandbo
 complete(output_schema=…)
     │
     ▼
-_ensure_codex_auth(settings)
+self._ensure_auth(llm)
     │  1. Check `codex login status`
     │  2. If not logged in → `codex login --with-api-key` via llm.openai_api_key
     │

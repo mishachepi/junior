@@ -10,7 +10,6 @@ result model.
 import json
 import os
 import re
-import subprocess
 import tempfile
 from pathlib import Path
 
@@ -18,7 +17,7 @@ import structlog
 from pydantic import BaseModel
 
 from junior.config import LLMSettings
-from junior.harnesses._shared import CliHarness, parse_json_reply
+from junior.harnesses._shared import CliHarness, parse_json_reply, stderr_tail
 from junior.runbook.base import LLMResult, Usage
 
 logger = structlog.get_logger()
@@ -31,45 +30,6 @@ def _build_output_schema(output_schema: type[BaseModel]) -> dict:
     return to_strict_json_schema(output_schema)
 
 
-def _ensure_codex_auth(llm: LLMSettings) -> None:
-    """Ensure codex CLI is authenticated. Uses existing OAuth or OPENAI_API_KEY."""
-    try:
-        result = subprocess.run(
-            ["codex", "login", "status"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        if result.returncode == 0:
-            logger.debug("codex already authenticated")
-            return
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        raise RuntimeError("codex CLI not found — install with: npm install -g @openai/codex")
-
-    api_key = llm.openai_api_key
-    if not api_key:
-        raise RuntimeError(
-            "codex is not authenticated. Either run 'codex login' or set OPENAI_API_KEY."
-        )
-
-    try:
-        result = subprocess.run(
-            ["codex", "login", "--with-api-key"],
-            input=api_key,
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=False,
-        )
-        if result.returncode == 0:
-            logger.info("codex authenticated via OPENAI_API_KEY")
-        else:
-            raise RuntimeError(f"codex login failed: {result.stderr[:300]}")
-    except subprocess.TimeoutExpired:
-        raise RuntimeError("codex login timed out")
-
-
 class CodexHarness(CliHarness):
     name = "codex"
     binary = "codex"
@@ -77,6 +37,22 @@ class CodexHarness(CliHarness):
     file_access = True  # reads repo files via its own sandbox
     config_fields = ("model", "timeout")
     setup_note = "Uses the local `codex` CLI — authenticate it once (no env var)."
+
+    def _ensure_auth(self, llm: LLMSettings) -> None:
+        """Use codex's existing login, else log in with OPENAI_API_KEY."""
+        if self.run_cli([self.binary, "login", "status"], llm, timeout=10).returncode == 0:
+            logger.debug("codex already authenticated")
+            return
+        if not llm.openai_api_key:
+            raise RuntimeError(
+                "codex is not authenticated. Either run 'codex login' or set OPENAI_API_KEY."
+            )
+        proc = self.run_cli(
+            [self.binary, "login", "--with-api-key"], llm, input=llm.openai_api_key, timeout=15
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(f"codex login failed: {stderr_tail(proc, 300)}")
+        logger.info("codex authenticated via OPENAI_API_KEY")
 
     def complete(
         self,
@@ -87,7 +63,7 @@ class CodexHarness(CliHarness):
         llm: LLMSettings,
         project_dir: Path,
     ) -> LLMResult:
-        _ensure_codex_auth(llm)
+        self._ensure_auth(llm)
         prompt = f"{system_prompt}\n---\n\n{user_message}"
 
         logger.debug("invoking codex CLI", schema=output_schema.__name__, prompt_size=len(prompt))
@@ -103,7 +79,7 @@ class CodexHarness(CliHarness):
                 output_path = output_f.name
 
             cmd = [
-                "codex", "exec",
+                self.binary, "exec",
                 "--output-schema", schema_path,
                 "-o", output_path,
                 "-C", str(project_dir),
@@ -118,11 +94,11 @@ class CodexHarness(CliHarness):
                 logger.error(
                     "codex exec failed",
                     returncode=result.returncode,
-                    stderr=result.stderr[-2000:],
+                    stderr=stderr_tail(result, 2000),
                     stdout=result.stdout[-500:] if result.stdout else None,
                 )
                 raise RuntimeError(
-                    f"codex exec failed (exit {result.returncode}): {result.stderr[-2000:]}"
+                    f"codex exec failed (exit {result.returncode}): {stderr_tail(result, 2000)}"
                 )
 
             try:

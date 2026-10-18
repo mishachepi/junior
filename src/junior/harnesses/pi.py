@@ -23,7 +23,7 @@ import structlog
 from pydantic import BaseModel
 
 from junior.config import LLMSettings
-from junior.harnesses._shared import CliHarness, parse_json_reply, schema_contract
+from junior.harnesses._shared import CliHarness, parse_json_reply, schema_contract, stderr_tail
 from junior.runbook.base import EnvVar, LLMResult, Usage
 
 logger = structlog.get_logger()
@@ -69,7 +69,7 @@ class PiHarness(CliHarness):
         )
 
         cmd = [
-            "pi", "--mode", "json",
+            self.binary, "--mode", "json",
             "--no-session",
             "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files",
             "--tools", _TOOLS,
@@ -87,11 +87,11 @@ class PiHarness(CliHarness):
         text, usage = _last_assistant(proc.stdout)
         if proc.returncode != 0 and not text:
             raise RuntimeError(
-                f"pi CLI failed (exit {proc.returncode}): {(proc.stderr or '')[-1000:]}"
+                f"pi CLI failed (exit {proc.returncode}): {stderr_tail(proc, 1000)}"
             )
         if not text:
             raise RuntimeError(
-                f"pi returned no assistant message: {(proc.stderr or '')[-500:]}"
+                f"pi returned no assistant message: {stderr_tail(proc)}"
             )
 
         output = parse_json_reply(text, output_schema, source="pi")

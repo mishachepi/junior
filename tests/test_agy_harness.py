@@ -22,23 +22,27 @@ def _envelope(**fields) -> str:
     return json.dumps(obj)
 
 
+def _proc(stdout: str, returncode: int, stderr: str) -> SimpleNamespace:
+    return SimpleNamespace(stdout=stdout, returncode=returncode, stderr=stderr)
+
+
 def test_parse_envelope_returns_successful_turn():
-    data = _parse_envelope(_envelope(response="hi"), 0, "")
+    data = _parse_envelope(_proc(_envelope(response="hi"), 0, ""))
     assert data["response"] == "hi"
 
 
 def test_parse_envelope_raises_on_error_field_and_bad_status():
     with pytest.raises(RuntimeError, match="quota exceeded"):
-        _parse_envelope(_envelope(status="ERROR", error={"message": "quota exceeded"}), 1, "")
+        _parse_envelope(_proc(_envelope(status="ERROR", error={"message": "quota exceeded"}), 1, ""))
     with pytest.raises(RuntimeError, match="status FAILED"):
-        _parse_envelope(_envelope(status="FAILED"), 1, "stderr tail")
+        _parse_envelope(_proc(_envelope(status="FAILED"), 1, "stderr tail"))
 
 
 def test_parse_envelope_raises_on_empty_or_non_json():
     with pytest.raises(RuntimeError, match="empty output"):
-        _parse_envelope("   ", 1, "boom")
+        _parse_envelope(_proc("   ", 1, "boom"))
     with pytest.raises(RuntimeError, match="not valid JSON"):
-        _parse_envelope("Please log in first", 1, "")
+        _parse_envelope(_proc("Please log in first", 1, ""))
 
 
 def test_extract_output_prefers_structured_output():
