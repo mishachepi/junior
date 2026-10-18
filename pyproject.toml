@@ -1,6 +1,6 @@
 [project]
 name = "junior"
-version = "0.3.0"
+version = "0.3.1"
 description = "Deterministic LLM runbook framework like dynamic workflows. Includes built-in AI code review tooling."
 license = "MIT"
 requires-python = ">=3.12"
