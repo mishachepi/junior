@@ -205,9 +205,7 @@ def run(
         project_dir=project_dir,
         target_branch=target_branch,
         prompts=prompt,
-        prompt_files=[str(p) for p in prompt_file] if prompt_file else None,
-        # `prompt_files` is just CLI sugar — settings_builder converts each
-        # path to a `file://...` URI and appends to `context.prompts`.
+        prompt_files=prompt_file,  # appended to context.prompts as file:// URIs
         context=parse_kv(extra_context, "--context"),
         context_files=parse_kv(context_files, "--context-file"),
         input_text=input_text,
@@ -221,19 +219,17 @@ def run(
     runbook = resolve_runbook(settings)
 
     needs_review = publish_file is None
-    loaded_prompts = load_prompts(settings, logger, runbook.name) if needs_review else []
+    loaded_prompts = load_prompts(settings, runbook.name) if needs_review else []
 
     # `--from-file` and `--publish-file` skip collection entirely, so the
     # project_dir doesn't need to be a git repo (or even exist).
     needs_local_git = publish_file is None and from_file is None
     log_and_preflight(
-        logger, settings, globals_,
-        publish_enabled=publish_enabled or publish_file is not None,
+        logger, settings, globals_, runbook,
+        publish=publish_enabled or publish_file is not None,
         prompts=loaded_prompts,
         review_check=needs_review,
-        publish_check=publish_enabled or publish_file is not None,
         check_project_dir=needs_local_git,
-        runbook=runbook,
     )
 
     if publish_file:
@@ -330,19 +326,17 @@ def dry_run(
         project_dir=project_dir,
         target_branch=target_branch,
         prompts=prompt,
-        prompt_files=[str(p) for p in prompt_file] if prompt_file else None,
+        prompt_files=prompt_file,
         context=parse_kv(extra_context, "--context"),
         context_files=parse_kv(context_files, "--context-file"),
         input_text=input_text,
         output_file=output_file,
     )
     runbook = resolve_runbook(settings)
-    loaded_prompts = load_prompts(settings, logger, runbook.name)
+    loaded_prompts = load_prompts(settings, runbook.name)
     log_and_preflight(
-        logger, settings, globals_,
-        publish_enabled=False, prompts=loaded_prompts,
-        review_check=False, publish_check=False,
-        runbook=runbook,
+        logger, settings, globals_, runbook,
+        publish=False, prompts=loaded_prompts, review_check=False,
     )
 
     context_data = load_or_collect_context(runbook, settings, None, logger)

@@ -55,7 +55,7 @@ def build_settings(
     project_dir: Path | None = None,
     target_branch: str | None = None,
     prompts: list[str] | None = None,
-    prompt_files: list[str] | None = None,
+    prompt_files: list[str | Path] | None = None,
     context: dict[str, str] | None = None,
     context_files: dict[str, str] | None = None,
     input_text: str | None = None,
@@ -198,23 +198,22 @@ def log_and_preflight(
     logger,
     settings: Settings,
     globals_: GlobalOpts,
+    runbook,
     *,
-    publish_enabled: bool,
+    publish: bool,
     prompts: list,
     review_check: bool,
-    publish_check: bool,
     check_project_dir: bool = True,
-    runbook=None,
 ) -> None:
     """Emit startup log, run preflight, exit on config errors.
 
     Generic checks come from `settings.preflight`; publish/platform checks are
-    runbook-specific and come from `runbook.validate` when a runbook is given.
+    runbook-specific and come from `runbook.validate`.
     """
     config_files = used_config_files(globals_)
     log_startup(
         logger, settings,
-        publish_enabled=publish_enabled,
+        publish_enabled=publish,
         prompts=prompts,
         config_files=config_files,
     )
@@ -225,20 +224,16 @@ def log_and_preflight(
     setup_errors: list[str] = []
     # Explicit input text replaces the git diff as the review subject, so a
     # git repo is not required for that run.
-    git_required = (
-        runbook is None or getattr(runbook, "needs_git", True)
-    ) and not settings.context.input_text
+    git_required = runbook.needs_git and not settings.context.input_text
     if check_project_dir and git_required:
         setup_errors.extend(_check_project_dir(settings))
     setup_errors.extend(settings.preflight(review=review_check))
 
-    runbook_errors = (
-        runbook.validate(settings, publish_enabled=publish_check) if runbook is not None else []
-    )
+    runbook_errors = runbook.validate(settings, publish_enabled=publish)
 
     if setup_errors or runbook_errors:
         for err in (*setup_errors, *runbook_errors):
             error(str(err))
-        if setup_errors and (review_check or publish_check):
+        if setup_errors and (review_check or publish):
             err_console.print("\n[dim]Hint: run 'junior config init' for interactive setup.[/]")
         raise typer.Exit(code=2)

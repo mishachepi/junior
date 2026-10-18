@@ -63,7 +63,7 @@ def resolve_harness(settings: Settings):
         raise typer.Exit(code=3)
 
 
-def load_prompts(settings: Settings, logger, runbook_name: str = "") -> list:
+def load_prompts(settings: Settings, runbook_name: str = "") -> list:
     """Resolve the effective prompts into Prompt objects (for preflight/log):
     the global `context.prompts` plus, when `runbook_name` is given, that
     runbook's scoped `runbooks.<name>.prompts`.
