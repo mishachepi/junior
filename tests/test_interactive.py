@@ -1,16 +1,7 @@
 """Tests for the `junior run -i` wizard."""
 
-from pathlib import Path
-
 from junior import interactive
 from junior.config import HarnessKind, LLMSettings, OutputSettings, Settings
-from junior.interactive import InteractiveIO
-
-
-def _io(**kw) -> InteractiveIO:
-    defaults = {"output_file": None, "publish_enabled": False}
-    defaults.update(kw)
-    return InteractiveIO(**defaults)
 
 
 def _patch_questions(monkeypatch, answers: dict) -> None:
@@ -32,17 +23,17 @@ def test_interactive_run_applies_overrides_to_settings(monkeypatch):
         "confirm_run": True,
     })
 
-    result = interactive.interactive_run(settings, _io())
+    result = interactive.interactive_run(settings)
     assert result is not None
-    new_settings, new_io = result
+    new_settings = result
 
     assert new_settings.llm.harness == HarnessKind.PYDANTIC
     assert new_settings.llm.resolved_provider == "openai"
     assert new_settings.llm.resolved_model == "gpt-5.4-mini"
     assert new_settings.context.source.value == "branch"
     assert new_settings.context.target_branch == "develop"
-    assert new_io.publish_enabled is False
-    assert new_io.output_file is None
+    assert new_settings.output.publish is False
+    assert new_settings.output.output_file == ""
 
 
 def test_interactive_run_sets_file_output(monkeypatch):
@@ -58,13 +49,10 @@ def test_interactive_run_sets_file_output(monkeypatch):
         "confirm_run": True,
     })
 
-    result = interactive.interactive_run(settings, _io())
+    result = interactive.interactive_run(settings)
     assert result is not None
-    new_settings, new_io = result
-
-    assert new_io.output_file == Path("out.md")
-    assert new_io.publish_enabled is False
-    assert new_settings.output.output_file == "out.md"
+    assert result.output.output_file == "out.md"
+    assert result.output.publish is False
 
 
 def test_interactive_run_sets_publish_mode(monkeypatch):
@@ -82,12 +70,10 @@ def test_interactive_run_sets_publish_mode(monkeypatch):
         "confirm_run": True,
     })
 
-    result = interactive.interactive_run(settings, _io())
+    result = interactive.interactive_run(settings)
     assert result is not None
-    _new_settings, new_io = result
-
-    assert new_io.publish_enabled is True
-    assert new_io.output_file is None
+    assert result.output.publish is True
+    assert result.output.output_file == ""
 
 
 def test_interactive_run_cancel_returns_none(monkeypatch):
@@ -98,7 +84,7 @@ def test_interactive_run_cancel_returns_none(monkeypatch):
         "ask_model": None,  # user hits Ctrl+C on model step
     })
 
-    assert interactive.interactive_run(settings, _io()) is None
+    assert interactive.interactive_run(settings) is None
 
 
 def test_interactive_run_switches_runbook(monkeypatch):
@@ -114,10 +100,9 @@ def test_interactive_run_switches_runbook(monkeypatch):
         "confirm_run": True,
     })
 
-    result = interactive.interactive_run(settings, _io())
+    result = interactive.interactive_run(settings)
     assert result is not None
-    new_settings, _ = result
-    assert new_settings.runbook == "weather_advice"
+    assert result.runbook == "weather_advice"
 
 
 def test_interactive_run_confirm_no_returns_none(monkeypatch):
@@ -132,13 +117,15 @@ def test_interactive_run_confirm_no_returns_none(monkeypatch):
         "confirm_run": False,
     })
 
-    assert interactive.interactive_run(settings, _io()) is None
+    assert interactive.interactive_run(settings) is None
 
 
 def test_interactive_run_file_mode_defaults_to_existing_output_file(monkeypatch):
     """If `-o release.md` was passed before -i, picking 'file' must offer release.md as default."""
-    settings = Settings(llm=LLMSettings(harness=HarnessKind.CLAUDECODE))
-    io = _io(output_file=Path("release.md"))
+    settings = Settings(
+        llm=LLMSettings(harness=HarnessKind.CLAUDECODE),
+        output=OutputSettings(output_file="release.md"),
+    )
 
     captured: dict = {}
 
@@ -156,10 +143,29 @@ def test_interactive_run_file_mode_defaults_to_existing_output_file(monkeypatch)
         "confirm_run": True,
     })
 
-    result = interactive.interactive_run(settings, io)
+    result = interactive.interactive_run(settings)
     assert result is not None
-    new_settings, new_io = result
 
     assert captured["default"] == "release.md"
-    assert new_io.output_file == Path("release.md")
-    assert new_settings.output.output_file == "release.md"
+    assert result.output.output_file == "release.md"
+
+
+def test_interactive_stdout_mode_overrides_config_publish(monkeypatch):
+    """Config `publish: true` + wizard "stdout" → no publish (the wizard has the last word)."""
+    settings = Settings(
+        llm=LLMSettings(harness=HarnessKind.CLAUDECODE),
+        output=OutputSettings(publish=True, output_file="old.md"),
+    )
+    _patch_questions(monkeypatch, {
+        "ask_harness": "claudecode",
+        "ask_model": "",
+        "ask_source": "auto",
+        "ask_target_branch": "main",
+        "ask_output_mode": "stdout",
+        "confirm_run": True,
+    })
+
+    result = interactive.interactive_run(settings)
+    assert result is not None
+    assert result.output.publish is False
+    assert result.output.output_file == ""

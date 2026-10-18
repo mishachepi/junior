@@ -13,7 +13,6 @@ import typer
 
 from junior.cli.console import console, error
 from junior.config import Settings
-from junior.interactive import InteractiveIO
 
 
 def resolve_runbook(settings: Settings):
@@ -423,15 +422,12 @@ def publish_pre_generated(settings: Settings, review_file: Path, runbook, logger
     logger.info("published successfully", runbook=runbook.name)
 
 
-def run_interactive(
-    settings: Settings,
-    io_in: InteractiveIO,
-) -> tuple[Settings, InteractiveIO]:
-    """Walk the interactive wizard. Returns (new_settings, new_io). Exits on cancel."""
+def run_interactive(settings: Settings) -> Settings:
+    """Walk the interactive wizard. Returns the new settings. Exits on cancel."""
     from junior.interactive import interactive_run
 
     ensure_interactive_tty("`junior run -i`")
-    outcome = interactive_run(settings, io_in)
+    outcome = interactive_run(settings)
     if outcome is None:
         raise typer.Exit()
     return outcome
