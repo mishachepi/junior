@@ -105,6 +105,6 @@ def test_gitlab_publish_warning_without_inline_sha_context():
     )
 
     assert warnings == [
-        "Inline comments will be skipped — CI_MERGE_REQUEST_DIFF_BASE_SHA / "
-        "CI_COMMIT_SHA not set. Only the summary note will be posted."
+        ("Inline comments will be skipped — CI_MERGE_REQUEST_DIFF_BASE_SHA / "
+        "CI_COMMIT_SHA not set. Only the summary note will be posted.")
     ]

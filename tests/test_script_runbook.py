@@ -2,6 +2,7 @@
 
 import pytest
 import yaml
+from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from junior.cli import app
@@ -27,7 +28,7 @@ def test_json_schema_to_model_builds_fields():
     assert inst.a == "x"
     assert inst.n is None          # optional → default None
     assert inst.items == ["y"]
-    with pytest.raises(Exception):  # required field enforced
+    with pytest.raises(ValidationError):  # required field enforced
         model()
 
 
@@ -63,7 +64,7 @@ def test_json_schema_enum_is_enforced():
     }
     model = json_schema_to_model("E", schema)
     assert model(category="Added").category == "Added"
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         model(category="Invented")
     # the value set reaches the harness-facing schema too
     out = model.model_json_schema()
@@ -143,7 +144,7 @@ def test_manifest_without_schema_gets_default_result_model(tmp_path):
     assert set(cls.result_model.model_fields) == {"result"}
     inst = cls.result_model(result="ok")
     assert inst.result == "ok"
-    with pytest.raises(Exception):  # `result` is required
+    with pytest.raises(ValidationError):  # `result` is required
         cls.result_model()
 
 

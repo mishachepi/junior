@@ -15,7 +15,7 @@ should fail loudly at instantiation, not silently under a type checker.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Generic, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, ClassVar, NamedTuple
 
 from pydantic import BaseModel, Field, SerializeAsAny
 
@@ -24,8 +24,6 @@ if TYPE_CHECKING:
 
     from junior.config import LLMSettings, Settings
 
-C = TypeVar("C", bound=BaseModel)  # a runbook's context schema
-R = TypeVar("R", bound=BaseModel)  # a runbook's result schema (raw LLM output)
 
 
 class EnvVar(NamedTuple):
@@ -123,7 +121,7 @@ class Harness(ABC):
         return None
 
 
-class Runbook(ABC, Generic[C, R]):
+class Runbook[C: BaseModel, R: BaseModel](ABC):  # C: context schema, R: result schema
     """One review domain. A fork subclasses this and registers it by name."""
 
     name: ClassVar[str]

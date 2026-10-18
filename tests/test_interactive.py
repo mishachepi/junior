@@ -8,7 +8,7 @@ from junior.interactive import InteractiveIO
 
 
 def _io(**kw) -> InteractiveIO:
-    defaults = dict(output_file=None, publish_enabled=False)
+    defaults = {"output_file": None, "publish_enabled": False}
     defaults.update(kw)
     return InteractiveIO(**defaults)
 

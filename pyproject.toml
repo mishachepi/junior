@@ -53,5 +53,10 @@ packages = ["src/junior"]
 target-version = "py312"
 line-length = 100
 
+[tool.ruff.lint]
+# Broad `except Exception` is deliberate at the boundaries — CLI exit codes, runbook /
+# plugin loaders, platform metadata fetches: every site logs and degrades or exits.
+ignore = ["BLE001"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

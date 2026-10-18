@@ -302,6 +302,7 @@ def _run_git(
             capture_output=True,
             text=True,
             timeout=60,
+            check=False,
         )
         if result.returncode != 0:
             if allow_failure:

@@ -13,13 +13,13 @@ from junior.runbooks.code_review.models import (
 
 
 def _make_comment(**kwargs):
-    defaults = dict(
-        category=ReviewCategory.LOGIC,
-        severity=Severity.HIGH,
-        message="Test issue",
-        file_path="foo.py",
-        line_number=10,
-    )
+    defaults = {
+        "category": ReviewCategory.LOGIC,
+        "severity": Severity.HIGH,
+        "message": "Test issue",
+        "file_path": "foo.py",
+        "line_number": 10,
+    }
     defaults.update(kwargs)
     return ReviewComment(**defaults)
 

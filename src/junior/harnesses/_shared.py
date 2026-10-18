@@ -15,7 +15,7 @@ import subprocess
 from typing import ClassVar
 
 import structlog
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from junior.config import LLMSettings
 from junior.runbook.base import Harness
@@ -110,6 +110,6 @@ def parse_json_reply(text: str, output_schema: type[BaseModel], *, source: str) 
 
     try:
         return output_schema.model_validate(data)
-    except Exception as e:
+    except ValidationError as e:
         logger.error(f"{source} output failed validation", data=data, error=str(e))
         raise RuntimeError(f"{source} output failed {output_schema.__name__} validation: {e}")
