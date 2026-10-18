@@ -262,12 +262,12 @@ class LLMSettings(BaseSettings):
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
     # pydantic harness: cap the response tokens per call (0 = no cap).
-    max_tokens_per_agent: int = 0
+    max_tokens_per_agent: int = Field(default=0, ge=0)
     # collection + pydantic file tools: skip files larger than this (bytes).
-    max_file_size: int = 100_000
+    max_file_size: int = Field(default=100_000, ge=0)
     # CLI harnesses (claudecode/codex/pi/agy): kill the subprocess after this
     # many seconds. Lower it to fail fast on a stuck/runaway agent.
-    timeout: int = 600
+    timeout: int = Field(default=600, ge=1)
     # claudecode-only knobs (nested under `llm.claudecode`); other harnesses ignore it.
     claudecode: ClaudeCodeSettings = Field(default_factory=ClaudeCodeSettings)
 

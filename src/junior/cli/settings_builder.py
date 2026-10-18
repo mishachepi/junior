@@ -139,7 +139,9 @@ def build_settings(
     except ValidationError as e:
         for err in e.errors():
             # pydantic prefixes custom-validator messages with "Value error, "
-            error(str(err["msg"]).removeprefix("Value error, "))
+            msg = str(err["msg"]).removeprefix("Value error, ")
+            where = ".".join(str(part) for part in err["loc"])
+            error(f"{where}: {msg}" if where else msg)
         raise typer.Exit(code=2)
 
 

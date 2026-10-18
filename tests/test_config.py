@@ -713,3 +713,16 @@ class TestPerRunbookPrompts:
         entry = data["runbooks"]["local_review"]["prompts"][0]
         assert entry.startswith("file:///")
         assert entry.endswith("rules.md")
+
+
+@pytest.mark.parametrize("field,value", [
+    ("timeout", 0), ("max_tokens_per_agent", -1), ("max_file_size", -5),
+])
+def test_llm_limits_reject_out_of_range(field, value):
+    """timeout 0 would kill every CLI run instantly; negatives are typos — config error."""
+    from pydantic import ValidationError
+
+    from junior.config import LLMSettings
+
+    with pytest.raises(ValidationError):
+        LLMSettings(**{field: value})
