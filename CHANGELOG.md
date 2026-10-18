@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.1 — 2026-10-19
+
 - Docs: the harness pages and `architecture/runbooks.md` show the 0.3.0 `Harness.complete()` signature (`llm: LLMSettings`, `project_dir: Path`) — the Harness Contract blocks still carried the pre-0.3.0 `settings: Settings`.
 - Lint debt paid: ruff reports zero findings and the CI ruff step is now blocking. No behaviour change — explicit `check=False` on `subprocess.run`, `Runbook` as a PEP 695 generic (`class Runbook[C, R]`), narrower exception types where a specific one exists; `BLE001` (broad `except`) is ignored by policy at the CLI / loader / platform boundaries, where every catch logs and degrades.
 - CI pins Python 3.14 via `.python-version` (an unpinned `uv python install` resolved to 3.15, where PyO3-based wheels do not build yet).
