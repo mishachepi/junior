@@ -180,7 +180,7 @@ def _load_from_path(spec: str) -> Runbook:
     except (ImportError, AttributeError) as e:
         raise ValueError(f"cannot load runbook '{spec}': {e}") from e
     if not (isinstance(cls, type) and issubclass(cls, Runbook)):
-        raise ValueError(f"'{spec}' is not a Runbook subclass")
+        raise ValueError(f"'{spec}' is not a Runbook subclass")  # noqa: TRY004
     return cls()
 
 
@@ -254,5 +254,5 @@ def get_harness(kind: HarnessKind | str) -> Harness:
     module = importlib.import_module(path)
     harness = getattr(module, "HARNESS", None)
     if not isinstance(harness, Harness):
-        raise RuntimeError(f"harness module '{path}' does not expose a HARNESS instance")
+        raise RuntimeError(f"harness module '{path}' does not expose a HARNESS instance")  # noqa: TRY004
     return harness

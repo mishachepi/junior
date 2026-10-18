@@ -484,8 +484,8 @@ class Settings(BaseSettings):
         p = Path(of)
         if p.is_dir():
             return [
-                f"output file is a directory: '{of}'. "
-                "Pass a file path, or '-o -' to force stdout."
+                (f"output file is a directory: '{of}'. "
+                "Pass a file path, or '-o -' to force stdout.")
             ]
         if not p.parent.is_dir():
             return [f"output file directory does not exist: {p.parent}"]
@@ -585,7 +585,7 @@ def _parse_config_text(text: str) -> dict:
     if data is None:
         return {}
     if not isinstance(data, dict):
-        raise ValueError("config root must be a mapping")
+        raise ValueError("config root must be a mapping")  # noqa: TRY004
     return data
 
 

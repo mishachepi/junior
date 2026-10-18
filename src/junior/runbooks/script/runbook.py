@@ -41,7 +41,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from typing import Literal, Optional
+from typing import ClassVar, Literal
 
 import structlog
 from pydantic import BaseModel, Field, create_model
@@ -93,7 +93,7 @@ def json_schema_to_model(name: str, schema: dict) -> type[BaseModel]:
         if fname in required:
             fields[fname] = (typ, Field(..., description=desc))
         else:
-            fields[fname] = (Optional[typ], Field(None, description=desc))
+            fields[fname] = (typ | None, Field(None, description=desc))
     return create_model(name, **fields)
 
 
@@ -125,7 +125,7 @@ class ScriptRunbook(Runbook[ScriptContext, BaseModel]):
     `runbook_from_manifest` (which bakes in `_manifest` / `_base_dir`)."""
 
     context_model = ScriptContext
-    _manifest: dict = {}
+    _manifest: ClassVar[dict] = {}
     _base_dir: Path = Path()
     _blocking: bool = False
 
@@ -193,7 +193,7 @@ class ScriptRunbook(Runbook[ScriptContext, BaseModel]):
             env[f"JUNIOR_CONTEXT_{key.upper()}"] = value
         proc = subprocess.run(
             command, shell=True, cwd=str(self._base_dir), env=env,
-            input=stdin, text=True, capture_output=capture,
+            input=stdin, text=True, capture_output=capture, check=False,
         )
         if proc.returncode != 0:
             detail = (proc.stderr or "").strip()

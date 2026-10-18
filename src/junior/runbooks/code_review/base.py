@@ -41,8 +41,8 @@ def require_https_url(url: str, token: str, *, var_name: str) -> list[str]:
     case-insensitively (RFC 3986)."""
     if token and url and not url.lower().startswith("https://"):
         return [
-            f"{var_name} must use HTTPS — the access token would otherwise be "
-            "sent in cleartext. Use an https:// URL."
+            (f"{var_name} must use HTTPS — the access token would otherwise be "
+            "sent in cleartext. Use an https:// URL.")
         ]
     return []
 

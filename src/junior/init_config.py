@@ -44,13 +44,12 @@ def interactive_setup() -> None:
     is_local = target == "local"
     path = Path(LOCAL_CONFIG_CANDIDATES[0]) if is_local else GLOBAL_CONFIG_PATH
 
-    if path.is_file():
-        if not questionary.confirm(
-            f"{path} already exists. Update it? (other keys are kept)",
-            default=False,
-        ).ask():
-            console.print("Cancelled. Existing config kept.")
-            return
+    if path.is_file() and not questionary.confirm(
+        f"{path} already exists. Update it? (other keys are kept)",
+        default=False,
+    ).ask():
+        console.print("Cancelled. Existing config kept.")
+        return
 
     # --- 2. Runbook ------------------------------------------------------
     console.print("\n[bold]2. Runbook[/] — what gets reviewed and where the result goes.")

@@ -39,6 +39,7 @@ def _ensure_codex_auth(llm: LLMSettings) -> None:
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
         if result.returncode == 0:
             logger.debug("codex already authenticated")
@@ -59,6 +60,7 @@ def _ensure_codex_auth(llm: LLMSettings) -> None:
             capture_output=True,
             text=True,
             timeout=15,
+            check=False,
         )
         if result.returncode == 0:
             logger.info("codex authenticated via OPENAI_API_KEY")
