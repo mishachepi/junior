@@ -185,3 +185,16 @@ def test_run_wraps_model_http_error(monkeypatch):
         project_dir=settings.context.project_dir,
         )
     assert isinstance(exc_info.value.__cause__, ModelHTTPError)
+
+
+def test_config_api_key_reaches_the_provider(monkeypatch):
+    """A key from the config file (not the env) must be the one the SDK uses."""
+    from junior.config import LLMSettings
+    from junior.harnesses.pydantic import _model
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    bound = _model(LLMSettings(model="anthropic:claude-haiku-4-5", anthropic_api_key="k-yaml"))
+    assert bound.client.api_key == "k-yaml"
+    # no key configured → the plain string; pydantic-ai resolves the env itself
+    assert _model(LLMSettings(model="openai:gpt-5.4-mini")) == "openai:gpt-5.4-mini"

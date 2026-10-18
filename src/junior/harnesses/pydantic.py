@@ -249,7 +249,7 @@ class PydanticHarness(Harness):
         logger.debug("invoking pydantic-ai", model=model_str, schema=output_schema.__name__)
 
         agent = Agent(
-            model_str,
+            _model(llm),
             output_type=output_schema,
             deps_type=ReviewDeps,
             system_prompt=system_prompt,
@@ -267,6 +267,25 @@ class PydanticHarness(Harness):
             output=result.output,
             usage=Usage.from_io(input_tokens=u.input_tokens or 0, output_tokens=u.output_tokens or 0),
         )
+
+
+def _model(llm: LLMSettings):
+    """The `provider:model` string, bound to the configured key.
+
+    pydantic-ai's providers read the key from the env; a key set in the config
+    file (`llm.anthropic_api_key` / `llm.openai_api_key`) would pass preflight
+    and then be ignored, so hand it to the provider explicitly.
+    """
+    from pydantic_ai.models import infer_model
+    from pydantic_ai.providers import infer_provider_class
+
+    provider = llm.resolved_provider
+    key = {"openai": llm.openai_api_key, "anthropic": llm.anthropic_api_key}.get(provider)
+    if not key:
+        return llm.model_string
+    return infer_model(
+        llm.model_string, provider_factory=lambda name: infer_provider_class(name)(api_key=key)
+    )
 
 
 HARNESS = PydanticHarness()
