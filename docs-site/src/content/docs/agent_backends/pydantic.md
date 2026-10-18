@@ -16,7 +16,7 @@ subclass). Its one method is schema-agnostic — the result schema is a **parame
 
 ```python
 complete(*, system_prompt: str, user_message: str,
-         output_schema: type[BaseModel], settings: Settings) -> LLMResult
+         output_schema: type[BaseModel], llm: LLMSettings, project_dir: Path) -> LLMResult
 ```
 
 The code-review runbook passes `ReviewOutput`, but the harness works for any
@@ -35,9 +35,9 @@ fan-out and no separate summary agent.
 complete(output_schema=…) → asyncio.run(_run(...))
     │
     ▼
-model_str = settings.llm.model_string
-deps      = ReviewDeps(project_dir, max_file_size=settings.llm.max_file_size)
-limits    = UsageLimits(response_tokens_limit=settings.llm.max_tokens_per_agent)
+model_str = llm.model_string
+deps      = ReviewDeps(project_dir, max_file_size=llm.max_file_size)
+limits    = UsageLimits(output_tokens_limit=llm.max_tokens_per_agent)
     │
     ▼
 ┌──────────────────────────────────────────────┐
@@ -66,7 +66,7 @@ LLMResult(output=result.output,
 
 The runbook assembles `system_prompt` and `user_message` (the latter with the diff
 inlined, since `file_access = False`). The harness makes a single `agent.run()` call.
-`settings.llm.max_tokens_per_agent`, when set, caps the response via `UsageLimits`.
+`llm.max_tokens_per_agent`, when set, caps the response via `UsageLimits`.
 
 ## Output Format
 
@@ -79,12 +79,12 @@ lives in the harness; the model fills the schema directly.
 ## File access
 
 Three tools are registered on the agent, all restricted to
-`settings.context.project_dir`. Because the diff is already inlined, these are for
+`project_dir`. Because the diff is already inlined, these are for
 *optional* deeper exploration:
 
 | Tool | Limit | Description |
 |------|-------|-------------|
-| `_read_file(path)` | `settings.llm.max_file_size` (default 100KB) | Read file content |
+| `_read_file(path)` | `llm.max_file_size` (default 100KB) | Read file content |
 | `_list_dir(path)` | — | List directory entries |
 | `_grep(pattern, path)` | 50 results max | Regex search in files |
 

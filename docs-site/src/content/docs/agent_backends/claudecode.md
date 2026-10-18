@@ -17,7 +17,7 @@ not hard-coded:
 
 ```python
 complete(*, system_prompt: str, user_message: str,
-         output_schema: type[BaseModel], settings: Settings) -> LLMResult
+         output_schema: type[BaseModel], llm: LLMSettings, project_dir: Path) -> LLMResult
 ```
 
 The code-review runbook passes `ReviewOutput` as `output_schema`, but the same
@@ -42,15 +42,15 @@ complete(output_schema=…)
 schema_json = output_schema.model_json_schema()   ← schema is a parameter
     │
     ▼
-subprocess: claude -p   (cwd = settings.context.project_dir)
+subprocess: claude -p   (cwd = project_dir)
     │  --output-format json
     │  --json-schema <output_schema JSON schema>
     │  --append-system-prompt <system_prompt>
     │  --tools "Read,Bash(git log/show/diff/blame),Grep,Glob"
-    │  --permission-mode <settings.llm.claudecode.permission_mode>  (default bypassPermissions)
+    │  --permission-mode <llm.claudecode.permission_mode>  (default bypassPermissions)
     │  --no-session-persistence
-    │  --bare (when settings.llm.anthropic_api_key is set)
-    │  --model <settings.llm.model> (optional)
+    │  --bare (when llm.anthropic_api_key is set)
+    │  --model <llm.model> (optional)
     │  stdin: user_message
     │
     │  ┌─────────────────────────────┐
@@ -75,9 +75,9 @@ LLMResult(output=<output_schema instance>, usage=Usage(input, output, total))
 
 `system_prompt` is passed via `--append-system-prompt`; the runbook's `user_message`
 goes in on **stdin** (avoids OS argument-length limits on large metadata). It's a single
-subprocess call — no parallelism. `settings.llm.model` is optional (the Claude CLI uses
+subprocess call — no parallelism. `llm.model` is optional (the Claude CLI uses
 its own default unless `--model` is set, e.g. `MODEL=claude-sonnet-4-6`); with
-`settings.llm.anthropic_api_key` set the harness adds `--bare` for API mode.
+`llm.anthropic_api_key` set the harness adds `--bare` for API mode.
 
 ## Output Format
 

@@ -113,7 +113,8 @@ class Harness(ABC):
         system_prompt: str,
         user_message: str,
         output_schema: type[BaseModel],    # ← from runbook.result_model
-        settings: "Settings",
+        llm: LLMSettings,                  # ← LLM-side config only (model, keys, timeout)
+        project_dir: Path,
     ) -> LLMResult:
         """Call the model and return an LLMResult whose .output is an
         instance of output_schema."""

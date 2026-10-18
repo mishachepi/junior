@@ -43,7 +43,7 @@ the standard schema-agnostic method:
 
 ```python
 complete(*, system_prompt: str, user_message: str,
-         output_schema: type[BaseModel], settings: Settings) -> LLMResult
+         output_schema: type[BaseModel], llm: LLMSettings, project_dir: Path) -> LLMResult
 ```
 
 `file_access = True` — pi explores the repository with its own **read-only** tools
