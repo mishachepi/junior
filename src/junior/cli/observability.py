@@ -2,7 +2,7 @@
 
 Logs go to stderr (Unix convention — stdout is reserved for the program's
 actual output: review markdown, context JSON, dry-run preview). The custom
-`_drop_none` processor strips key=None pairs so structured log lines stay
+`_drop_empty` processor strips empty key=value pairs so structured log lines stay
 focused on what actually has a value.
 """
 

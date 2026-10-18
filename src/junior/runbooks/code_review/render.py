@@ -13,8 +13,8 @@ def build_user_message(
     """Build user message with full MR context for AI agents.
 
     Used by all harnesses.
-    When include_diff=False (codex), omits the full diff and adds
-    file-tool instructions instead — codex reads files via sandbox.
+    When include_diff=False (an oversized diff on a harness with file access),
+    omits the full diff and adds file-tool instructions instead.
     When inlined, the diff is hard-capped at `max_diff_chars` (0 = no cap)
     so a runaway MR can't blow the token budget.
     """

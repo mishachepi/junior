@@ -79,7 +79,7 @@ class Harness(ABC):
 
     #: short name, matches the HarnessKind member (e.g. "codex")
     name: ClassVar[str]
-    #: True if the engine reads repository files itself (claudecode/codex);
+    #: True if the engine reads repository files itself (e.g. claudecode, codex, pi);
     #: runbooks use this to decide whether to inline a full diff or not.
     file_access: ClassVar[bool] = False
     #: LLMSettings field names this harness actually honors (for `config show`).
