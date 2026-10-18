@@ -26,7 +26,6 @@ jobs:
         run: uv python install
       - name: Run ruff
         run: uv run ruff check src/ tests/
-        continue-on-error: true
       - name: Run tests
         run: uv run --all-extras pytest -q
 
