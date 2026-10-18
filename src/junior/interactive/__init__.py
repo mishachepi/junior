@@ -57,10 +57,9 @@ def interactive_run(settings: Settings) -> Settings | None:
     context_over: dict = {}
     output_over: dict = {}
 
-    from junior.runbook.registry import available_runbooks, load_local_runbooks
+    from junior.runbook.registry import available_runbooks, load_project_runbooks
 
-    if settings.local_runbooks:
-        load_local_runbooks(settings.context.project_dir)
+    load_project_runbooks(settings)
     runbook = ask_runbook(available_runbooks(), default=settings.runbook)
     if runbook is None:
         return None

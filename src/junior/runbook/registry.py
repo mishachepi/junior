@@ -228,6 +228,27 @@ def _harness_module(kind: HarnessKind | str) -> str:
     return kind.value if isinstance(kind, HarnessKind) else kind
 
 
+def load_project_runbooks(settings) -> None:
+    """Load the project's `.junior/runbooks/` unless `settings.local_runbooks` is off.
+
+    Every command that resolves or lists runbooks goes through here, so
+    `run`, `list`, `config show/env` and the wizard all see the same set.
+    """
+    if settings.local_runbooks:
+        load_local_runbooks(settings.context.project_dir)
+
+
+def harness_readiness(kind: HarnessKind | str) -> str | None:
+    """The installed harness's `is_ready()` text, or None if its self-check raised.
+
+    Callers check `harness_available` first; this one may import the harness.
+    """
+    try:
+        return get_harness(kind).is_ready()
+    except Exception:
+        return None
+
+
 def harness_available(kind: HarnessKind | str) -> bool:
     """True if the harness's extra is installed — without importing it.
 

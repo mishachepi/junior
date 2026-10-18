@@ -377,10 +377,9 @@ def _run_list(ctx: typer.Context, target: str) -> None:
 
     globals_: GlobalOpts = ctx.obj or GlobalOpts()
     settings = build_settings(config=globals_.config)
-    if settings.local_runbooks:
-        from junior.runbook.registry import load_local_runbooks
+    from junior.runbook.registry import load_project_runbooks
 
-        load_local_runbooks(settings.context.project_dir)
+    load_project_runbooks(settings)
     print_listing(
         default_runbook=settings.runbook,
         default_harness=settings.llm.harness_name,
@@ -498,6 +497,9 @@ def config_show(
     """
     globals_: GlobalOpts = ctx.obj or GlobalOpts()
     settings = build_settings(config=globals_.config, harness=harness, runbook=runbook_name)
+    from junior.runbook.registry import load_project_runbooks
+
+    load_project_runbooks(settings)
     print_example_config(settings, config_source=_config_source(globals_))
 
 
@@ -542,6 +544,9 @@ def config_env(
 
     globals_: GlobalOpts = ctx.obj or GlobalOpts()
     settings = build_settings(config=globals_.config, harness=harness, runbook=runbook_name)
+    from junior.runbook.registry import load_project_runbooks
+
+    load_project_runbooks(settings)
     print_env_requirements(settings.llm.harness_name, settings.runbook)
 
 

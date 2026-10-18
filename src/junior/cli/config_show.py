@@ -86,15 +86,11 @@ def _runbook_obj(name: str):
 
 def _readiness(kind: HarnessKind | str) -> str:
     """Short live-status of the resolved harness, for the header comment."""
-    from junior.runbook.registry import get_harness, harness_available
+    from junior.runbook.registry import harness_available, harness_readiness
 
     if not harness_available(kind):
         return "✗ not installed"
-    try:
-        ready = get_harness(kind).is_ready()
-    except Exception:
-        return "installed"
-    return ready or "installed"
+    return harness_readiness(kind) or "installed"
 
 
 def print_example_config(settings: Settings, *, config_source: str) -> None:
