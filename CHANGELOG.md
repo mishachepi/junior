@@ -4,6 +4,14 @@
 
 ## 0.3.1 — 2026-10-19
 
+- Fix: exit codes keep their meaning. An error escaping a command (e.g. `-o` into a read-only directory after the LLM call) exited 1 — "blocking issues" to a pipeline; it is now 3. `--publish-file` on a runbook that can't publish a file, or on an unreadable path, is a config error (2) instead of a crash.
+- Fix: `junior run -i` — choosing stdout or a file in the wizard now overrides a config `publish: true` (the run used to publish anyway). The wizard offers all five harnesses (agy was missing) with model hints for pi/agy.
+- Fix: `github_pr_review` posts inline comments without `CI_COMMIT_SHA`. They were gated on that GitLab variable, which the documented GitHub Actions setup never sets, so they were silently skipped; GitHub anchors a review to the PR's latest commit by itself.
+- Fix: an API key set in the config file (`llm.anthropic_api_key` / `llm.openai_api_key`) reaches the `pydantic` harness — it passed preflight and then failed the run, because pydantic-ai only read the env. Keys still belong in env vars.
+- Fix: `config show` / `config env` see repo-local runbooks (`.junior/runbooks/`) like `run` and `list` do.
+- Fix: `llm.timeout` must be ≥ 1 and `max_tokens_per_agent` / `max_file_size` ≥ 0 (`timeout: 0` killed every CLI run instantly); config errors name the offending field (`timeout: Input should be …`).
+- Fix: codex's `codex login status` probe gets `/dev/null` stdin like every other CLI call, and its timeout no longer reports "codex CLI not found".
+- Refactor, no behaviour change: one helper each for loading local runbooks, harness readiness, stderr tails, schema JSON, `file://` URIs and diff `+/-` counts; harness lists in help/wizard/config-show derive from `HarnessKind`; `InteractiveIO` is gone (the wizard returns `Settings`); stale docstrings fixed.
 - Docs: the harness pages and `architecture/runbooks.md` show the 0.3.0 `Harness.complete()` signature (`llm: LLMSettings`, `project_dir: Path`) — the Harness Contract blocks still carried the pre-0.3.0 `settings: Settings`.
 - Lint debt paid: ruff reports zero findings and the CI ruff step is now blocking. No behaviour change — explicit `check=False` on `subprocess.run`, `Runbook` as a PEP 695 generic (`class Runbook[C, R]`), narrower exception types where a specific one exists; `BLE001` (broad `except`) is ignored by policy at the CLI / loader / platform boundaries, where every catch logs and degrades.
 - CI pins Python 3.14 via `.python-version` (an unpinned `uv python install` resolved to 3.15, where PyO3-based wheels do not build yet).
