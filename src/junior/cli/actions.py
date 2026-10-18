@@ -407,10 +407,13 @@ def emit_output(runbook, settings: Settings, result_output, logger) -> None:
 
 def publish_pre_generated(settings: Settings, review_file: Path, runbook, logger) -> None:
     """Skip collect+review; publish a pre-generated review .md via the runbook."""
+    if not hasattr(runbook, "publish_prepared"):
+        error(f"--publish-file needs a code-review runbook; '{runbook.name}' can't publish a file")
+        raise typer.Exit(code=2)
     try:
         markdown = review_file.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        logger.error("review file not found", path=str(review_file))
+    except OSError as e:
+        logger.error("can't read review file", path=str(review_file), error=str(e))
         raise typer.Exit(code=2)
 
     logger.info("publishing pre-generated review", path=str(review_file), runbook=runbook.name)

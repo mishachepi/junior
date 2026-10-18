@@ -549,5 +549,18 @@ def main() -> None:
     """Console-script entry point.
 
     Exit codes: 0=success, 1=blocking issues, 2=config error, 3=runtime error.
+    Anything that escapes the commands is a runtime error (3) — never the 1 Python
+    would exit with, which a pipeline reads as "blocking issues found".
     """
-    app()
+    import sys
+
+    from junior.cli.console import err_console, error
+
+    try:
+        app()
+    except OSError as e:  # unwritable -o path, a directory where a file was expected, …
+        error(str(e))
+        sys.exit(3)
+    except Exception:
+        err_console.print_exception()
+        sys.exit(3)
