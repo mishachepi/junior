@@ -45,7 +45,7 @@ def post_review(settings: Settings, result: ReviewResult) -> None:
     posted = 0
 
     for comment in inline_comments[:MAX_INLINE_COMMENTS]:
-        if _post_inline_comment(mr, comment, base_sha or head_sha, head_sha):
+        if _post_inline_comment(mr, comment, base_sha, head_sha):
             posted += 1
 
     if posted:
