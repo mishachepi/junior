@@ -16,7 +16,7 @@ subclass). Its one method is schema-agnostic — the result schema is a **parame
 
 ```python
 complete(*, system_prompt: str, user_message: str,
-         output_schema: type[BaseModel], settings: Settings) -> LLMResult
+         output_schema: type[BaseModel], llm: LLMSettings, project_dir: Path) -> LLMResult
 ```
 
 The code-review runbook passes `ReviewOutput`, but the harness works for any
@@ -35,7 +35,7 @@ complete(output_schema=…)
     ▼
 _ensure_codex_auth(settings)
     │  1. Check `codex login status`
-    │  2. If not logged in → `codex login --with-api-key` via settings.llm.openai_api_key
+    │  2. If not logged in → `codex login --with-api-key` via llm.openai_api_key
     │
     ▼
 prompt = system_prompt + "\n---\n\n" + user_message
@@ -45,7 +45,7 @@ schema  = _build_output_schema(output_schema)   ← strict JSON schema, a parame
 subprocess: codex exec
     │  --output-schema schema.json    ← strict schema from output_schema
     │  -o output.txt                   ← response to file
-    │  -C settings.context.project_dir ← working directory
+    │  -C project_dir ← working directory
     │  --ephemeral                     ← no session persistence
     │  --skip-git-repo-check           ← for Docker/CI
     │
