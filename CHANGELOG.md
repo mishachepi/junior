@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+- Docs: the harness pages and `architecture/runbooks.md` show the 0.3.0 `Harness.complete()` signature (`llm: LLMSettings`, `project_dir: Path`) — the Harness Contract blocks still carried the pre-0.3.0 `settings: Settings`.
+- Lint debt paid: ruff reports zero findings and the CI ruff step is now blocking. No behaviour change — explicit `check=False` on `subprocess.run`, `Runbook` as a PEP 695 generic (`class Runbook[C, R]`), narrower exception types where a specific one exists; `BLE001` (broad `except`) is ignored by policy at the CLI / loader / platform boundaries, where every catch logs and degrades.
+- CI pins Python 3.14 via `.python-version` (an unpinned `uv python install` resolved to 3.15, where PyO3-based wheels do not build yet).
 - Docs: the `pydantic` harness drives any OpenAI-compatible local server (oMLX, Ollama, LM Studio, vLLM) through pydantic-ai's standard `OPENAI_BASE_URL` — `--model openai:<id>` plus a (placeholder) `OPENAI_API_KEY`; verified against oMLX (gemma-4-12B) — with the caveat that the default tool-call output needs a model that fills a nested schema faithfully. No code change.
 
-## 0.3.0 — 2026-09-30
+## 0.3.0 — 2026-10-18
 
 - **Breaking (harness API):** `Harness.complete()` takes `llm: LLMSettings` and `project_dir: Path` instead of the whole `Settings` (same for `CliHarness.run_cli(cmd, llm, …)`). A harness only ever needed the LLM-side config and a working directory; passing exactly that is what lets a future workflow give each step its own harness/model. Custom harnesses (`--harness pkg.module`) update the two parameter names.
 - `--harness` (and `HARNESS` / `harness:`) accepts the import path of any module exposing a `HARNESS` instance — a custom harness no longer needs a fork or an enum entry, mirroring `--runbook pkg.module:Class`. `config.harness_ref()` resolves the value; `junior config show --harness pkg.x` reports its readiness.
