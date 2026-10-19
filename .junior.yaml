@@ -1,14 +1,22 @@
-# Dogfooding: Junior reviews its own diff.
-#   junior dry-run          → preview exactly what the AI would see (no call)
-#   junior run              → structured JSON verdict to stdout
-#   junior run --publish    → render the review as Markdown (redirect with > to save)
+# Junior reviews its own changes (dogfooding).
+#
+#   junior dry-run                          what the model would see, no call
+#   junior run                              review of the branch vs main → JSON, exit 1 on blocking
+#   junior run --publish > review.md        the same review as Markdown
+#   junior run --runbook changelog          draft CHANGELOG entries for this branch
+#
+# The default harness (pydantic) needs ANTHROPIC_API_KEY or OPENAI_API_KEY in the
+# env; `--harness claudecode` uses the local `claude` login instead.
 runbook: local_review
-harness: claudecode
+harness: pydantic
+model: anthropic:claude-sonnet-4-6
 
-# Prompts are scoped per runbook (scion-style): the review rules below apply
-# ONLY to local_review — a `junior run --runbook changelog` in this repo won't
-# drag code-review instructions (and their token bill) into an unrelated task.
-# Truly global prompts (style, language) would go under `context.prompts`.
+context:
+  source: branch            # the whole branch vs target_branch, not just the last commit
+  target_branch: main
+
+# Review rules apply only to local_review — other runbooks in this repo
+# (changelog) don't pay for them.
 runbooks:
   local_review:
     prompts:

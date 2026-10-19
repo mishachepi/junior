@@ -1,0 +1,13 @@
+name: changelog
+description: draft CHANGELOG.md entries for this branch's commits vs main
+needs_git: true
+collect: ./collect.sh
+system_prompt: prompt.md
+schema:
+  type: object
+  required: [entries]
+  properties:
+    entries:
+      type: array
+      description: one CHANGELOG bullet per user-visible change, Markdown, no leading "- "
+      items: {type: string}

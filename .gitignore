@@ -217,7 +217,7 @@ tmp/
 site/
 
 # Local Junior run artifacts. The .junior/ tree holds run records & local
-# runbooks; keep the dogfooding config + review prompts tracked, ignore the rest.
+# runbooks; keep the dogfooding config, prompts and runbooks tracked, ignore the rest.
 /.junior.yml
 /ctx.json
 /context.json
@@ -225,3 +225,4 @@ site/
 !.junior/prompts/
 .junior/prompts/*
 !.junior/prompts/*.md
+!.junior/runbooks/
