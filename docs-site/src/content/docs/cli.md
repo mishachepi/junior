@@ -290,15 +290,18 @@ So `✓ installed` answers "can I select it?" and the readiness half answers "wi
 
 ```text
 Runbooks
-  local_review     *   review the local git diff → raw JSON, or --publish for Markdown
-  github_pr_review     review a GitHub PR → post review comments
-  gitlab_pr_review     review a GitLab MR → post a note + inline threads
-  bitbucket_pr_review  review a Bitbucket DC PR → post a comment + inline comments
+  bitbucket_pr_review       review a Bitbucket DC PR → post a comment + inline comments
+  github_pr_review          review a GitHub PR → post review comments
+  gitlab_pr_review          review a GitLab MR → post a note + inline threads
+  local_review         *    review the local git diff → raw JSON, or --publish for Markdown
+  weather_advice            fetch local weather → advise what to wear (terminal only)
 
 Harnesses
-  claudecode   *   claude CLI subprocess (no API key)        ✓ installed · ready
-  codex            codex CLI subprocess                      ✓ installed · ready
-  pydantic         single structured call via pydantic-ai    ✓ installed · not ready: set OPENAI_API_KEY / ANTHROPIC_API_KEY
+  pydantic             single structured call via pydantic-ai (default)        ✓ installed · not ready: set OPENAI_API_KEY / ANTHROPIC_API_KEY
+  claudecode      *    claude CLI subprocess (no API key)                      ✓ installed · ready
+  codex                codex CLI subprocess                                    ✓ installed · ready
+  pi                   pi CLI subprocess — incl. local models (models.json)    ✓ installed · ready
+  agy                  agy CLI subprocess (Google Antigravity; its own login)  ✓ installed · ready
 ```
 
 ---
@@ -373,7 +376,7 @@ junior config env                                   # for your current config
 junior config env --harness pydantic --runbook github_pr_review
 ```
 
-`claudecode` / `codex` need no env var (they use local CLI auth); `pydantic` needs `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. `github_pr_review` needs `GITHUB_TOKEN` (+ `GITHUB_REPOSITORY`, `GITHUB_EVENT_NUMBER`); `gitlab_pr_review` needs `GITLAB_TOKEN` (+ `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`); `bitbucket_pr_review` needs all of `BITBUCKET_URL`, `BITBUCKET_TOKEN`, `BITBUCKET_PROJECT`, `BITBUCKET_REPO`, `BITBUCKET_PR_ID` (Bitbucket DC has no pipelines, so nothing is auto-provided). Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner.
+`claudecode` / `codex` / `pi` / `agy` need no env var (they use local CLI auth); `pydantic` needs `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. `github_pr_review` needs `GITHUB_TOKEN` (+ `GITHUB_REPOSITORY`, `GITHUB_EVENT_NUMBER`); `gitlab_pr_review` needs `GITLAB_TOKEN` (+ `CI_PROJECT_ID`, `CI_MERGE_REQUEST_IID`); `bitbucket_pr_review` needs all of `BITBUCKET_URL`, `BITBUCKET_TOKEN`, `BITBUCKET_PROJECT`, `BITBUCKET_REPO`, `BITBUCKET_PR_ID` (Bitbucket DC has no pipelines, so nothing is auto-provided). Many `CI_*` / `GITHUB_*` vars are auto-provided by the CI runner.
 
 ### `junior config path`
 
