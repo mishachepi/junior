@@ -3,7 +3,7 @@
 A **runbook framework** for AI "juniors" — deterministic collect → one schema-validated LLM call → deterministic publish. Code review (GitLab / GitHub / Bitbucket DC) is the built-in flagship, not the boundary. Two concepts explain the whole codebase:
 
 - **Runbook** (`Runbook[Ctx, Result]` ABC) — a module owning one vertical: collect → render → harness → publish, plus its context/result schemas. The platform (local / GitHub / GitLab / Bitbucket DC) is part of the runbook, not a separate selector.
-- **Harness** (`Harness` ABC) — the schema-agnostic LLM driver: `complete(*, system_prompt, user_message, output_schema, settings) -> LLMResult`. Six built-ins: `claudecode` (default), `codex`, `pydantic`, `deepagents`, `pi` (local models), `gemini` (read-only Gemini CLI).
+- **Harness** (`Harness` ABC) — the schema-agnostic LLM driver: `complete(*, system_prompt, user_message, output_schema, llm, project_dir) -> LLMResult`. Five built-ins: `pydantic` (default, one API call via pydantic-ai), `claudecode`, `codex`, `pi` (incl. local models), `agy` (Google Antigravity CLI). The four CLI ones share `CliHarness` in `harnesses/_shared.py`.
 
 Both ABCs live in `src/junior/runbook/base.py`. The big picture is documented — read it instead of re-deriving: [architecture](docs-site/src/content/docs/architecture.md), [glossary](docs-site/src/content/docs/glossary.md), [philosophy](docs-site/src/content/docs/philosophy.md).
 
@@ -22,13 +22,12 @@ src/junior/
   config.py       ← Settings = ContextSettings + LLMSettings + OutputSettings (+ top-level runbook/log_level); frozen
   init_config.py  ← the `junior init` wizard
   runbook/        ← framework core (domain-agnostic): base.py (both ABCs), registry.py (discovery), runner.py
-  harnesses/      ← LLM drivers, one file each, exposing HARNESS: claudecode, codex, pydantic, deepagents, pi, gemini
+  harnesses/      ← LLM drivers, one file each, exposing HARNESS: pydantic, claudecode, codex, pi, agy (+ _shared.py: CliHarness)
   runbooks/       ← built-ins (auto-discovered): code_review/{local,github,gitlab,bitbucket}, weather (example), script (YAML manifests)
   collect/        ← context-collection helper libs the runbooks call: local/gitlab/github/bitbucket + core/
   publish/        ← result-posting helper libs: local/gitlab/github/bitbucket + core/ (formatter)
   run_record.py   ← writes the .junior/output/{ts}.json trace after each run
   prompt_loader.py, github_api.py, bitbucket_api.py
-  models.py       ← DEPRECATED re-export shim → runbooks/code_review/models.py
 tests/            ← pytest; harness contract tests are parametrized over HarnessKind, so a new harness is covered automatically
 docs-site/        ← Astro + Starlight docs site; deployed to GitHub Pages by .github/workflows/docs.yml
 ```
@@ -37,11 +36,11 @@ docs-site/        ← Astro + Starlight docs site; deployed to GitHub Pages by .
 
 - **Output contract (all runbooks):** without `--publish` → the raw result JSON goes to stdout/`-o` (pipe-safe); with `--publish` → only the runbook's `publish()` runs. Logs always go to stderr (structlog); user-facing output goes through rich (`cli/console.py`). Reference: [cli.md](docs-site/src/content/docs/cli.md).
 - **Lazy imports:** runbook and harness modules import their platform/SDK deps *inside* methods (`collect` / `_post_to_platform` / `complete`) — registry scans and `junior list` must stay cheap on a core install. `Harness.is_ready()` does env/CLI checks only, no heavy imports.
-- **Domain models** live in `src/junior/runbooks/code_review/models.py`. `junior.models` is a deprecated shim — never import it in new code.
+- **Domain models** live in `src/junior/runbooks/code_review/models.py`; the framework core never imports them.
 - **Config is YAML-only.** Priority: CLI flags → env → `--config FILE` → `./.junior.{yaml,yml}` (found walking up to the repo root) → `~/.config/junior/settings.{yaml,yml}`. Shorthands `harness`/`model`/`publish`/`output_file` are accepted at the config root. Reference: [configuration.md](docs-site/src/content/docs/configuration.md).
 - Pydantic models are `frozen=True`; logging is structlog only (never stdlib); Python 3.12+, ruff, line length 100.
-- Exit codes: 0 ok · 1 blocking findings · 2 config error · 3 runtime error.
-- **Adding a harness or runbook:** follow [adding_harnesses.md](docs-site/src/content/docs/adding_harnesses.md) / [adding_runbooks.md](docs-site/src/content/docs/adding_runbooks.md) — they list every registration touchpoint (HarnessKind enum, HARNESS_META, validation skip list, extras).
+- Exit codes: 0 ok · 1 blocking findings · 2 config error · 3 runtime error. `cli/app.py:main()` maps anything that escapes a command to 3 — never let a failure exit 1.
+- **Adding a harness or runbook:** follow [adding_harnesses.md](docs-site/src/content/docs/adding_harnesses.md) / [adding_runbooks.md](docs-site/src/content/docs/adding_runbooks.md) — they list every registration touchpoint (HarnessKind enum, HARNESS_META, extras). Help text, the wizard and `config show` derive the harness list from those two.
 
 ## Documentation map
 
@@ -82,6 +81,12 @@ All user docs live in `docs-site/src/content/docs/` (single source of truth, pub
 | Any user-visible change | check `faq.md` for relevance |
 
 Docs authoring: every page needs a frontmatter `title`; cross-link with relative `*.md` paths; GitHub callouts (`> [!NOTE]`) and ` ```mermaid ` blocks work; a remark plugin strips the body `# H1` and rewrites links. Details: `docs-site/README.md`.
+
+## Dogfooding
+
+`.junior.yaml` points Junior at this repo: `junior run` reviews the branch vs `main`
+with `.junior/prompts/review.md` (the codebase checklist); `junior run --runbook changelog`
+drafts CHANGELOG entries (`.junior/runbooks/changelog/`). Run the review before pushing.
 
 ## Development workflow
 
