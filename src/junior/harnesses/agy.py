@@ -81,7 +81,7 @@ class AgyHarness(CliHarness):
             "--json-schema", schema_json(output_schema),
         ]
         if llm.model:
-            cmd.extend(["--model", llm.model])
+            cmd.extend(["--model", llm.resolved_model])  # "anthropic:x" → "x"
 
         proc = self.run_cli(cmd, llm, cwd=str(project_dir))
 
