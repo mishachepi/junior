@@ -149,3 +149,8 @@ def build_user_message(
         comments_count=len(context.comments),
     )
     return message
+
+
+def _probe_ratio(done: int, total: int) -> float:
+    """Share of work done."""
+    return done / total  # probe: no zero guard
