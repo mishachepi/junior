@@ -10,6 +10,7 @@
 - Fix: an API key set in the config file (`llm.anthropic_api_key` / `llm.openai_api_key`) reaches the `pydantic` harness — it passed preflight and then failed the run, because pydantic-ai only read the env. Keys still belong in env vars.
 - Fix: `config show` / `config env` see repo-local runbooks (`.junior/runbooks/`) like `run` and `list` do.
 - Fix: `llm.timeout` must be ≥ 1 and `max_tokens_per_agent` / `max_file_size` ≥ 0 (`timeout: 0` killed every CLI run instantly); config errors name the offending field (`timeout: Input should be …`).
+- Fix: `claudecode` / `agy` accept the `provider:model` form (`--model anthropic:claude-haiku-4-5`) — the prefix used to reach the CLI and fail as an unknown model.
 - Fix: codex's `codex login status` probe gets `/dev/null` stdin like every other CLI call, and its timeout no longer reports "codex CLI not found".
 - Refactor, no behaviour change: one helper each for loading local runbooks, harness readiness, stderr tails, schema JSON, `file://` URIs and diff `+/-` counts; harness lists in help/wizard/config-show derive from `HarnessKind`; `InteractiveIO` is gone (the wizard returns `Settings`); stale docstrings fixed.
 - Docs: the harness pages and `architecture/runbooks.md` show the 0.3.0 `Harness.complete()` signature (`llm: LLMSettings`, `project_dir: Path`) — the Harness Contract blocks still carried the pre-0.3.0 `settings: Settings`.

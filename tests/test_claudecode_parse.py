@@ -108,3 +108,9 @@ def test_cmd_uses_configured_permission_mode(monkeypatch):
     settings = Settings(llm=LLMSettings(claudecode={"permission_mode": "acceptEdits"}))
     cmd = _run_and_capture(monkeypatch, settings)
     assert _permission_mode(cmd) == "acceptEdits"
+
+
+def test_cmd_strips_provider_prefix_from_model(monkeypatch):
+    """`--model anthropic:claude-x` (the pydantic form) reaches the CLI as `claude-x`."""
+    cmd = _run_and_capture(monkeypatch, Settings(llm=LLMSettings(model="anthropic:claude-x")))
+    assert cmd[cmd.index("--model") + 1] == "claude-x"

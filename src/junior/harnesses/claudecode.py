@@ -58,7 +58,7 @@ class ClaudeCodeHarness(CliHarness):
         if llm.anthropic_api_key:
             cmd.append("--bare")
         if llm.model:
-            cmd.extend(["--model", llm.model])
+            cmd.extend(["--model", llm.resolved_model])  # "anthropic:x" → "x"
 
         proc = self.run_cli(cmd, llm, input=user_message, cwd=str(project_dir))
 
