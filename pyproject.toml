@@ -12,7 +12,7 @@ dependencies = [
     "typer>=0.27.3",
     "rich>=15.0.0",
     "PyYAML>=6.0",
-    "pydantic-ai-slim[anthropic,openai]>=2.51.0",  # the default harness: one structured API call
+    "pydantic-ai-slim[anthropic,openai]>=2.57.0",  # the default harness: one structured API call
 ]
 
 [project.optional-dependencies]
