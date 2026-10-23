@@ -19,7 +19,7 @@ dependencies = [
 # --- Agent backends ---
 pydantic = []  # default — ships in core (pydantic-ai); kept so `junior[pydantic]` still installs
 claudecode = []  # drives the `claude` CLI (Node.js), no Python deps
-codex = ["openai>=3.31.0"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
+codex = ["openai>=3.35.1"]  # drives the `codex` CLI (Node.js); openai = strict-schema helper
 
 # --- Built-in platforms for code review collect MR/PR metadata + publish comments ---
 gitlab = ["python-gitlab>=8.6.0"]
@@ -34,7 +34,7 @@ all = ["junior[gitlab,github,bitbucket,codex,pydantic]"]
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
-    "pytest-mock>=3.16.0",
+    "pytest-mock>=3.17.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.1",
 ]
